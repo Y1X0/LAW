@@ -11,7 +11,46 @@
 - **استجابة موحّدة:** `{ data, meta, errors }` مع رموز HTTP صحيحة.
 - **الترقيم/الفرز/الفلترة:** `?page=&per_page=&sort=&filter[field]=`.
 - **Idempotency-Key** للعمليات المالية الحسّاسة (منع الازدواج).
-- **Rate Limiting** لكل مستخدم/عميل.
+- **Rate Limiting** لكل مستخدم/عميل (انظر الحدود أدناه).
+- **OpenAPI/Swagger كأرتيفكت تسليم:** ملف `openapi.yaml` مصدر الحقيقة للعقد، يُنشر تلقائياً كـ Swagger UI، ويُختبَر ثباته بـ Contract Tests (انظر [ملف 11](11-quality-and-operations.md)).
+
+### 1.1 الاستجابة الموحّدة (Response Envelope)
+```jsonc
+// نجاح مع ترقيم
+{
+  "data": [ /* السجلات */ ],
+  "meta": { "page": 1, "per_page": 20, "total": 500, "total_pages": 25 },
+  "errors": null
+}
+```
+
+### 1.2 مخطط الخطأ الموحّد (Error Schema)
+```jsonc
+{
+  "data": null,
+  "meta": null,
+  "errors": {
+    "code": "VALIDATION_ERROR",        // رمز ثابت قابل للبرمجة
+    "message": "بيانات غير صحيحة",       // رسالة عربية للمستخدم
+    "trace_id": "req_01H...",           // لتتبّع الطلب في السجلات
+    "fields": {                          // أخطاء على مستوى الحقل (اختياري)
+      "national_id": ["الرقم الوطني مستخدَم مسبقاً"],
+      "from_date": ["يجب ألا يسبق تاريخ اليوم"]
+    }
+  }
+}
+```
+**رموز الأخطاء القياسية:** `VALIDATION_ERROR` (422) · `UNAUTHENTICATED` (401) · `FORBIDDEN` (403) · `NOT_FOUND` (404) · `CONFLICT` (409) · `RATE_LIMITED` (429) · `SERVER_ERROR` (500). كل خطأ يحمل `trace_id` يربط الاستجابة بسجل الخادم/Sentry.
+
+### 1.3 حدود المعدّل (Rate Limits)
+| الفئة | الحد |
+|------|------|
+| تسجيل الدخول / MFA | 5–10 محاولات / دقيقة / IP+حساب (ثم قفل تصاعدي) |
+| قراءة API عامة | 120 طلب / دقيقة / مستخدم |
+| كتابة/تعديل | 60 طلب / دقيقة / مستخدم |
+| التصدير/التقارير الثقيلة | 10 طلبات / دقيقة / مستخدم |
+| Webhook البصمة | حسب الجهاز (Allowlist IP) — لا خنق ضمن الشبكة الموثوقة |
+عند التجاوز: استجابة **429** مع ترويسات `Retry-After` و`X-RateLimit-Remaining`.
 
 ### 2. أمثلة على نقاط النهاية (Endpoints)
 

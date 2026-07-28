@@ -5,9 +5,10 @@
 ## اصطلاحات عامة (Conventions)
 
 - **المفتاح الأساسي (PK):** `id BIGINT GENERATED ALWAYS AS IDENTITY` (أو UUID للكيانات المعرّضة خارجياً).
-- **الحقول الزمنية القياسية على كل جدول:** `created_at`, `updated_at` (TIMESTAMPTZ)، و`deleted_at` (Soft Delete) للجداول الحساسة.
-- **التتبّع:** `created_by`, `updated_by` (FK → users.id) على الجداول التشغيلية.
-- **العزل متعدد الفروع:** `branch_id` (FK → branches.id) على الجداول التشغيلية.
+- **الحقول الزمنية القياسية:** `created_at`, `updated_at` (TIMESTAMPTZ) على جميع جداول الكيانات. **استثناء:** جداول الربط البحتة (M:N مثل `role_permission`, `user_role`, `task_assignees`) تكفيها `created_at` فقط.
+- **الحذف المنطقي (Soft Delete):** `deleted_at` على الكيانات الحساسة فقط (employees, cases, clients, invoices, documents, users). **عمداً غير موجود** على الجداول المالية للحركات (payments, expenses, journal_entries) — هذه **لا تُحذف بل تُعكَس (Reversal)** حفاظاً على سلامة الدفتر المحاسبي.
+- **التتبّع:** `created_by`, `updated_by` (FK → users.id) على الجداول التشغيلية؛ و`approved_by/approved_at` (و`posted_by/posted_at` للقيود) على الجداول المالية التي يمرّ عليها اعتماد.
+- **العزل متعدد الفروع:** `branch_id` (FK → branches.id) على الجداول التشغيلية. **ملاحظة العزل:** النظام يعتمد `branch_id` فقط حالياً؛ `tenant_id` غير موجود ويُدخَل في مرحلة SaaS كطبقة أعلى (انظر [ADR-005](adr/005-multitenancy-strategy.md)).
 - **العملة والمبالغ:** `NUMERIC(15,2)` (لا تُستخدم FLOAT للمال إطلاقاً).
 - **الحالات (Enums):** جداول مرجعية (Lookup) أو أنواع `ENUM`/`CHECK` — نعتمد جداول مرجعية للمرونة.
 - **الفهارس:** على كل FK، وعلى الحقول كثيرة البحث/الفرز (status, dates, national_id...).
@@ -609,7 +610,12 @@ erDiagram
 | balance | NUMERIC(15,2) | المتبقي (محسوب) |
 | status | VARCHAR(20) | draft/sent/partial/paid/overdue/cancelled |
 | notes | TEXT | |
-| created_by | BIGINT FK | |
+| created_by | BIGINT FK → users | من أنشأ الفاتورة |
+| approved_by | BIGINT FK → users Nullable | من اعتمد إصدارها |
+| approved_at | TIMESTAMPTZ Nullable | وقت الاعتماد |
+| created_at / updated_at | TIMESTAMPTZ | |
+
+> **حقول الاعتماد (Domain-level Approval):** الاعتماد جزء من نطاق العمل المالي/القانوني، لا يُكتفى فيه بـ `audit_logs` العام. من ثمّ تحمل الفواتير والمدفوعات والمصروفات والقيود أعمدة `approved_by/approved_at` (و`posted_by/posted_at` للقيود) صراحةً.
 
 ### `invoice_items` — بنود الفاتورة
 `id, invoice_id, description, quantity, unit_price, tax_rate, line_total`.
@@ -627,8 +633,11 @@ erDiagram
 | account_id | BIGINT FK → financial_accounts | الصندوق/البنك المستلِم |
 | reference | VARCHAR(80) | رقم الشيك/التحويل |
 | payment_date | DATE | |
-| received_by | BIGINT FK | |
+| received_by | BIGINT FK → users | من استلم/سجّل الدفعة |
+| approved_by | BIGINT FK → users Nullable | من اعتمد السند |
+| approved_at | TIMESTAMPTZ Nullable | وقت الاعتماد |
 | notes | TEXT | |
+| created_at / updated_at | TIMESTAMPTZ | |
 
 ### `expenses` — المصروفات (سندات الصرف)
 | العمود | النوع | ملاحظات |
@@ -643,9 +652,12 @@ erDiagram
 | account_id | BIGINT FK → financial_accounts | مصدر الصرف |
 | beneficiary | VARCHAR(150) | المستفيد |
 | expense_date | DATE | |
-| paid_by | BIGINT FK | |
+| paid_by | BIGINT FK → users | من صرف/سجّل المصروف |
+| approved_by | BIGINT FK → users Nullable | من اعتمد الصرف |
+| approved_at | TIMESTAMPTZ Nullable | وقت الاعتماد |
 | document_id | BIGINT FK Nullable | صورة الفاتورة/الإيصال |
 | notes | TEXT | |
+| created_at / updated_at | TIMESTAMPTZ | |
 
 ### `expense_categories` — تصنيفات المصروفات
 `id, name` (رواتب، إيجار، رسوم محكمة، قرطاسية، مواصلات...).
@@ -663,7 +675,7 @@ erDiagram
 | currency | VARCHAR(3) | |
 
 ### `journal_entries` / `journal_lines` — القيود اليومية (القيد المزدوج)
-- `journal_entries`: `id, branch_id, entry_no, entry_date, description, reference_type, reference_id, posted (BOOLEAN), created_by`.
+- `journal_entries`: `id, branch_id, entry_no, entry_date, description, reference_type, reference_id, posted (BOOLEAN), created_by (FK→users), posted_by (FK→users, Nullable), posted_at (TIMESTAMPTZ, Nullable), approved_by (FK→users, Nullable), approved_at (TIMESTAMPTZ, Nullable), created_at, updated_at`.
 - `journal_lines`: `id, entry_id, account_id, debit NUMERIC(15,2), credit NUMERIC(15,2), notes`.
 - **قيد التوازن:** مجموع المدين = مجموع الدائن لكل قيد (يُفرض بمنطق الأعمال).
 

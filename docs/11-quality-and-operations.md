@@ -82,7 +82,7 @@
 ### 2.3 أهداف التغطية والجودة
 - تغطية **≥ 80%** للمنطق الحرج (المالية، الرواتب، الحضور، الصلاحيات).
 - تغطية **≥ 60%** إجمالاً.
-- **بوابة جودة CI:** لا دمج قبل نجاح كل الاختبارات + فحص Lint/Static Analysis (PHPStan/ESLint) + مسح تبعيات (Dependabot/Snyk).
+- **بوابة جودة CI:** لا دمج قبل نجاح كل الاختبارات + فحص Lint/Static Analysis (PHPStan/ESLint) + مسح تبعيات (Dependabot/Snyk) + **مسح الأسرار (Secret Scanning)** عبر gitleaks/trufflehog على كل Push + التحقق من `.env` ضمن `.gitignore` (يُرفض أي سرّ مُسرَّب في الـ diff).
 - **بيانات اختبار:** Factories/Seeders + بيئة اختبار ببيانات **مُقنّعة** (Masked) من الإنتاج.
 
 ### 2.4 خط CI/CD

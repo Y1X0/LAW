@@ -32,6 +32,8 @@
 | 07 | [لوحة التحكم والتقارير](docs/07-dashboard-and-reports.md) | Dashboard، KPIs، جميع التقارير، التصدير PDF/Excel/Print |
 | 08 | [الإشعارات والأتمتة](docs/08-notifications-automation.md) | محرك الإشعارات، القنوات، القواعد، المهام المجدولة |
 | 09 | [واجهة برمجة التطبيقات وخارطة الطريق](docs/09-api-and-roadmap.md) | تصميم REST/WebSocket API، المراحل، التقديرات، التحسينات |
+| 10 | [التتبعية وحالات الحواف](docs/10-traceability-and-edge-cases.md) | ربط كل جدول بعملية أعمال + حالات الحواف الحرجة (حضور/إجازات/قضايا/مالية) |
+| 11 | [الجودة والتشغيل](docs/11-quality-and-operations.md) | أهداف الأداء بالأرقام، استراتيجية الاختبار، ترحيل البيانات، النسخ الاحتياطي والتعافي (RPO/RTO) |
 
 ---
 
@@ -81,3 +83,5 @@
 - **فريق الـ Frontend / UX:** [الشاشات](docs/06-screens-ui.md) + [لوحة التحكم](docs/07-dashboard-and-reports.md).
 - **DevOps / الأمان:** [المعمارية](docs/01-architecture-and-stack.md) + [الأمان](docs/05-roles-permissions-security.md).
 - **فريق التكامل (Integrations):** [أجهزة البصمة](docs/04-attendance-biometrics.md).
+- **فريق QA / ضمان الجودة:** [الجودة والتشغيل](docs/11-quality-and-operations.md) + [التتبعية وحالات الحواف](docs/10-traceability-and-edge-cases.md).
+- **محلل النظم / مراجعة المعمارية:** [التتبعية](docs/10-traceability-and-edge-cases.md) للتحقق من ربط الجداول بالعمليات.

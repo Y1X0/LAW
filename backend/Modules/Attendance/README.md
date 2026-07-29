@@ -1,13 +1,13 @@
 # وحدة Attendance
 
-**الملكية (Owns):** attendance_records, work_shifts, employee_shifts (biometric_devices لاحقاً في #16)
-**تُتيح (Exposes):** AttendanceService
+**الملكية (Owns):** attendance_records, work_shifts, employee_shifts, biometric_devices, attendance_logs
+**تُتيح (Exposes):** AttendanceService, BiometricIngestionService, BiometricAdapter (واجهة موحّدة)
 
 > المرجع: [docs/module-boundaries.md](../../../docs/module-boundaries.md)
 
 **القاعدة الذهبية:** لا تصل هذه الوحدة إلى جداول وحدة أخرى مباشرةً — التواصل عبر الخدمات/الأحداث فقط.
 
-الحالة: **محرّك الحضور الأساسي جاهز (Issue #15).** تكامل أجهزة البصمة لاحقاً في #16 (`source=manual` حالياً).
+الحالة: **محرّك الحضور الأساسي (Issue #15) + أساس تكامل البصمة (Issue #16) جاهزان.**
 
 ## الجداول (Migrations)
 
@@ -54,8 +54,47 @@
 
 ## سجل التدقيق (Audit)
 
-`attendance_check_in` · `attendance_check_out` · `attendance_manual_recorded` · `attendance_approved` · `work_shift_created`
+**الحضور (#15):** `attendance_check_in` · `attendance_check_out` · `attendance_manual_recorded` · `attendance_approved` · `work_shift_created`
 
-## خارج نطاق #15
+**البصمة (#16):** `biometric_device_registered` · `biometric_device_updated` · `biometric_user_enrolled` · `biometric_sync_triggered` · `biometric_device_synced` · `biometric_log_unmatched` · `biometric_log_processed`
 
-تكامل أجهزة البصمة (ZKTeco/Hikvision/…)، المزامنة مع الأجهزة، والتقاط `source` الآلي — كلها في Issue #16.
+---
+
+# تكامل البصمة (Issue #16)
+
+أساس تكامل أجهزة البصمة عبر **نمط Adapter** (ADR-003) + طبقة **Staging خام** + بنية **مهمة مزامنة**. يدعم MVP مورّد **ZKTeco** بالكامل (Push أساسي + Pull للتسوية).
+
+## الجداول
+
+| الجدول | الوصف |
+|--------|-------|
+| `biometric_devices` | الأجهزة: `vendor`, `api_mode` (push/pull), `ip_address`, `port`, `serial_number`, `auth_token` (مشفّر), `status`, `last_sync_at`, `is_active` |
+| `attendance_logs` | Staging خام: `device_id`, `biometric_user_id`, `employee_id`, `punch_time`, `punch_type`, `verify_mode`, `source`, `status`, `raw_payload` (JSONB) |
+
+**منع التكرار (Idempotency):** `unique(device_id, biometric_user_id, punch_time)` — أي إعادة إرسال تُتجاهل.
+
+## طبقة المحوّلات (Adapter Layer)
+
+- `Biometric\Contracts\BiometricAdapter` — الواجهة الموحّدة: `connect` / `fetchLogs` / `parseWebhook` / `normalize` / `enrollUser` / `deleteUser` / `getDeviceStatus`.
+- `Biometric\Adapters\ZKTecoAdapter` — محوّل ZKTeco (تعيينات status/verify؛ Push عبر normalize، Pull عبر fetchLogs).
+- `Biometric\BiometricAdapterFactory` — يختار المحوّل حسب `vendor` (إضافة مورّد = محوّل + فرع جديد).
+- `Biometric\PunchData` — النبضة الموحّدة `{biometric_user_id, punch_time, punch_type, verify_mode, raw}`.
+
+## خط الاستيعاب (Ingestion) والمعالجة
+
+1. **Push:** الجهاز يرسل إلى `POST /api/biometric/devices/{device}/webhook` (يُصادَق بتوكن الجهاز) → `parseWebhook` → استيعاب.
+2. **Pull/التسوية:** `biometric:sync` (كل دقيقة) يطلق `SyncBiometricDeviceJob` لكل جهاز نشط → `fetchLogs(since=last_sync_at)`.
+3. **BiometricIngestionService:** منع التكرار → حفظ خام في `attendance_logs` → مطابقة الموظف بـ `biometric_user_id`.
+4. **المطابَق:** `ProcessAttendanceLogJob` (طابور + إعادة محاولة) → `AttendanceService::applyPunch` → `attendance_records` بمصدر `biometric` (أول دخول/آخر خروج).
+5. **غير المطابَق:** يبقى `status=unmatched` (قائمة عمل HR عبر `GET /api/biometric/logs?status=unmatched`) + أثر تدقيق `biometric_log_unmatched`.
+
+## نقاط النهاية (البصمة)
+
+| الطريقة | المسار | الصلاحية |
+|---------|--------|----------|
+| POST | `/api/biometric/devices/{device}/webhook` | توكن الجهاز (Push) |
+| GET/POST | `/api/biometric/devices` | `attendance.devices` |
+| PUT | `/api/biometric/devices/{device}` | `attendance.devices` |
+| POST | `/api/biometric/devices/{device}/enroll` | `attendance.devices` |
+| POST | `/api/biometric/devices/{device}/sync` | `attendance.devices` |
+| GET | `/api/biometric/logs` | `attendance.devices` |

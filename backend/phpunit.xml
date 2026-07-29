@@ -19,6 +19,8 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- مفتاح تشفير ثابت للاختبارات (يلزم لحقول encrypted مثل توكن جهاز البصمة — #16). -->
+        <env name="APP_KEY" value="base64:8Z846Zj3SMwY2v0EaXRYzJY/r6ly51V+kBDEFKgEvdc="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>

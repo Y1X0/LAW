@@ -85,7 +85,7 @@ class BiometricSyncService
             $key = [
                 'device_id' => $device->id,
                 'biometric_user_id' => $norm['biometric_user_id'],
-                'punch_time' => $norm['punch_time'],
+                'punch_time' => $this->toUtc($norm['punch_time'], $device),
             ];
 
             // Idempotency: إعادة الإرسال تطابق الفهرس الفريد فلا تُنشئ سجلاً جديداً.
@@ -144,6 +144,19 @@ class BiometricSyncService
         }
 
         return ['processed' => $processed, 'unmatched' => $unmatched];
+    }
+
+    /**
+     * تحويل وقت النبضة إلى UTC وفق منطقة الجهاز الزمنية (إن وُجدت).
+     * الجهاز يرسل وقتاً محلياً بلا منطقة؛ نفسّره بمنطقته ثم نخزّنه كلحظة UTC صحيحة.
+     */
+    private function toUtc(Carbon $punchTime, BiometricDevice $device): Carbon
+    {
+        if (! $device->timezone) {
+            return $punchTime;
+        }
+
+        return Carbon::parse($punchTime->format('Y-m-d H:i:s'), $device->timezone)->utc();
     }
 
     /** تطبيق نبضة واحدة على سجل الحضور (دخول أول نبضة، خروج للاحقة). */

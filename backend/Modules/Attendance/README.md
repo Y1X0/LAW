@@ -66,7 +66,7 @@
 
 | الجدول | الوصف |
 |--------|-------|
-| `biometric_devices` | الأجهزة المسجّلة: `vendor` (zkteco/hikvision/suprema/anviz), `api_mode` (push/pull), `secret`, `last_sync_at`, `status` |
+| `biometric_devices` | الأجهزة المسجّلة: `vendor` (zkteco/hikvision/suprema/anviz), `api_mode` (push/pull), `secret`, `timezone`, `last_sync_at`, `status`. **حذف ناعم** (تقاعد الجهاز لا يمسّ السجلات التاريخية) |
 | `attendance_logs` | Staging خام لكل نبضة: `raw_payload` (JSONB), `punch_time`, `punch_type`, `status` (pending/processed/unmatched) |
 
 **Idempotency:** فهرس فريد منطقي `(device_id, biometric_user_id, punch_time)` — إعادة الإرسال تُتجاهَل.
@@ -97,10 +97,15 @@
 
 `biometric_device_created` · `biometric_device_updated` · `biometric_device_deleted` · `biometric_webhook_received` · `biometric_pulled`
 
+## المنطقة الزمنية (Timezone)
+
+الأعمدة الزمنية كلها `timestamptz`. الجهاز قد يرسل وقتاً محلياً بلا منطقة؛ يُخزَّن `biometric_devices.timezone` (مثل `Asia/Riyadh`) ويُفسَّر وقت النبضة بمنطقة الجهاز ثم يُحوَّل إلى UTC عند الحفظ — فلا اختلاف بين توقيت الجهاز والخادم.
+
 ## أمان
 
 - التحقق من Push بمقارنة ثابتة الزمن (`hash_equals`) لمفتاح الجهاز؛ يُفضّل تقييد المصدر بـ IP Allowlist/VPN على مستوى البنية.
 - المفتاح السري (`secret`) مخفيّ من كل استجابات الـ API.
+- صلاحية `attendance.devices` تدير الأجهزة فقط — لا تمنح قراءة سجلات الحضور (تبقى خلف `attendance.view`).
 
 ## خارج نطاق #16
 

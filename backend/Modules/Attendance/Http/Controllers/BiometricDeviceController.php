@@ -73,6 +73,7 @@ class BiometricDeviceController
             'serial_number' => ['nullable', 'string', 'max:80', Rule::unique('biometric_devices', 'serial_number')->ignore($request->route('device')?->id)],
             'ip_address' => ['nullable', 'ip'],
             'port' => ['nullable', 'integer', 'between:1,65535'],
+            'timezone' => ['nullable', 'timezone'],
             'secret' => [$creating ? 'required' : 'sometimes', 'string', 'min:8', 'max:128'],
             'is_active' => ['boolean'],
         ]);

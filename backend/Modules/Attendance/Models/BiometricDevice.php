@@ -5,13 +5,17 @@ namespace Modules\Attendance\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Models\Branch;
 
 /**
  * جهاز بصمة مسجّل (Issue #16). المورّد ونمط التكامل يحدّدان المحوّل المستخدم.
+ * حذف ناعم: تقاعد الجهاز يحافظ على سجلات البصمة التاريخية.
  */
 class BiometricDevice extends Model
 {
+    use SoftDeletes;
+
     public const VENDORS = ['zkteco', 'hikvision', 'suprema', 'anviz'];
 
     public const API_MODES = ['push', 'pull'];
@@ -20,7 +24,7 @@ class BiometricDevice extends Model
 
     protected $fillable = [
         'branch_id', 'name', 'vendor', 'api_mode', 'serial_number',
-        'ip_address', 'port', 'secret', 'is_active', 'last_sync_at', 'status',
+        'ip_address', 'port', 'secret', 'timezone', 'is_active', 'last_sync_at', 'status',
     ];
 
     protected $casts = [

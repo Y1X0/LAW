@@ -22,10 +22,13 @@ return new class extends Migration
             $table->string('ip_address', 45)->nullable();
             $table->unsignedSmallInteger('port')->nullable();
             $table->string('secret', 128)->comment('مفتاح سري للتحقق من Push/Webhook');
+            $table->string('timezone', 40)->nullable()->comment('منطقة الجهاز الزمنية؛ null = منطقة التطبيق');
             $table->boolean('is_active')->default(true);
             $table->timestampTz('last_sync_at')->nullable();
             $table->string('status', 20)->default('unknown')->comment('online/offline/unknown');
             $table->timestampsTz();
+            // حذف ناعم: إيقاف/تقاعد جهاز لا يمسّ سجلات البصمة التاريخية (attendance_logs).
+            $table->softDeletesTz();
 
             $table->index('vendor');
             $table->index('is_active');

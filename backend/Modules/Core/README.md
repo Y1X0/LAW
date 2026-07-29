@@ -16,4 +16,11 @@
 - نقاط النهاية (تحت `/api/auth`): `login` · `refresh` (تدوير) · `logout` · `me` · `forgot-password` · `reset-password`.
 - توكن Access (15د) + Refresh (14ي) مخزّنان **مجزّأين** (SHA-256) · قفل الحساب بعد 5 محاولات · أحداث Audit للمصادقة · إبطال الجلسات عند تغيير كلمة المرور.
 
-الحالة: النواة جاهزة (Health + أساس المخطط + **المصادقة**). صلاحيات RBAC الكاملة تُنفَّذ في Issue #12.
+## الصلاحيات RBAC (Issue #12)
+- `Concerns/HasAuthorization` (على User): `hasPermission` · `hasRole` · `assignRole` · `removeRole`.
+- Middleware: `permission:<name>` · `role:<name>` + تكامل `Gate::before` (يدعم `$user->can(...)`).
+- إدارة عبر API: أدوار (CRUD + مزامنة صلاحيات) · كتالوج الصلاحيات · إسناد/إزالة أدوار المستخدمين — محميّة بـ `roles.manage`/`users.manage`.
+- `Seeders/RbacSeeder`: كتالوج الصلاحيات (docs/05 §2) + الأدوار النظامية + منح admin كامل الصلاحيات.
+- أحداث Audit: `role_created/updated/deleted` · `role_permissions_synced` · `user_role_assigned/removed` · `permission_denied`.
+
+الحالة: النواة جاهزة (Health + المخطط + **المصادقة** + **RBAC**). الوحدات الوظيفية (HR/Cases/...) تُنفَّذ في بواباتها.

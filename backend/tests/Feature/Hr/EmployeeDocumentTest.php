@@ -31,6 +31,35 @@ class EmployeeDocumentTest extends TestCase
             ->assertOk()->assertJsonCount(1, 'data');
     }
 
+    public function test_expiry_date_is_stored_and_returned(): void
+    {
+        $hr = $this->userWithPermissions(['employees.update', 'employees.view']);
+        $employee = Employee::factory()->create();
+
+        $res = $this->actingAsToken($hr)->postJson("/api/employees/{$employee->id}/documents", [
+            'doc_type' => 'certificate', 'title' => 'شهادة', 'file_path' => 'c.pdf',
+            'expiry_date' => '2030-06-30',
+        ])->assertCreated();
+
+        // تأكيد قابل للنقل بين SQLite و PostgreSQL عبر النموذج (لا سلسلة قاعدة البيانات الخام)
+        $this->assertStringStartsWith('2030-06-30', (string) $res->json('data.expiry_date'));
+        $this->assertSame('2030-06-30', $employee->documents()->first()->expiry_date->toDateString());
+    }
+
+    public function test_document_of_other_employee_returns_404(): void
+    {
+        $hr = $this->userWithPermissions(['employees.update']);
+        $employeeA = Employee::factory()->create();
+        $employeeB = Employee::factory()->create();
+        $doc = EmployeeDocument::create([
+            'employee_id' => $employeeA->id, 'doc_type' => 'other', 'title' => 'x', 'file_path' => 'x.pdf',
+        ]);
+
+        // محاولة حذف مستند الموظف A عبر مسار الموظف B → 404
+        $this->actingAsToken($hr)->deleteJson("/api/employees/{$employeeB->id}/documents/{$doc->id}")
+            ->assertStatus(404);
+    }
+
     public function test_document_type_is_validated(): void
     {
         $hr = $this->userWithPermissions(['employees.update']);

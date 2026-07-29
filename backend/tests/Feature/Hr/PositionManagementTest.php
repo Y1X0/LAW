@@ -39,12 +39,14 @@ class PositionManagementTest extends TestCase
         $this->assertDatabaseMissing('positions', ['id' => $position->id]);
     }
 
-    public function test_position_write_requires_permission(): void
+    public function test_position_write_requires_permission_and_audits_denial(): void
     {
         $viewer = $this->userWithPermissions(['employees.view']); // لا يملك update
 
         $this->actingAsToken($viewer)->postJson('/api/positions', ['title' => 'x'])
             ->assertStatus(403);
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'permission_denied', 'user_id' => $viewer->id]);
     }
 
     public function test_position_title_is_required(): void

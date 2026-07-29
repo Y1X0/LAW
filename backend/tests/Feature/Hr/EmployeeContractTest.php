@@ -56,6 +56,21 @@ class EmployeeContractTest extends TestCase
         ])->assertOk()->assertJsonPath('data.status', 'terminated');
     }
 
+    public function test_contract_of_other_employee_returns_404(): void
+    {
+        $hr = $this->userWithPermissions(['employees.update']);
+        $employeeA = Employee::factory()->create();
+        $employeeB = Employee::factory()->create();
+        $contract = EmployeeContract::create([
+            'employee_id' => $employeeA->id, 'contract_type' => 'permanent', 'start_date' => '2026-01-01',
+        ]);
+
+        // تحديث عقد الموظف A عبر مسار الموظف B → 404 (ارتباط صحيح)
+        $this->actingAsToken($hr)->putJson("/api/employees/{$employeeB->id}/contracts/{$contract->id}", [
+            'status' => 'terminated',
+        ])->assertStatus(404);
+    }
+
     public function test_contract_write_requires_permission(): void
     {
         $viewer = $this->userWithPermissions(['employees.view']);

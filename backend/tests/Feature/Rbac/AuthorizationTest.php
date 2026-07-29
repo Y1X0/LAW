@@ -4,6 +4,7 @@ namespace Tests\Feature\Rbac;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Modules\Core\Models\Permission;
 use Modules\Core\Models\Role;
 use Tests\Concerns\AuthenticatesApi;
@@ -80,5 +81,42 @@ class AuthorizationTest extends TestCase
 
         $user->removeRole($role);
         $this->assertFalse($user->hasPermission('finance.reports'));
+    }
+
+    public function test_permission_cache_is_invalidated_after_role_change(): void
+    {
+        $user = User::factory()->create();
+        // أول استدعاء يبني الذاكرة المؤقتة (فارغة)
+        $this->assertFalse($user->hasPermission('cases.view'));
+
+        $role = Role::create(['name' => 'viewer', 'display_name' => 'مطّلع']);
+        $role->permissions()->attach(Permission::create(['name' => 'cases.view', 'module' => 'cases'])->id);
+        $user->assignRole($role);
+
+        // بعد الإسناد يجب أن تعكس الذاكرة المؤقتة الصلاحية الجديدة (لا قيمة قديمة)
+        $this->assertTrue($user->hasPermission('cases.view'));
+    }
+
+    public function test_role_middleware_allows_user_with_role(): void
+    {
+        Route::middleware(['auth.token', 'role:admin'])
+            ->get('/api/_test/admin-only', fn () => response()->json(['ok' => true]));
+
+        $user = User::factory()->create();
+        $user->assignRole(Role::create(['name' => 'admin', 'display_name' => 'المدير']));
+
+        $this->actingAsToken($user)->getJson('/api/_test/admin-only')->assertOk();
+    }
+
+    public function test_role_middleware_blocks_user_without_role(): void
+    {
+        Route::middleware(['auth.token', 'role:admin'])
+            ->get('/api/_test/admin-only-2', fn () => response()->json(['ok' => true]));
+
+        $user = User::factory()->create(); // بلا دور admin
+
+        $this->actingAsToken($user)->getJson('/api/_test/admin-only-2')
+            ->assertStatus(403)
+            ->assertJsonPath('errors.code', 'FORBIDDEN');
     }
 }

@@ -27,6 +27,18 @@ class RoleManagementTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'role_created']);
     }
 
+    public function test_can_update_role_display_name(): void
+    {
+        $admin = $this->userWithPermissions(['roles.manage']);
+        $role = Role::create(['name' => 'reviewer', 'display_name' => 'قديم']);
+
+        $this->actingAsToken($admin)->putJson("/api/roles/{$role->id}", ['display_name' => 'مُراجِع'])
+            ->assertOk()
+            ->assertJsonPath('data.display_name', 'مُراجِع');
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'role_updated']);
+    }
+
     public function test_can_sync_permissions_to_role(): void
     {
         $admin = $this->userWithPermissions(['roles.manage']);

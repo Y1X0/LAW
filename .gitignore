@@ -1,0 +1,11 @@
+# Safety net (each subproject also has its own .gitignore)
+/backend/vendor/
+/backend/node_modules/
+/backend/.env
+/backend/.env.*
+!/backend/.env.example
+/backend/public/build/
+/backend/storage/*.key
+node_modules/
+.DS_Store
+*.log

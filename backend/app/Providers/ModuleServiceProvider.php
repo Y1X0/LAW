@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
+
+/**
+ * ModuleServiceProvider — نواة الـ Modular Monolith.
+ *
+ * يكتشف الوحدات تلقائياً داخل مجلد Modules/ ويحمّل لكل وحدة:
+ *  - مسارات الـ API      (Modules/<Name>/routes/api.php)  تحت البادئة /api
+ *  - الترحيلات (Migrations) (Modules/<Name>/database/migrations)
+ *
+ * هذا يحقّق حدود الوحدات المعرّفة في docs/module-boundaries.md دون أي تبعية خارجية،
+ * ويجعل إضافة وحدة جديدة = إنشاء مجلد جديد فقط (Open/Closed).
+ */
+class ModuleServiceProvider extends ServiceProvider
+{
+    /** المسار الجذري للوحدات. */
+    protected string $modulesPath;
+
+    public function register(): void
+    {
+        $this->modulesPath = base_path('Modules');
+    }
+
+    public function boot(): void
+    {
+        $this->modulesPath = base_path('Modules');
+
+        if (! is_dir($this->modulesPath)) {
+            return;
+        }
+
+        foreach (glob($this->modulesPath.'/*', GLOB_ONLYDIR) as $modulePath) {
+            $this->loadModuleRoutes($modulePath);
+            $this->loadModuleMigrations($modulePath);
+        }
+    }
+
+    /** تحميل مسارات الـ API الخاصة بالوحدة تحت البادئة /api مع middleware المناسب. */
+    protected function loadModuleRoutes(string $modulePath): void
+    {
+        $routeFile = $modulePath.'/routes/api.php';
+
+        if (is_file($routeFile)) {
+            Route::middleware('api')
+                ->prefix('api')
+                ->group($routeFile);
+        }
+    }
+
+    /** تسجيل ترحيلات الوحدة ليتعرّف عليها artisan migrate. */
+    protected function loadModuleMigrations(string $modulePath): void
+    {
+        $migrationsPath = $modulePath.'/database/migrations';
+
+        if (is_dir($migrationsPath)) {
+            $this->loadMigrationsFrom($migrationsPath);
+        }
+    }
+}

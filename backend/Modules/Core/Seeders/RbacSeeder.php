@@ -17,7 +17,7 @@ class RbacSeeder extends Seeder
     /** كتالوج الصلاحيات الذرّية (docs/05 §2). */
     public const PERMISSIONS = [
         'employees.view', 'employees.view_all', 'employees.create', 'employees.update', 'employees.delete', 'employees.salary.view',
-        'attendance.view', 'attendance.manual', 'attendance.approve', 'attendance.report',
+        'attendance.view', 'attendance.manual', 'attendance.approve', 'attendance.report', 'attendance.devices',
         'leaves.request', 'leaves.approve', 'leaves.view_all',
         'payroll.view', 'payroll.create', 'payroll.approve', 'payroll.pay', 'payslip.view_own',
         'cases.view', 'cases.view_all', 'cases.create', 'cases.update', 'cases.close', 'cases.delete',

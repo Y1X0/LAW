@@ -113,6 +113,58 @@ class AttendanceService
         return $record;
     }
 
+    /**
+     * تطبيق نبضة بصمة على سجل اليوم (Issue #16): أول دخول = check_in، آخر خروج = check_out.
+     * تُستدعى من معالج البصمة (بلا طلب HTTP)؛ التدقيق يُسجَّل في المعالج كحدث نظام.
+     *
+     * @param  string  $punchType  in|out|unknown (unknown يُستنتج بالتجميع)
+     */
+    public function applyPunch(Employee $employee, Carbon $time, string $punchType, string $source = 'biometric'): AttendanceRecord
+    {
+        $workDate = $time->toDateString();
+        $shift = $this->resolveShift($employee, $workDate);
+
+        $record = $this->findOrNewDaily($employee, $workDate);
+        $record->branch_id = $employee->branch_id;
+        $record->source = $source;
+        $record->shift_id ??= $shift?->id;
+
+        $type = $this->resolvePunchType($record, $punchType);
+
+        if ($type === 'in') {
+            if ($record->check_in === null || $time->lt($record->check_in)) {
+                $record->check_in = $time; // أول دخول
+            }
+        } elseif ($record->check_out === null || $time->gt($record->check_out)) {
+            $record->check_out = $time; // آخر خروج
+        }
+
+        $record->late_minutes = $this->computeLate($record->check_in, $shift, $workDate);
+        $this->recalcWorked($record);
+
+        if ($record->check_out && $shift) {
+            $shiftEnd = Carbon::parse($workDate.' '.$shift->end_time);
+            $out = $record->check_out;
+            $record->early_leave_minutes = $out->lt($shiftEnd) ? (int) round($out->diffInMinutes($shiftEnd)) : 0;
+            $record->overtime_minutes = $out->gt($shiftEnd) ? (int) round($shiftEnd->diffInMinutes($out)) : 0;
+        }
+
+        $record->status = $record->late_minutes > 0 ? 'late' : 'present';
+        $record->save();
+
+        return $record;
+    }
+
+    /** استنتاج نوع النبضة عند غياب التحديد: لا دخول بعد ⇒ دخول، وإلا خروج. */
+    private function resolvePunchType(AttendanceRecord $record, string $punchType): string
+    {
+        if (in_array($punchType, ['in', 'out'], true)) {
+            return $punchType;
+        }
+
+        return $record->check_in === null ? 'in' : 'out';
+    }
+
     /** اعتماد سجل حضور (يتطلب صلاحية attendance.approve). */
     public function approve(AttendanceRecord $record, Request $request): AttendanceRecord
     {

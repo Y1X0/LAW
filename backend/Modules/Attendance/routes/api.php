@@ -2,13 +2,19 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Attendance\Http\Controllers\AttendanceController;
+use Modules\Attendance\Http\Controllers\BiometricDeviceController;
+use Modules\Attendance\Http\Controllers\BiometricWebhookController;
 use Modules\Attendance\Http\Controllers\EmployeeShiftController;
 use Modules\Attendance\Http\Controllers\WorkShiftController;
 
 /*
-| مسارات وحدة Attendance (Issue #15) — تُحمّل تلقائياً تحت /api.
-| محميّة بالمصادقة + صلاحيات attendance.*. لا أجهزة بصمة هنا (#16 لاحقاً).
+| مسارات وحدة Attendance (Issues #15 + #16) — تُحمّل تلقائياً تحت /api.
+| الحضور محميّ بالمصادقة + صلاحيات attendance.*؛ وWebhook البصمة يُصادَق بتوكن الجهاز.
 */
+
+// Push/Webhook البصمة (#16) — خارج مصادقة المستخدم؛ يُصادَق بتوكن الجهاز داخل المتحكم.
+Route::post('biometric/devices/{device}/webhook', [BiometricWebhookController::class, 'receive'])
+    ->name('biometric.webhook');
 
 Route::middleware('auth.token')->group(function () {
     // قراءة
@@ -35,4 +41,14 @@ Route::middleware('auth.token')->group(function () {
     // اعتماد (attendance.approve)
     Route::middleware('permission:attendance.approve')
         ->post('attendance/{record}/approve', [AttendanceController::class, 'approve'])->name('attendance.approve');
+
+    // إدارة أجهزة البصمة (#16) — attendance.devices
+    Route::middleware('permission:attendance.devices')->group(function () {
+        Route::get('biometric/devices', [BiometricDeviceController::class, 'index'])->name('biometric.devices.index');
+        Route::post('biometric/devices', [BiometricDeviceController::class, 'store'])->name('biometric.devices.store');
+        Route::put('biometric/devices/{device}', [BiometricDeviceController::class, 'update'])->name('biometric.devices.update');
+        Route::post('biometric/devices/{device}/enroll', [BiometricDeviceController::class, 'enroll'])->name('biometric.devices.enroll');
+        Route::post('biometric/devices/{device}/sync', [BiometricDeviceController::class, 'sync'])->name('biometric.devices.sync');
+        Route::get('biometric/logs', [BiometricDeviceController::class, 'logs'])->name('biometric.logs');
+    });
 });

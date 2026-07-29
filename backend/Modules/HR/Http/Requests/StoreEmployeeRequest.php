@@ -28,6 +28,7 @@ class StoreEmployeeRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:150'],
             'address' => ['nullable', 'string'],
             'job_title' => ['nullable', 'string', 'max:120'],
+            'position_id' => ['nullable', 'integer', 'exists:positions,id'],
             'manager_id' => ['nullable', 'integer', 'exists:employees,id'],
             'hire_date' => ['nullable', 'date'],
             'contract_type' => ['nullable', Rule::in(['permanent', 'temporary', 'part_time'])],

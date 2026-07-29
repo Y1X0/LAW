@@ -3,9 +3,12 @@
 namespace App\Providers;
 
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Core\Http\Middleware\AuthenticateToken;
+use Modules\Core\Http\Middleware\EnsurePermission;
+use Modules\Core\Http\Middleware\EnsureRole;
 
 /**
  * ModuleServiceProvider — نواة الـ Modular Monolith.
@@ -31,11 +34,15 @@ class ModuleServiceProvider extends ServiceProvider
     {
         $this->modulesPath = base_path('Modules');
 
-        // أسماء الـ middleware المتاحة للوحدات (Core: مصادقة التوكن — Issue #11).
-        $this->app['router']->aliasMiddleware(
-            'auth.token',
-            AuthenticateToken::class
-        );
+        // أسماء الـ middleware المتاحة للوحدات.
+        $router = $this->app['router'];
+        $router->aliasMiddleware('auth.token', AuthenticateToken::class);   // مصادقة (#11)
+        $router->aliasMiddleware('permission', EnsurePermission::class);    // RBAC (#12)
+        $router->aliasMiddleware('role', EnsureRole::class);               // RBAC (#12)
+
+        // تكامل RBAC مع Gate: أي صلاحية يملكها المستخدم تُمنح تلقائياً (docs/05 §4).
+        // إرجاع null يترك المجال للسياسات الصريحة للفصل.
+        Gate::before(fn ($user, string $ability) => $user->hasPermission($ability) ? true : null);
 
         // رابط إعادة تعيين كلمة المرور يشير لواجهة العميل (API-only، بلا مسار ويب password.reset).
         ResetPassword::createUrlUsing(function ($notifiable, string $token): string {

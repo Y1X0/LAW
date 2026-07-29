@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Modules\Core\Http\Controllers\Auth\AuthController;
 use Modules\Core\Http\Controllers\Auth\PasswordController;
 use Modules\Core\Http\Controllers\HealthController;
+use Modules\Core\Http\Controllers\Rbac\PermissionController;
+use Modules\Core\Http\Controllers\Rbac\RoleController;
+use Modules\Core\Http\Controllers\Rbac\UserRoleController;
 
 /*
 | مسارات وحدة Core — النواة العرضية (Auth/Permissions/Settings/Audit).
@@ -22,5 +25,24 @@ Route::prefix('auth')->group(function () {
     Route::middleware('auth.token')->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::get('me', [AuthController::class, 'me'])->name('auth.me');
+    });
+});
+
+// RBAC — إدارة الأدوار والصلاحيات (Issue #12). محميّ بالمصادقة + الصلاحيات.
+Route::middleware('auth.token')->group(function () {
+    Route::middleware('permission:roles.manage')->group(function () {
+        Route::get('permissions', [PermissionController::class, 'index'])->name('permissions.index');
+        Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::post('roles', [RoleController::class, 'store'])->name('roles.store');
+        Route::get('roles/{role}', [RoleController::class, 'show'])->name('roles.show');
+        Route::put('roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+        Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+        Route::put('roles/{role}/permissions', [RoleController::class, 'syncPermissions'])->name('roles.permissions.sync');
+    });
+
+    Route::middleware('permission:users.manage')->group(function () {
+        Route::get('users/{user}/roles', [UserRoleController::class, 'index'])->name('users.roles.index');
+        Route::post('users/{user}/roles', [UserRoleController::class, 'store'])->name('users.roles.store');
+        Route::delete('users/{user}/roles/{role}', [UserRoleController::class, 'destroy'])->name('users.roles.destroy');
     });
 });

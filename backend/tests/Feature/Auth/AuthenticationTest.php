@@ -4,6 +4,8 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
+use Modules\Core\Models\AuthToken;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -123,8 +125,46 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('errors.code', 'INVALID_TOKEN');
     }
 
-    public function test_login_requires_valid_input(): void
+    public function test_login_requires_valid_input_with_unified_error_schema(): void
     {
-        $this->postJson('/api/auth/login', ['email' => 'not-an-email'])->assertStatus(422);
+        $this->postJson('/api/auth/login', ['email' => 'not-an-email'])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.code', 'VALIDATION_ERROR')
+            ->assertJsonStructure(['data', 'meta', 'errors' => ['code', 'message', 'fields']]);
+    }
+
+    public function test_expired_access_token_is_rejected(): void
+    {
+        $user = $this->user();
+        $plain = Str::random(64);
+        AuthToken::create([
+            'user_id' => $user->id,
+            'access_token_hash' => hash('sha256', $plain),
+            'refresh_token_hash' => hash('sha256', Str::random(64)),
+            'access_expires_at' => now()->subMinute(),   // منتهٍ
+            'refresh_expires_at' => now()->addDays(14),
+        ]);
+
+        $this->withHeaders(['Authorization' => "Bearer {$plain}"])
+            ->getJson('/api/auth/me')
+            ->assertStatus(401)
+            ->assertJsonPath('errors.code', 'UNAUTHENTICATED');
+    }
+
+    public function test_expired_refresh_token_is_rejected(): void
+    {
+        $user = $this->user();
+        $plain = Str::random(64);
+        AuthToken::create([
+            'user_id' => $user->id,
+            'access_token_hash' => hash('sha256', Str::random(64)),
+            'refresh_token_hash' => hash('sha256', $plain),
+            'access_expires_at' => now()->addMinutes(15),
+            'refresh_expires_at' => now()->subDay(),      // منتهٍ
+        ]);
+
+        $this->postJson('/api/auth/refresh', ['refresh_token' => $plain])
+            ->assertStatus(401)
+            ->assertJsonPath('errors.code', 'INVALID_TOKEN');
     }
 }

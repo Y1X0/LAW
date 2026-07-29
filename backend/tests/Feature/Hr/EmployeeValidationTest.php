@@ -74,6 +74,16 @@ class EmployeeValidationTest extends TestCase
         $this->postEmployee(['branch_id' => 999999])->assertStatus(422);
     }
 
+    public function test_nonexistent_department_is_rejected(): void
+    {
+        $this->postEmployee(['department_id' => 999999])->assertStatus(422);
+    }
+
+    public function test_nonexistent_manager_is_rejected(): void
+    {
+        $this->postEmployee(['manager_id' => 999999])->assertStatus(422);
+    }
+
     public function test_contract_end_must_not_precede_start(): void
     {
         $this->postEmployee(['contract_start' => '2026-06-01', 'contract_end' => '2026-01-01'])->assertStatus(422);

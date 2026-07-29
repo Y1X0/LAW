@@ -95,6 +95,38 @@ class EmployeeManagementTest extends TestCase
             ->assertJsonPath('errors.code', 'FORBIDDEN');
     }
 
+    public function test_update_requires_update_permission(): void
+    {
+        $viewer = $this->userWithPermissions(['employees.view']); // لا يملك update
+        $employee = Employee::factory()->create();
+
+        $this->actingAsToken($viewer)->putJson("/api/employees/{$employee->id}", ['job_title' => 'x'])
+            ->assertStatus(403)
+            ->assertJsonPath('errors.code', 'FORBIDDEN');
+    }
+
+    public function test_delete_requires_delete_permission(): void
+    {
+        $viewer = $this->userWithPermissions(['employees.view']); // لا يملك delete
+        $employee = Employee::factory()->create();
+
+        $this->actingAsToken($viewer)->deleteJson("/api/employees/{$employee->id}")
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('employees', ['id' => $employee->id, 'deleted_at' => null]);
+    }
+
+    public function test_denied_access_is_audited(): void
+    {
+        [$branch, $department] = $this->orgUnits();
+        $user = User::factory()->create();
+
+        $this->actingAsToken($user)->postJson('/api/employees', $this->payload($branch, $department))
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'permission_denied', 'user_id' => $user->id]);
+    }
+
     public function test_endpoints_require_authentication(): void
     {
         $this->getJson('/api/employees')

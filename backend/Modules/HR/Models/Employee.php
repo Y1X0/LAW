@@ -27,7 +27,7 @@ class Employee extends Model
     protected $fillable = [
         'branch_id', 'department_id', 'employee_no', 'full_name_ar', 'full_name_en',
         'national_id', 'birth_date', 'gender', 'phone', 'email', 'address', 'photo_path',
-        'job_title', 'manager_id', 'hire_date', 'contract_type', 'contract_start', 'contract_end',
+        'job_title', 'position_id', 'manager_id', 'hire_date', 'contract_type', 'contract_start', 'contract_end',
         'basic_salary', 'bank_name', 'bank_account', 'biometric_user_id', 'status', 'notes',
         'created_by', 'updated_by',
     ];
@@ -58,6 +58,21 @@ class Employee extends Model
     public function subordinates(): HasMany
     {
         return $this->hasMany(self::class, 'manager_id');
+    }
+
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class);
+    }
+
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(EmployeeContract::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(EmployeeDocument::class);
     }
 
     protected static function newFactory(): Factory

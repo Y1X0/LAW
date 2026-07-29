@@ -15,5 +15,12 @@
 - حماية على مستوى الحقل: الراتب/الحساب البنكي يُخفيان إلا بصلاحية `employees.salary.view`.
 - Audit: `employee_created` / `employee_updated` / `employee_archived`.
 
-**اعتماد على Core:** يقرأ الفروع/الأقسام عبر نماذجها المشتركة (بنية تنظيمية)؛ يستخدم `RecordsAudit`.
-الحالة: **إدارة الموظفين جاهزة**. السجلات المتقدمة/العقود في Issue #14؛ الحضور/الإجازات في #15–#17.
+## السجلات الأساسية (Issue #14)
+- **المسميات الوظيفية** (`Position`): كتالوج + CRUD (`/api/positions`) + ربط `employees.position_id`.
+- **عقود التوظيف** (`EmployeeContract`): سجل/تاريخ عقود لكل موظف (`/api/employees/{id}/contracts`) بحالات active/expired/terminated.
+- **مستندات الموظف** (`EmployeeDocument`): بيانات وصفية + مسار + تنبيه انتهاء (`/api/employees/{id}/documents`)، حذف = أرشفة.
+- **سجل الموظف** (History): `/api/employees/{id}/history` من `audit_logs`.
+- الحماية: قراءة `employees.view` · كتابة `employees.update`. Audit: `position_*` · `employee_contract_added/updated` · `employee_document_added/removed`.
+
+**اعتماد على Core:** يقرأ الفروع/الأقسام عبر نماذجها المشتركة؛ يستخدم `RecordsAudit`.
+الحالة: **إدارة الموظفين + السجلات الأساسية جاهزتان**. الحضور/البصمة/الإجازات في #15–#17.

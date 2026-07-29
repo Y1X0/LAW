@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Modules\Core\Http\Middleware\AuthenticateToken;
 
 /**
  * ModuleServiceProvider — نواة الـ Modular Monolith.
@@ -28,6 +30,19 @@ class ModuleServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->modulesPath = base_path('Modules');
+
+        // أسماء الـ middleware المتاحة للوحدات (Core: مصادقة التوكن — Issue #11).
+        $this->app['router']->aliasMiddleware(
+            'auth.token',
+            AuthenticateToken::class
+        );
+
+        // رابط إعادة تعيين كلمة المرور يشير لواجهة العميل (API-only، بلا مسار ويب password.reset).
+        ResetPassword::createUrlUsing(function ($notifiable, string $token): string {
+            $frontend = rtrim((string) config('app.frontend_url', config('app.url')), '/');
+
+            return "{$frontend}/reset-password?token={$token}&email=".urlencode($notifiable->getEmailForPasswordReset());
+        });
 
         if (! is_dir($this->modulesPath)) {
             return;

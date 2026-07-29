@@ -6,6 +6,7 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Modules\Attendance\Adapters\BiometricAdapterManager;
 use Modules\Core\Http\Middleware\AuthenticateToken;
 use Modules\Core\Http\Middleware\EnsurePermission;
 use Modules\Core\Http\Middleware\EnsureRole;
@@ -28,6 +29,9 @@ class ModuleServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->modulesPath = base_path('Modules');
+
+        // سجلّ محوّلات البصمة singleton حتى تُشارَك التسجيلات (ADR-003, #16).
+        $this->app->singleton(BiometricAdapterManager::class);
     }
 
     public function boot(): void

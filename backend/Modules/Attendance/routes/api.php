@@ -2,13 +2,19 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Attendance\Http\Controllers\AttendanceController;
+use Modules\Attendance\Http\Controllers\BiometricDeviceController;
+use Modules\Attendance\Http\Controllers\BiometricWebhookController;
 use Modules\Attendance\Http\Controllers\EmployeeShiftController;
 use Modules\Attendance\Http\Controllers\WorkShiftController;
 
 /*
-| مسارات وحدة Attendance (Issue #15) — تُحمّل تلقائياً تحت /api.
-| محميّة بالمصادقة + صلاحيات attendance.*. لا أجهزة بصمة هنا (#16 لاحقاً).
+| مسارات وحدة Attendance (#15 الحضور + #16 البصمة) — تُحمّل تلقائياً تحت /api.
+| محميّة بالمصادقة + صلاحيات attendance.*، عدا Webhook الجهاز (تحقق بالمفتاح السري).
 */
+
+// استقبال Push/Webhook من جهاز البصمة — لا مصادقة مستخدم؛ التحقق بمفتاح الجهاز (#16).
+Route::post('biometric/devices/{device}/webhook', BiometricWebhookController::class)
+    ->name('biometric.webhook');
 
 Route::middleware('auth.token')->group(function () {
     // قراءة
@@ -35,4 +41,14 @@ Route::middleware('auth.token')->group(function () {
     // اعتماد (attendance.approve)
     Route::middleware('permission:attendance.approve')
         ->post('attendance/{record}/approve', [AttendanceController::class, 'approve'])->name('attendance.approve');
+
+    // أجهزة البصمة ومزامنتها (#16) — attendance.devices
+    Route::middleware('permission:attendance.devices')->group(function () {
+        Route::get('biometric/devices', [BiometricDeviceController::class, 'index'])->name('biometric.devices.index');
+        Route::post('biometric/devices', [BiometricDeviceController::class, 'store'])->name('biometric.devices.store');
+        Route::get('biometric/devices/{device}', [BiometricDeviceController::class, 'show'])->name('biometric.devices.show');
+        Route::put('biometric/devices/{device}', [BiometricDeviceController::class, 'update'])->name('biometric.devices.update');
+        Route::delete('biometric/devices/{device}', [BiometricDeviceController::class, 'destroy'])->name('biometric.devices.destroy');
+        Route::post('biometric/devices/{device}/sync', [BiometricDeviceController::class, 'sync'])->name('biometric.devices.sync');
+    });
 });

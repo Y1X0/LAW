@@ -1,13 +1,13 @@
 # وحدة Attendance
 
-**الملكية (Owns):** attendance_records, work_shifts, employee_shifts (biometric_devices لاحقاً في #16)
-**تُتيح (Exposes):** AttendanceService
+**الملكية (Owns):** attendance_records, work_shifts, employee_shifts, biometric_devices, attendance_logs
+**تُتيح (Exposes):** AttendanceService, BiometricSyncService, BiometricAdapter (+ Manager)
 
-> المرجع: [docs/module-boundaries.md](../../../docs/module-boundaries.md)
+> المرجع: [docs/module-boundaries.md](../../../docs/module-boundaries.md) · [ADR-003](../../../docs/adr/003-attendance-adapter-pattern.md)
 
 **القاعدة الذهبية:** لا تصل هذه الوحدة إلى جداول وحدة أخرى مباشرةً — التواصل عبر الخدمات/الأحداث فقط.
 
-الحالة: **محرّك الحضور الأساسي جاهز (Issue #15).** تكامل أجهزة البصمة لاحقاً في #16 (`source=manual` حالياً).
+الحالة: **محرّك الحضور (Issue #15) + تكامل أجهزة البصمة (Issue #16) جاهزان.**
 
 ## الجداول (Migrations)
 
@@ -56,6 +56,51 @@
 
 `attendance_check_in` · `attendance_check_out` · `attendance_manual_recorded` · `attendance_approved` · `work_shift_created`
 
-## خارج نطاق #15
+---
 
-تكامل أجهزة البصمة (ZKTeco/Hikvision/…)، المزامنة مع الأجهزة، والتقاط `source` الآلي — كلها في Issue #16.
+# تكامل أجهزة البصمة (Issue #16)
+
+نمط **Adapter** (ADR-003): واجهة موحّدة لكل مورّد، وطبقة **Staging خام** (`attendance_logs`) تضمن عدم فقدان أي بصمة قبل معالجتها إلى `attendance_records` بمصدر `source=biometric`.
+
+## الجداول
+
+| الجدول | الوصف |
+|--------|-------|
+| `biometric_devices` | الأجهزة المسجّلة: `vendor` (zkteco/hikvision/suprema/anviz), `api_mode` (push/pull), `secret`, `last_sync_at`, `status` |
+| `attendance_logs` | Staging خام لكل نبضة: `raw_payload` (JSONB), `punch_time`, `punch_type`, `status` (pending/processed/unmatched) |
+
+**Idempotency:** فهرس فريد منطقي `(device_id, biometric_user_id, punch_time)` — إعادة الإرسال تُتجاهَل.
+
+## المحوّلات (Adapters)
+
+- `BiometricAdapter` — واجهة موحّدة: `fetchLogs` (Pull) · `parseWebhook` (Push) · `normalize`.
+- `ZktecoAdapter` — يفسّر JSON (`records`) ونص ATTLOG؛ حالة 0=دخول، 1=خروج.
+- `BiometricAdapterManager` — سجلّ يحلّ المحوّل حسب المورّد؛ إضافة مورّد = محوّل جديد فقط (`extend`).
+
+## المزامنة (BiometricSyncService)
+
+- **Push/Webhook**: `POST /api/biometric/devices/{device}/webhook` (تحقق بمفتاح الجهاز، بلا مصادقة مستخدم) → تفسير + Staging + معالجة.
+- **Pull/Reconciliation**: `POST /api/biometric/devices/{device}/sync` (يدوي) — يسحب منذ `last_sync_at` كشبكة أمان.
+- **المطابقة**: `attendance_logs.biometric_user_id` → `employees.biometric_user_id`؛ غير المطابَق يُعلَّم `unmatched` (لا يُفقد).
+- **التطبيق**: أول نبضة = دخول، اللاحقة = خروج، عبر `AttendanceService` بمصدر `biometric`.
+
+## نقاط النهاية والصلاحيات
+
+| الطريقة | المسار | الصلاحية |
+|---------|--------|----------|
+| GET/POST/PUT/DELETE | `/api/biometric/devices[...]` | `attendance.devices` |
+| POST | `/api/biometric/devices/{device}/sync` | `attendance.devices` |
+| POST | `/api/biometric/devices/{device}/webhook` | مفتاح الجهاز (`X-Device-Secret`) |
+
+## التدقيق (Audit)
+
+`biometric_device_created` · `biometric_device_updated` · `biometric_device_deleted` · `biometric_webhook_received` · `biometric_pulled`
+
+## أمان
+
+- التحقق من Push بمقارنة ثابتة الزمن (`hash_equals`) لمفتاح الجهاز؛ يُفضّل تقييد المصدر بـ IP Allowlist/VPN على مستوى البنية.
+- المفتاح السري (`secret`) مخفيّ من كل استجابات الـ API.
+
+## خارج نطاق #16
+
+طبقة النقل الفعلية للـ Pull عبر SDK كل مورّد (تُوصَّل لكل بيئة نشر)، ومزامنة تسجيل المستخدمين إلى الأجهزة (Enrollment Sync)، وجدولة عامل المزامنة الدوري.

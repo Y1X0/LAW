@@ -25,6 +25,19 @@ class ZktecoAdapter implements BiometricAdapter
         return 'zkteco';
     }
 
+    public function connect(BiometricDevice $device): bool
+    {
+        // فحص الاتصال الفعلي (بروتوكول 4370) يُوصَّل لكل بيئة؛ الأساس يعتبر الجهاز
+        // قابلاً للاتصال متى توفّر عنوانه وكان مفعّلاً.
+        return $device->is_active && ! empty($device->ip_address);
+    }
+
+    public function enrollUser(BiometricDevice $device, array $user): bool
+    {
+        // تسجيل المستخدم على الجهاز عبر SDK يُوصَّل لكل بيئة نشر (Enrollment Sync).
+        return false;
+    }
+
     public function fetchLogs(BiometricDevice $device, ?Carbon $since): array
     {
         // النقل الحقيقي عبر SDK/بروتوكول الجهاز يُوصَّل هنا لكل بيئة نشر؛

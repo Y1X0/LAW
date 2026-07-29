@@ -16,6 +16,17 @@ interface BiometricAdapter
     /** اسم المورّد الذي يخدمه هذا المحوّل (zkteco/hikvision/…). */
     public function vendor(): string;
 
+    /** فحص الاتصال بالجهاز (reachability) — يُستخدم قبل السحب/التسجيل. */
+    public function connect(BiometricDevice $device): bool;
+
+    /**
+     * مزامنة تسجيل موظف إلى الجهاز (Enrollment). طبقة النقل الفعلية تُوصَّل لكل مورّد؛
+     * الأساس يعرّف التوقيع فقط ضمن نمط Adapter (ADR-003).
+     *
+     * @param  array<string, mixed>  $user  بيانات المستخدم (biometric_user_id, name, …)
+     */
+    public function enrollUser(BiometricDevice $device, array $user): bool;
+
     /**
      * Pull: سحب السجلات الجديدة من الجهاز منذ آخر مزامنة.
      * يُعيد مصفوفة سجلات خام (كما يفهمها المحوّل) تُمرَّر لاحقاً إلى normalize().

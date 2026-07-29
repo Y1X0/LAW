@@ -4,6 +4,7 @@ namespace Modules\Attendance\Services;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Modules\Attendance\Adapters\BiometricAdapterManager;
 use Modules\Attendance\Models\AttendanceLog;
 use Modules\Attendance\Models\AttendanceRecord;
@@ -122,6 +123,13 @@ class BiometricSyncService
             if (! $employee) {
                 $log->forceFill(['status' => 'unmatched'])->save();
                 $unmatched++;
+
+                // تنبيه HR: بصمة بلا موظف مطابق — تُعلَّق ولا تُفقد (docs/04 §5).
+                Log::warning('بصمة غير مطابَقة لأي موظف — بحاجة لمراجعة HR', [
+                    'device_id' => $log->device_id,
+                    'biometric_user_id' => $log->biometric_user_id,
+                    'punch_time' => (string) $log->punch_time,
+                ]);
 
                 continue;
             }

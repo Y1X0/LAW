@@ -6,6 +6,7 @@ use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use Modules\Attendance\Adapters\BiometricAdapterManager;
 use Modules\Attendance\Adapters\ZktecoAdapter;
+use Modules\Attendance\Models\BiometricDevice;
 use PHPUnit\Framework\TestCase;
 
 class BiometricAdapterTest extends TestCase
@@ -37,6 +38,20 @@ class BiometricAdapterTest extends TestCase
 
         $unknown = $adapter->normalize(['pin' => 'U9', 'time' => '2026-02-01 12:00:00', 'status' => 9]);
         $this->assertSame('unknown', $unknown['punch_type']);
+    }
+
+    public function test_zkteco_connect_reflects_device_reachability(): void
+    {
+        $adapter = new ZktecoAdapter;
+
+        $reachable = new BiometricDevice(['is_active' => true, 'ip_address' => '10.0.0.5']);
+        $this->assertTrue($adapter->connect($reachable));
+
+        $noIp = new BiometricDevice(['is_active' => true]);
+        $this->assertFalse($adapter->connect($noIp));
+
+        // enrollUser جزء من الواجهة؛ النقل الفعلي يُوصَّل لكل بيئة (الأساس false).
+        $this->assertFalse($adapter->enrollUser($reachable, ['biometric_user_id' => 'U1']));
     }
 
     public function test_zkteco_parses_json_and_attlog_payloads(): void

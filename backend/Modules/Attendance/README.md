@@ -73,15 +73,16 @@
 
 ## المحوّلات (Adapters)
 
-- `BiometricAdapter` — واجهة موحّدة: `fetchLogs` (Pull) · `parseWebhook` (Push) · `normalize`.
+- `BiometricAdapter` — واجهة موحّدة: `connect` · `fetchLogs` (Pull) · `parseWebhook` (Push) · `normalize` · `enrollUser`.
 - `ZktecoAdapter` — يفسّر JSON (`records`) ونص ATTLOG؛ حالة 0=دخول، 1=خروج.
-- `BiometricAdapterManager` — سجلّ يحلّ المحوّل حسب المورّد؛ إضافة مورّد = محوّل جديد فقط (`extend`).
+- `BiometricAdapterManager` — سجلّ (singleton) يحلّ المحوّل حسب المورّد؛ إضافة مورّد = محوّل جديد فقط (`extend`).
 
 ## المزامنة (BiometricSyncService)
 
 - **Push/Webhook**: `POST /api/biometric/devices/{device}/webhook` (تحقق بمفتاح الجهاز، بلا مصادقة مستخدم) → تفسير + Staging + معالجة.
 - **Pull/Reconciliation**: `POST /api/biometric/devices/{device}/sync` (يدوي) — يسحب منذ `last_sync_at` كشبكة أمان.
-- **المطابقة**: `attendance_logs.biometric_user_id` → `employees.biometric_user_id`؛ غير المطابَق يُعلَّم `unmatched` (لا يُفقد).
+- **بنية المهمة (Queue)**: `PullBiometricDeviceJob` (طابور، `tries=3`، تراجع أُسّي 10/30/60ث) يُرسَل عبر الأمر `attendance:sync-biometric` المُجدوَل كل 5 دقائق (`routes/console.php`).
+- **المطابقة**: `attendance_logs.biometric_user_id` → `employees.biometric_user_id`؛ غير المطابَق يُعلَّم `unmatched` (لا يُفقد) مع تنبيه HR في السجل (`Log::warning`).
 - **التطبيق**: أول نبضة = دخول، اللاحقة = خروج، عبر `AttendanceService` بمصدر `biometric`.
 
 ## نقاط النهاية والصلاحيات
@@ -103,4 +104,4 @@
 
 ## خارج نطاق #16
 
-طبقة النقل الفعلية للـ Pull عبر SDK كل مورّد (تُوصَّل لكل بيئة نشر)، ومزامنة تسجيل المستخدمين إلى الأجهزة (Enrollment Sync)، وجدولة عامل المزامنة الدوري.
+طبقة النقل الفعلية عبر SDK كل مورّد (Pull الحقيقي + `enrollUser` — الواجهة معرّفة والتوصيل لكل بيئة نشر)، ومحوّلات المورّدين الآخرين (Hikvision/Suprema/Anviz). تنبيه HR الحالي عبر السجل؛ التكامل مع وحدة الإشعارات لاحقاً.

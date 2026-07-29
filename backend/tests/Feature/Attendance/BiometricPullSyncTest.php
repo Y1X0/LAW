@@ -29,6 +29,16 @@ class BiometricPullSyncTest extends TestCase
                 return 'acme';
             }
 
+            public function connect(BiometricDevice $device): bool
+            {
+                return true;
+            }
+
+            public function enrollUser(BiometricDevice $device, array $user): bool
+            {
+                return true;
+            }
+
             public function fetchLogs(BiometricDevice $device, ?Carbon $since): array
             {
                 return $this->records;

@@ -62,6 +62,7 @@ class ModuleServiceProvider extends ServiceProvider
         foreach (glob($this->modulesPath.'/*', GLOB_ONLYDIR) as $modulePath) {
             $this->loadModuleRoutes($modulePath);
             $this->loadModuleMigrations($modulePath);
+            $this->loadModuleCommands($modulePath);
         }
     }
 
@@ -84,6 +85,27 @@ class ModuleServiceProvider extends ServiceProvider
 
         if (is_dir($migrationsPath)) {
             $this->loadMigrationsFrom($migrationsPath);
+        }
+    }
+
+    /** اكتشاف أوامر artisan الخاصة بالوحدة (Modules/<Name>/Console/*Command.php) وتسجيلها. */
+    protected function loadModuleCommands(string $modulePath): void
+    {
+        if (! $this->app->runningInConsole()) {
+            return;
+        }
+
+        $consolePath = $modulePath.'/Console';
+        if (! is_dir($consolePath)) {
+            return;
+        }
+
+        $moduleName = basename($modulePath);
+        foreach (glob($consolePath.'/*Command.php') as $file) {
+            $class = "Modules\\{$moduleName}\\Console\\".basename($file, '.php');
+            if (class_exists($class)) {
+                $this->commands($class);
+            }
         }
     }
 }

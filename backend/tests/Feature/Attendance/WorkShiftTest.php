@@ -3,6 +3,7 @@
 namespace Tests\Feature\Attendance;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\Attendance\Models\EmployeeShift;
 use Modules\Attendance\Models\WorkShift;
 use Modules\HR\Models\Employee;
 use Tests\Concerns\AuthenticatesApi;
@@ -55,6 +56,22 @@ class WorkShiftTest extends TestCase
         ])->assertCreated();
 
         $this->assertDatabaseHas('employee_shifts', ['employee_id' => $employee->id, 'shift_id' => $shift->id]);
+    }
+
+    public function test_can_list_employee_shift_assignments(): void
+    {
+        $admin = $this->userWithPermissions(['attendance.manual', 'attendance.view']);
+        $employee = Employee::factory()->create();
+        $shift = WorkShift::create(['name' => 'صباحي', 'start_time' => '08:00', 'end_time' => '16:00']);
+        EmployeeShift::create([
+            'employee_id' => $employee->id, 'shift_id' => $shift->id, 'from_date' => '2026-01-01',
+        ]);
+
+        $res = $this->actingAsToken($admin)->getJson("/api/employees/{$employee->id}/shifts")
+            ->assertOk()
+            ->assertJsonStructure(['data', 'meta', 'errors']);
+
+        $this->assertSame($shift->id, $res->json('data.0.shift_id'));
     }
 
     public function test_attendance_routes_require_authentication(): void

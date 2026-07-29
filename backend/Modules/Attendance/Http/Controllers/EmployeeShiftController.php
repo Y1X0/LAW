@@ -17,11 +17,12 @@ class EmployeeShiftController
 
     public function index(Employee $employee): JsonResponse
     {
-        return response()->json([
-            'data' => $employee->shifts ?? EmployeeShift::where('employee_id', $employee->id)
-                ->with('shift:id,name,start_time,end_time')->orderByDesc('from_date')->get(),
-            'meta' => null, 'errors' => null,
-        ]);
+        $shifts = EmployeeShift::where('employee_id', $employee->id)
+            ->with('shift:id,name,start_time,end_time')
+            ->orderByDesc('from_date')
+            ->get();
+
+        return response()->json(['data' => $shifts, 'meta' => null, 'errors' => null]);
     }
 
     public function store(Request $request, Employee $employee): JsonResponse

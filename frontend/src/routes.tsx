@@ -7,7 +7,7 @@ import { LeavePage } from './pages/LeavePage'
 import { LoginPage } from './pages/LoginPage'
 import { PayslipDetailPage } from './pages/PayslipDetailPage'
 import { PayslipsPage } from './pages/PayslipsPage'
-import { PlaceholderPage } from './pages/PlaceholderPage'
+import { ProfilePage } from './pages/ProfilePage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -23,8 +23,7 @@ export const router = createBrowserRouter([
           { path: '/payslips/:id', element: <PayslipDetailPage /> },
           { path: '/attendance', element: <AttendancePage /> },
           { path: '/leave', element: <LeavePage /> },
-          // أماكن الشاشات القادمة (#62).
-          { path: '/profile', element: <PlaceholderPage title="ملفي" /> },
+          { path: '/profile', element: <ProfilePage /> },
         ],
       },
     ],

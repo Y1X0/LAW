@@ -13,6 +13,13 @@ export default defineConfig({
       },
     },
   },
+  // معاينة الإنتاج (تُستخدم لاختبارات E2E) — ربط IPv4 صريح لتفادي عدم تطابق
+  // localhost/::1 مع 127.0.0.1 على منصّات CI.
+  preview: {
+    host: '127.0.0.1',
+    port: 4173,
+    strictPort: true,
+  },
   test: {
     // اختبارات الوحدة فقط داخل src — اختبارات E2E (e2e/**) يشغّلها Playwright.
     include: ['src/**/*.{test,spec}.{ts,tsx}'],

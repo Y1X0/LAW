@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\SelfService\Http\Controllers\MyAttendanceController;
 use Modules\SelfService\Http\Controllers\MyDashboardController;
 use Modules\SelfService\Http\Controllers\MyPayslipController;
 
@@ -21,4 +22,8 @@ Route::middleware(['auth.token', 'employee.linked'])->prefix('me')->group(functi
         Route::get('payslips/{payroll_item}', [MyPayslipController::class, 'show'])->name('me.payslips.show');
         Route::get('payslips/{payroll_item}/html', [MyPayslipController::class, 'html'])->name('me.payslips.html');
     });
+
+    // حضوري (#50) — قراءة فقط
+    Route::middleware('permission:attendance.view_own')
+        ->get('attendance', [MyAttendanceController::class, 'index'])->name('me.attendance.index');
 });

@@ -20,11 +20,17 @@ src/
 - **الصلاحيات:** لا قائمة صلاحيات في العميل — يعالج العميل 401 (تجديد ثم خروج) و403 (لا صلاحية / حساب غير مرتبط) مركزياً.
 - **الحالات:** كل شاشة تعرض loading / empty / error / permission بوضوح.
 - **RTL** أولاً (عربي).
+- **مصدر عنوان الـ API:** متغيّر البيئة `VITE_API_URL` فقط (لا عنوان ثابت داخل الكود).
+
+## قرار أمني موثّق — تخزين التوكن
+يُخزَّن التوكن في **`localStorage`** (في `src/auth/tokenStorage.ts`). مقبول لـ MVP، لكنه **قابل للقراءة عبر XSS**. تحسينات لاحقة (Issue مستقل عند تصلّب الأمان):
+- الأفضلية: **Refresh token في cookie بخاصية HttpOnly** + الاحتفاظ بالـ access token في الذاكرة فقط، أو `sessionStorage` لتقليل زمن التعرّض.
+- سياسة **CSP** صارمة + مراجعة XSS. التخزين مُجرَّد خلف `tokenStorage` فيسهل تبديله لاحقاً بلا لمس بقية الكود.
 
 ## التشغيل
 ```bash
 npm install
-cp .env.example .env      # VITE_API_BASE_URL=/api
+cp .env.example .env      # VITE_API_URL=/api
 npm run dev               # يبروكسي /api إلى http://localhost:8000 (أو VITE_DEV_API_TARGET)
 ```
 

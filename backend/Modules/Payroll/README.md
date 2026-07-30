@@ -1,13 +1,13 @@
 # وحدة Payroll
 
-**الملكية (Owns):** payroll_periods, employee_salary_profiles, payroll_runs, salary_components, employee_salary_components, payroll_attendance_summaries, payroll_leave_summaries
-**تُتيح (Exposes):** PayrollService, SalaryComponentService, PayrollAttendanceService, PayrollLeaveService
+**الملكية (Owns):** payroll_periods, employee_salary_profiles, payroll_runs, salary_components, employee_salary_components, payroll_attendance_summaries, payroll_leave_summaries, payroll_items
+**تُتيح (Exposes):** PayrollService, SalaryComponentService, PayrollAttendanceService, PayrollLeaveService, PayrollCalculationService
 
 > المرجع: [docs/module-boundaries.md](../../../docs/module-boundaries.md) · Epic #31
 
-**القاعدة الذهبية:** لا تصل هذه الوحدة إلى جداول وحدة أخرى مباشرةً — التواصل عبر الخدمات/الأحداث فقط. تقرأ من الحضور **قراءةً فقط** ولا تكتب فيه.
+**القاعدة الذهبية:** لا تصل هذه الوحدة إلى جداول وحدة أخرى مباشرةً — التواصل عبر الخدمات/الأحداث فقط. تقرأ من الحضور/الإجازات **قراءةً فقط** ولا تكتب فيهما.
 
-الحالة: **الأساس (#32) + المكوّنات (#33) + تكامل الحضور (#34) + تكامل الإجازات (#35) جاهزة.** الحساب/الكشوف في #36–#38.
+الحالة: **الأساس (#32) + المكوّنات (#33) + الحضور (#34) + الإجازات (#35) + محرّك الحساب (#36) جاهزة.** الكشوف/التقارير في #37–#38.
 
 ## الجداول (Migrations)
 
@@ -20,6 +20,7 @@
 | `employee_salary_components` | إسناد مكوّن لموظف (#33): `value`, `effective_from`/`effective_to`, `is_active` — تاريخي |
 | `payroll_attendance_summaries` | **لقطة (Snapshot)** ملخّص الحضور الشهري لموظف ضمن مسير (#34): `total_work_days`, `absent_days`, `worked/late/early_leave/overtime_minutes`. فريد `(payroll_run_id, employee_id)` |
 | `payroll_leave_summaries` | **لقطة (Snapshot)** ملخّص الإجازات الشهري لموظف ضمن مسير (#35): `paid_leave_days`, `unpaid_leave_days`. فريد `(payroll_run_id, employee_id)` |
+| `payroll_items` | **نتيجة الحساب النهائية** لموظف ضمن مسير (#36): `basic_salary`, `allowances_total`, `deductions_total`, `gross_amount`, `net_amount`, `breakdown` (JSONB). فريد `(payroll_run_id, employee_id)` |
 
 ## PayrollService
 
@@ -63,6 +64,25 @@
 - الإجازات **المعتمدة فقط**؛ تُحتسب أيام العمل ضمن **تقاطع** فترة الإجازة مع الشهر (استبعاد الويكند).
 - التمييز مدفوعة/بدون راتب حسب `leave_types.is_paid`. **تحويلها إلى خصم في #36.**
 
+## PayrollCalculationService (#36) — محرّك الحساب
+
+يجمع كل المدخلات → **Gross / Deductions / Net** ويحفظ لقطة نهائية (`payroll_items`) مع تفصيل البنود (`breakdown`).
+
+| المُدخَل | المصدر | التأثير |
+|---------|--------|---------|
+| الراتب الأساسي | `employee_salary_profiles` النشط | أساس الحساب |
+| البدلات | `employee_salary_components` (allowance) | + (ثابت أو % من الأساسي) |
+| الخصومات اليدوية | `employee_salary_components` (deduction) | − |
+| الغياب/التأخير/الإضافي | **لقطة الحضور #34** (لا حضور حيّ) | −غياب، −تأخير، +إضافي |
+| الإجازة بدون راتب | **لقطة الإجازات #35** | − (المدفوعة لا تُخصم) |
+
+**قواعد المعدّلات (موثّقة، قابلة للضبط):** اليومي = الأساسي ÷ 30 · الساعة = اليومي ÷ 8 · الدقيقة = الساعة ÷ 60 · الإضافي = الساعة × 1.5 × ساعات الإضافي.
+`gross = basic + allowances` · `net = gross − deductions` (تقريب لخانتين).
+
+- **قراءة فقط** من اللقطات المجمّدة (#34/#35) والمكوّنات — لا يقرأ الحضور/الإجازات حيّاً ولا يعدّل أي مصدر (اختبار حارس).
+- **غير قابل لإعادة الحساب بعد الاعتماد:** يُرفض على مسير `approved/paid` (422)؛ idempotent على المسودة.
+- كل نتيجة تُحفظ كـ **snapshot نهائي** مع تفصيل قابل للتدقيق والكشف (#37).
+
 ## نقاط النهاية والصلاحيات
 
 | الطريقة | المسار | الصلاحية |
@@ -84,10 +104,12 @@
 | GET | `/api/employees/{employee}/leave-summary?year=&month=` (معاينة) | `payroll.view` |
 | GET | `/api/payroll-runs/{id}/leave-summaries` | `payroll.view` |
 | POST | `/api/payroll-runs/{id}/leave-snapshot` | `payroll.create` |
+| POST | `/api/payroll-runs/{id}/calculate` | `payroll.create` |
+| GET | `/api/payroll-runs/{id}/items` · `/api/payroll-items/{id}` | `payroll.view` |
 
 ## سجل التدقيق (Audit)
 
-`payroll_period_created` · `salary_profile_set` · `payroll_run_created` · `salary_component_created` · `salary_component_updated` · `employee_component_assigned` · `employee_component_deactivated` · `payroll_attendance_snapshotted` · `payroll_leave_snapshotted`
+`payroll_period_created` · `salary_profile_set` · `payroll_run_created` · `salary_component_created` · `salary_component_updated` · `employee_component_assigned` · `employee_component_deactivated` · `payroll_attendance_snapshotted` · `payroll_leave_snapshotted` · `payroll_calculated`
 
 ## مبادئ ثابتة عبر الـ Epic
 
@@ -98,4 +120,4 @@
 
 ## خارج النطاق الحالي
 
-محرك الحساب (#36 — تفسير fixed/percentage وتحويل ملخّصي الحضور والإجازات إلى خصومات/بدلات وحساب الصافي)، الكشوف والاعتماد (#37)، التقارير (#38). لا Finance/Banking/AI.
+الكشوف والاعتماد (#37)، التقارير (#38). لا Finance/Banking/AI.

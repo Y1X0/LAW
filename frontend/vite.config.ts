@@ -14,6 +14,8 @@ export default defineConfig({
     },
   },
   test: {
+    // اختبارات الوحدة فقط داخل src — اختبارات E2E (e2e/**) يشغّلها Playwright.
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],

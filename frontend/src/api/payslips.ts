@@ -53,7 +53,9 @@ export function usePayslip(id: number) {
  */
 export async function printPayslip(id: number): Promise<void> {
   const html = await api.text(`me/payslips/${id}/html`)
-  const win = window.open('', '_blank', 'noopener,noreferrer')
+  // نافذة فارغة (نفس الأصل) نكتب فيها مستند الباك-إند ثم نطبع.
+  // ملاحظة: لا نمرّر noopener هنا — فهو يُرجع null في المتصفّحات ويمنعنا من الكتابة في النافذة.
+  const win = window.open('', '_blank')
   if (!win) return
   win.document.open()
   win.document.write(html)

@@ -3,11 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Payroll\Http\Controllers\EmployeeSalaryComponentController;
 use Modules\Payroll\Http\Controllers\EmployeeSalaryProfileController;
+use Modules\Payroll\Http\Controllers\PayrollApprovalController;
 use Modules\Payroll\Http\Controllers\PayrollAttendanceController;
 use Modules\Payroll\Http\Controllers\PayrollCalculationController;
 use Modules\Payroll\Http\Controllers\PayrollLeaveController;
 use Modules\Payroll\Http\Controllers\PayrollPeriodController;
 use Modules\Payroll\Http\Controllers\PayrollRunController;
+use Modules\Payroll\Http\Controllers\PayslipController;
 use Modules\Payroll\Http\Controllers\SalaryComponentController;
 
 /*
@@ -38,6 +40,11 @@ Route::middleware('auth.token')->group(function () {
         // محرّك الحساب (#36) — قراءة النتائج
         Route::get('payroll-runs/{payroll_run}/items', [PayrollCalculationController::class, 'index'])->name('payroll-items.index');
         Route::get('payroll-items/{payroll_item}', [PayrollCalculationController::class, 'show'])->name('payroll-items.show');
+
+        // كشوف الرواتب (#37) — عرض/تصدير
+        Route::get('payroll-runs/{payroll_run}/payslips', [PayslipController::class, 'index'])->name('payslips.index');
+        Route::get('payroll-items/{payroll_item}/payslip', [PayslipController::class, 'show'])->name('payslips.show');
+        Route::get('payroll-items/{payroll_item}/payslip/html', [PayslipController::class, 'html'])->name('payslips.html');
     });
 
     // إنشاء/تعديل
@@ -60,4 +67,12 @@ Route::middleware('auth.token')->group(function () {
         // محرّك الحساب (#36) — تشغيل الحساب
         Route::post('payroll-runs/{payroll_run}/calculate', [PayrollCalculationController::class, 'calculate'])->name('payroll-items.calculate');
     });
+
+    // اعتماد المسير (#37)
+    Route::middleware('permission:payroll.approve')
+        ->post('payroll-runs/{payroll_run}/approve', [PayrollApprovalController::class, 'approve'])->name('payroll-runs.approve');
+
+    // قفل المسير (#37)
+    Route::middleware('permission:payroll.pay')
+        ->post('payroll-runs/{payroll_run}/lock', [PayrollApprovalController::class, 'lock'])->name('payroll-runs.lock');
 });

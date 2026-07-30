@@ -1,13 +1,13 @@
 # وحدة Payroll
 
-**الملكية (Owns):** payroll_periods, employee_salary_profiles, payroll_runs, salary_components, employee_salary_components
-**تُتيح (Exposes):** PayrollService, SalaryComponentService
+**الملكية (Owns):** payroll_periods, employee_salary_profiles, payroll_runs, salary_components, employee_salary_components, payroll_attendance_summaries
+**تُتيح (Exposes):** PayrollService, SalaryComponentService, PayrollAttendanceService
 
 > المرجع: [docs/module-boundaries.md](../../../docs/module-boundaries.md) · Epic #31
 
-**القاعدة الذهبية:** لا تصل هذه الوحدة إلى جداول وحدة أخرى مباشرةً — التواصل عبر الخدمات/الأحداث فقط. تقرأ من الحضور/الإجازات (لاحقاً) دون الكتابة فيها.
+**القاعدة الذهبية:** لا تصل هذه الوحدة إلى جداول وحدة أخرى مباشرةً — التواصل عبر الخدمات/الأحداث فقط. تقرأ من الحضور **قراءةً فقط** ولا تكتب فيه.
 
-الحالة: **الأساس (#32) + مكوّنات الراتب (#33) جاهزان.** الحساب/الكشوف في #34–#38.
+الحالة: **الأساس (#32) + المكوّنات (#33) + تكامل الحضور (#34) جاهزة.** الإجازات/الحساب/الكشوف في #35–#38.
 
 ## الجداول (Migrations)
 
@@ -18,6 +18,7 @@
 | `payroll_runs` | مسير تنفيذ لفترة: `status`, `created_by`, `approved_by`/`approved_at`, `notes` |
 | `salary_components` | كتالوج المكوّنات (#33): `code` (فريد), `type` (allowance/deduction), `value_type` (fixed/percentage), `is_active` |
 | `employee_salary_components` | إسناد مكوّن لموظف (#33): `value`, `effective_from`/`effective_to`, `is_active` — تاريخي |
+| `payroll_attendance_summaries` | **لقطة (Snapshot)** ملخّص الحضور الشهري لموظف ضمن مسير (#34): `total_work_days`, `absent_days`, `worked/late/early_leave/overtime_minutes`. فريد `(payroll_run_id, employee_id)` |
 
 ## PayrollService
 
@@ -37,6 +38,19 @@
 - مكوّنات مختلفة (سكن/مواصلات) **تتعايش نشطة** معاً؛ إعادة إسناد **نفس** المكوّن تؤرشف نسخته السابقة.
 - `value` تُفسَّر حسب `value_type` للمكوّن (مبلغ ثابت أو نسبة من الأساسي) — **التفسير في الحساب #36**، لا حساب هنا.
 
+## PayrollAttendanceService (#34) — قراءة فقط من الحضور
+
+| الدالة | الوظيفة |
+|--------|---------|
+| `summarize($employee, $year, $month)` | ملخّص حضور شهري (قراءة فقط، بلا حفظ): أيام العمل/الغياب ودقائق التأخير/المغادرة/الإضافي |
+| `snapshotEmployee($run, $employee, ...)` | حفظ لقطة الموظف ضمن مسير (idempotent لكل run+employee) |
+| `snapshotRun($run, ...)` | لقطة لكل موظفي المسير (أصحاب ملف راتب نشط، ضمن فرع الفترة إن حُدّد) |
+
+- **قراءة فقط** من `attendance_records` — لا كتابة/تعديل في وحدة الحضور.
+- **Snapshot يثبّت التاريخ:** تغيّر الحضور لاحقاً لا يغيّر لقطة محفوظة؛ إعادة اللقطة تُحدّثها **فقط والمسير مسودة/قيد المعالجة** — يُرفض إعادة لقطة مسير معتمد/مقفل (422).
+- الموظفون: أصحاب ملف راتب نشط فقط، وضمن فرع الفترة إن حُدّد (عزل بالفرع).
+- `total_work_days` = أيام الحالات present/late/early_leave. `overtime_hours` = الدقائق ÷ 60.
+
 ## نقاط النهاية والصلاحيات
 
 | الطريقة | المسار | الصلاحية |
@@ -52,10 +66,13 @@
 | GET | `/api/employees/{employee}/salary-components` | `payroll.view` |
 | POST | `/api/employees/{employee}/salary-components` | `payroll.create` |
 | DELETE | `/api/employee-salary-components/{id}` (إيقاف) | `payroll.create` |
+| GET | `/api/employees/{employee}/attendance-summary?year=&month=` (معاينة) | `payroll.view` |
+| GET | `/api/payroll-runs/{id}/attendance-summaries` | `payroll.view` |
+| POST | `/api/payroll-runs/{id}/attendance-snapshot` | `payroll.create` |
 
 ## سجل التدقيق (Audit)
 
-`payroll_period_created` · `salary_profile_set` · `payroll_run_created` · `salary_component_created` · `salary_component_updated` · `employee_component_assigned` · `employee_component_deactivated`
+`payroll_period_created` · `salary_profile_set` · `payroll_run_created` · `salary_component_created` · `salary_component_updated` · `employee_component_assigned` · `employee_component_deactivated` · `payroll_attendance_snapshotted`
 
 ## مبادئ ثابتة عبر الـ Epic
 
@@ -66,4 +83,4 @@
 
 ## خارج النطاق الحالي
 
-دمج الحضور (#34)، دمج الإجازات (#35)، محرك الحساب (#36 — تفسير fixed/percentage وحساب الصافي)، الكشوف والاعتماد (#37)، التقارير (#38). لا Finance/Banking/AI.
+دمج الإجازات (#35)، محرك الحساب (#36 — تفسير fixed/percentage وتحويل ملخّص الحضور إلى خصومات/بدلات وحساب الصافي)، الكشوف والاعتماد (#37)، التقارير (#38). لا Finance/Banking/AI.

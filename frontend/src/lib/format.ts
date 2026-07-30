@@ -28,6 +28,18 @@ export function payrollStatusLabel(status: string | null): string {
   return PAYROLL_STATUS[status] ?? status
 }
 
+const LEAVE_STATUS: Record<string, string> = {
+  pending: 'قيد المراجعة',
+  approved: 'معتمد',
+  rejected: 'مرفوض',
+  cancelled: 'ملغى',
+}
+
+/** تسمية عربية لحالة طلب الإجازة. */
+export function leaveStatusLabel(status: string): string {
+  return LEAVE_STATUS[status] ?? status
+}
+
 /** دقائق → "Xس Yد" (أو "—" عند الصفر). */
 export function formatMinutes(minutes: number): string {
   if (!minutes) return '—'

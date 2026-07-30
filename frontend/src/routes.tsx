@@ -3,6 +3,7 @@ import { ProtectedRoute } from './auth/ProtectedRoute'
 import { AppLayout } from './components/layout/AppLayout'
 import { AttendancePage } from './pages/AttendancePage'
 import { DashboardPage } from './pages/DashboardPage'
+import { LeavePage } from './pages/LeavePage'
 import { LoginPage } from './pages/LoginPage'
 import { PayslipDetailPage } from './pages/PayslipDetailPage'
 import { PayslipsPage } from './pages/PayslipsPage'
@@ -21,8 +22,8 @@ export const router = createBrowserRouter([
           { path: '/payslips', element: <PayslipsPage /> },
           { path: '/payslips/:id', element: <PayslipDetailPage /> },
           { path: '/attendance', element: <AttendancePage /> },
-          // أماكن الشاشات القادمة (#61–#62).
-          { path: '/leave', element: <PlaceholderPage title="إجازاتي" /> },
+          { path: '/leave', element: <LeavePage /> },
+          // أماكن الشاشات القادمة (#62).
           { path: '/profile', element: <PlaceholderPage title="ملفي" /> },
         ],
       },

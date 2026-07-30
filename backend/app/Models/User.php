@@ -5,10 +5,12 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Modules\Core\Concerns\HasAuthorization;
+use Modules\HR\Models\Employee;
 
 class User extends Authenticatable
 {
@@ -57,5 +59,14 @@ class User extends Authenticatable
             'password_changed_at' => 'datetime',
             'failed_attempts' => 'integer',
         ];
+    }
+
+    /**
+     * سجلّ الموظف المرتبط بهذا الحساب (Issue #47) — أساس الخدمة الذاتية.
+     * قد يكون null (مستخدم ليس موظفاً: Super Admin/Auditor).
+     */
+    public function employee(): HasOne
+    {
+        return $this->hasOne(Employee::class);
     }
 }

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Payroll\Http\Controllers\EmployeeSalaryComponentController;
 use Modules\Payroll\Http\Controllers\EmployeeSalaryProfileController;
 use Modules\Payroll\Http\Controllers\PayrollAttendanceController;
+use Modules\Payroll\Http\Controllers\PayrollLeaveController;
 use Modules\Payroll\Http\Controllers\PayrollPeriodController;
 use Modules\Payroll\Http\Controllers\PayrollRunController;
 use Modules\Payroll\Http\Controllers\SalaryComponentController;
@@ -28,6 +29,10 @@ Route::middleware('auth.token')->group(function () {
         // تكامل الحضور (#34) — قراءة/معاينة
         Route::get('employees/{employee}/attendance-summary', [PayrollAttendanceController::class, 'preview'])->name('payroll-attendance.preview');
         Route::get('payroll-runs/{payroll_run}/attendance-summaries', [PayrollAttendanceController::class, 'index'])->name('payroll-attendance.index');
+
+        // تكامل الإجازات (#35) — قراءة/معاينة
+        Route::get('employees/{employee}/leave-summary', [PayrollLeaveController::class, 'preview'])->name('payroll-leave.preview');
+        Route::get('payroll-runs/{payroll_run}/leave-summaries', [PayrollLeaveController::class, 'index'])->name('payroll-leave.index');
     });
 
     // إنشاء/تعديل
@@ -43,5 +48,8 @@ Route::middleware('auth.token')->group(function () {
 
         // تكامل الحضور (#34) — بناء اللقطة
         Route::post('payroll-runs/{payroll_run}/attendance-snapshot', [PayrollAttendanceController::class, 'snapshot'])->name('payroll-attendance.snapshot');
+
+        // تكامل الإجازات (#35) — بناء اللقطة
+        Route::post('payroll-runs/{payroll_run}/leave-snapshot', [PayrollLeaveController::class, 'snapshot'])->name('payroll-leave.snapshot');
     });
 });

@@ -1,7 +1,7 @@
 # وحدة SelfService (Epic 9)
 
 **الملكية (Owns):** لا تملك جداول — سطح الخدمة الذاتية للموظف تحت `/api/me`.
-**تُتيح (Exposes):** MyDashboardService, MyPayslipService
+**تُتيح (Exposes):** MyDashboardService, MyPayslipService, MyAttendanceService, MyLeaveService (+ تعديل الملف عبر HR::EmployeeService)
 
 > المرجع: [docs/module-boundaries.md](../../../docs/module-boundaries.md) · Epic #46
 
@@ -33,13 +33,32 @@
 - **العزل:** كل كشف يُتحقَّق أنه يخصّ الموظف الحالي (`ownedItem`) — كشف موظف آخر → **403**.
 - تدقيق تصدير الكشف الذاتي: `payslip_self_exported`.
 
+## My Attendance (#50) — `MyAttendanceService`
+`GET /api/me/attendance?from=&to=` (`attendance.view_own`) — سجلّ حضوري **قراءةً فقط** من `attendance_records` (لا API تعديل). عزل بالـ employee_id.
+
+## My Leave (#51) — `MyLeaveService`
+- `GET /api/me/leave/balance` · `/requests` (`leave.view_own`) — رصيدي وطلباتي.
+- `POST /api/me/leave/requests` (`leave.request_own` — مستقلة عن العرض) — تقديم طلب **لنفسي حصراً**، يعيد استخدام `LeaveService` (#17). لا اعتماد/رفض، ولا تقديم لموظف آخر (employee_id مُتجاهَل).
+
+## My Profile (#52) — تعديل عبر HR
+- `GET /api/me/profile` · `PATCH /api/me/profile` (`profile.update_own`).
+- **تعديل محدود فقط:** الهاتف · العنوان · صورة الملف · اسم/هاتف جهة الطوارئ.
+- **ممنوع تماماً:** الراتب · القسم · الفرع · الوظيفة · المدير (دفاع بالطبقات: تحقّق المُدخل + قائمة بيضاء في `EmployeeService::SELF_EDITABLE_FIELDS`).
+- الكتابة تمرّ عبر **HR (مالك الجدول)** — `EmployeeService::updateSelfProfile` مع تدقيق `employee_profile_self_updated`.
+
 ## نقاط النهاية
 
 | الطريقة | المسار | الحارس + الصلاحية |
 |---------|--------|-------------------|
 | GET | `/api/me/dashboard` | `auth.token` + `employee.linked` + `dashboard.view_own` |
-| GET | `/api/me/payslips` | `… + payslip.view_own` |
-| GET | `/api/me/payslips/{payroll_item}` (JSON) · `/html` (طباعة) | `… + payslip.view_own` |
+| GET | `/api/me/payslips` (+ `{id}` JSON/HTML) | `… + payslip.view_own` |
+| GET | `/api/me/attendance?from=&to=` | `… + attendance.view_own` |
+| GET | `/api/me/leave/balance` · `/leave/requests` | `… + leave.view_own` |
+| POST | `/api/me/leave/requests` | `… + leave.request_own` |
+| GET/PATCH | `/api/me/profile` | `… + profile.update_own` |
+
+## التدقيق
+`payslip_self_exported` · `employee_profile_self_updated` (+ أحداث LeaveService عند التقديم).
 
 ## خارج النطاق الحالي
-Attendance/Leave/Profile الذاتية (#50–#52). لا كتابة في أي وحدة. لا لوحة إدارة (تلك وحدة Dashboard المنفصلة، #18).
+لا لوحة إدارة (وحدة Dashboard المنفصلة، #18). SelfService لا يكتب في أي وحدة عدا التعديل الذاتي المحدود للملف عبر خدمة HR.

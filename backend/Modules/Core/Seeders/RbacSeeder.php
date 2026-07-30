@@ -20,7 +20,7 @@ class RbacSeeder extends Seeder
         'attendance.view', 'attendance.manual', 'attendance.approve', 'attendance.report', 'attendance.devices',
         'leaves.request', 'leaves.approve', 'leaves.view_all',
         'payroll.view', 'payroll.create', 'payroll.approve', 'payroll.pay', 'payslip.view_own',
-        'dashboard.view_own', 'attendance.view_own', 'leave.view_own', 'profile.update_own',
+        'dashboard.view_own', 'attendance.view_own', 'leave.view_own', 'leave.request_own', 'profile.update_own',
         'cases.view', 'cases.view_all', 'cases.create', 'cases.update', 'cases.close', 'cases.delete',
         'hearings.view', 'hearings.manage',
         'clients.view', 'clients.create', 'clients.update', 'clients.delete',

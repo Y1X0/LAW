@@ -3,6 +3,7 @@
 namespace Modules\Attendance\Services;
 
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Carbon;
 use Modules\Attendance\Biometric\PunchData;
 use Modules\Attendance\Concerns\RecordsSystemAudit;
 use Modules\Attendance\Jobs\ProcessAttendanceLogJob;
@@ -29,8 +30,11 @@ class BiometricIngestionService
             return null;
         }
 
+        // توقيت الجهاز: نفسّر وقت النبضة بمنطقة الجهاز ثم نخزّنه كلحظة UTC صحيحة.
+        $punchTime = $this->toUtc($punch->punchTime, $device);
+
         // Idempotency: أي إعادة إرسال لنفس (الجهاز/المستخدم/الوقت) تُتجاهل.
-        $existing = $this->findDuplicate($device, $punch);
+        $existing = $this->findDuplicate($device, $punch->biometricUserId, $punchTime);
         if ($existing !== null) {
             return $existing;
         }
@@ -43,7 +47,7 @@ class BiometricIngestionService
                 'branch_id' => $device->branch_id,
                 'biometric_user_id' => $punch->biometricUserId,
                 'employee_id' => $employee?->id,
-                'punch_time' => $punch->punchTime,
+                'punch_time' => $punchTime,
                 'punch_type' => $punch->punchType,
                 'verify_mode' => $punch->verifyMode,
                 'source' => $source,
@@ -52,7 +56,7 @@ class BiometricIngestionService
             ]);
         } catch (QueryException $e) {
             // سباق على الفهرس الفريد → عامله كتكرار.
-            return $this->findDuplicate($device, $punch);
+            return $this->findDuplicate($device, $punch->biometricUserId, $punchTime);
         }
 
         if ($employee !== null) {
@@ -62,18 +66,31 @@ class BiometricIngestionService
             $this->systemAudit('biometric_log_unmatched', AttendanceLog::class, $log->id, [
                 'device_id' => $device->id,
                 'biometric_user_id' => $punch->biometricUserId,
-                'punch_time' => $punch->punchTime->toIso8601String(),
+                'punch_time' => $punchTime->toIso8601String(),
             ]);
         }
 
         return $log;
     }
 
-    private function findDuplicate(BiometricDevice $device, PunchData $punch): ?AttendanceLog
+    private function findDuplicate(BiometricDevice $device, string $biometricUserId, Carbon $punchTime): ?AttendanceLog
     {
         return AttendanceLog::where('device_id', $device->id)
-            ->where('biometric_user_id', $punch->biometricUserId)
-            ->where('punch_time', $punch->punchTime)
+            ->where('biometric_user_id', $biometricUserId)
+            ->where('punch_time', $punchTime)
             ->first();
+    }
+
+    /**
+     * تحويل وقت النبضة إلى UTC وفق منطقة الجهاز (إن وُجدت).
+     * الجهاز يرسل وقتاً محلياً بلا منطقة؛ نعيد تفسيره بمنطقته ثم نحوّله UTC.
+     */
+    private function toUtc(Carbon $punchTime, BiometricDevice $device): Carbon
+    {
+        if (empty($device->timezone)) {
+            return $punchTime;
+        }
+
+        return Carbon::parse($punchTime->format('Y-m-d H:i:s'), $device->timezone)->utc();
     }
 }

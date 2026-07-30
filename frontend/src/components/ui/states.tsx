@@ -36,6 +36,11 @@ export function EmptyState({ message = 'لا توجد بيانات لعرضها.
   return <div className="py-10 text-center text-sm text-slate-500">{message}</div>
 }
 
+/** كتلة هيكلية (Skeleton) أثناء التحميل. */
+export function Skeleton({ className = '' }: { className?: string }) {
+  return <div className={`animate-pulse rounded bg-slate-200 ${className}`} />
+}
+
 /** حالة «لا صلاحية / حساب غير مرتبط» — الباك-إند هو الحكم النهائي. */
 export function PermissionDenied({ notLinked = false }: { notLinked?: boolean }) {
   return (

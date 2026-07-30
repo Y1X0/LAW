@@ -128,6 +128,9 @@ class PayrollCalculationService
         return PayrollItem::updateOrCreate(
             ['payroll_run_id' => $run->id, 'employee_id' => $employee->id],
             [
+                // لقطة الموقع التنظيمي لحظة الحساب (#38) — تقارير تاريخية لا تتأثر بانتقال الموظف لاحقاً.
+                'branch_id' => $employee->branch_id,
+                'department_id' => $employee->department_id,
                 'currency' => $profile->currency,
                 'basic_salary' => $this->round($basic),
                 'allowances_total' => $allowancesTotal,

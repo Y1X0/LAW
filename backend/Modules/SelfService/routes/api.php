@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\SelfService\Http\Controllers\MyAttendanceController;
 use Modules\SelfService\Http\Controllers\MyDashboardController;
+use Modules\SelfService\Http\Controllers\MyLeaveController;
 use Modules\SelfService\Http\Controllers\MyPayslipController;
 
 /*
@@ -26,4 +27,13 @@ Route::middleware(['auth.token', 'employee.linked'])->prefix('me')->group(functi
     // حضوري (#50) — قراءة فقط
     Route::middleware('permission:attendance.view_own')
         ->get('attendance', [MyAttendanceController::class, 'index'])->name('me.attendance.index');
+
+    // إجازاتي (#51)
+    Route::middleware('permission:leave.view_own')->group(function () {
+        Route::get('leave/balance', [MyLeaveController::class, 'balance'])->name('me.leave.balance');
+        Route::get('leave/requests', [MyLeaveController::class, 'index'])->name('me.leave.requests');
+    });
+    // تقديم طلب لنفسي (صلاحية مستقلة عن العرض)
+    Route::middleware('permission:leave.request_own')
+        ->post('leave/requests', [MyLeaveController::class, 'store'])->name('me.leave.store');
 });

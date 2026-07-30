@@ -3,13 +3,14 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Payroll\Http\Controllers\EmployeeSalaryComponentController;
 use Modules\Payroll\Http\Controllers\EmployeeSalaryProfileController;
+use Modules\Payroll\Http\Controllers\PayrollAttendanceController;
 use Modules\Payroll\Http\Controllers\PayrollPeriodController;
 use Modules\Payroll\Http\Controllers\PayrollRunController;
 use Modules\Payroll\Http\Controllers\SalaryComponentController;
 
 /*
-| مسارات وحدة Payroll (Epic 8 / #32 الأساس + #33 المكوّنات) — تُحمّل تلقائياً تحت /api.
-| قراءة: payroll.view · إنشاء/تعديل: payroll.create. لا حساب هنا (#36 لاحقاً).
+| مسارات وحدة Payroll (Epic 8 / #32 الأساس + #33 المكوّنات + #34 تكامل الحضور).
+| قراءة: payroll.view · إنشاء/تعديل: payroll.create. لا حساب نهائي هنا (#36 لاحقاً).
 */
 
 Route::middleware('auth.token')->group(function () {
@@ -23,6 +24,10 @@ Route::middleware('auth.token')->group(function () {
 
         Route::get('salary-components', [SalaryComponentController::class, 'index'])->name('salary-components.index');
         Route::get('employees/{employee}/salary-components', [EmployeeSalaryComponentController::class, 'index'])->name('employee-salary-components.index');
+
+        // تكامل الحضور (#34) — قراءة/معاينة
+        Route::get('employees/{employee}/attendance-summary', [PayrollAttendanceController::class, 'preview'])->name('payroll-attendance.preview');
+        Route::get('payroll-runs/{payroll_run}/attendance-summaries', [PayrollAttendanceController::class, 'index'])->name('payroll-attendance.index');
     });
 
     // إنشاء/تعديل
@@ -35,5 +40,8 @@ Route::middleware('auth.token')->group(function () {
         Route::put('salary-components/{salary_component}', [SalaryComponentController::class, 'update'])->name('salary-components.update');
         Route::post('employees/{employee}/salary-components', [EmployeeSalaryComponentController::class, 'store'])->name('employee-salary-components.store');
         Route::delete('employee-salary-components/{employee_salary_component}', [EmployeeSalaryComponentController::class, 'destroy'])->name('employee-salary-components.destroy');
+
+        // تكامل الحضور (#34) — بناء اللقطة
+        Route::post('payroll-runs/{payroll_run}/attendance-snapshot', [PayrollAttendanceController::class, 'snapshot'])->name('payroll-attendance.snapshot');
     });
 });

@@ -5,14 +5,18 @@ namespace Modules\Attendance\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Models\Branch;
 
 /**
  * جهاز بصمة مُسجَّل (Issue #16). يجرّد المورّد ونمط التكامل (push/pull)،
  * ويحمل توكناً سرياً مشفّراً يُتحقَّق منه في كل Push (docs/04 §2, §8).
+ * حذف ناعم: تقاعد الجهاز يحافظ على سجلات البصمة التاريخية (بيانات تدقيق).
  */
 class BiometricDevice extends Model
 {
+    use SoftDeletes;
+
     public const VENDORS = ['zkteco', 'hikvision', 'suprema', 'anviz'];
 
     public const API_MODES = ['push', 'pull'];
@@ -21,7 +25,7 @@ class BiometricDevice extends Model
 
     protected $fillable = [
         'name', 'vendor', 'branch_id', 'api_mode', 'ip_address', 'port',
-        'serial_number', 'auth_token', 'status', 'last_sync_at', 'last_seen_at', 'is_active',
+        'serial_number', 'timezone', 'auth_token', 'status', 'last_sync_at', 'last_seen_at', 'is_active',
     ];
 
     /** التوكن السري لا يُكشف أبداً في استجابات الـ API. */

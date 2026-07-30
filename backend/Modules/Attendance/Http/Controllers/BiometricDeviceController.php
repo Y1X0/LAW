@@ -52,6 +52,7 @@ class BiometricDeviceController
             'ip_address' => ['nullable', 'ip'],
             'port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'serial_number' => ['nullable', 'string', 'max:80', 'unique:biometric_devices,serial_number'],
+            'timezone' => ['nullable', 'timezone'],
         ]);
 
         // توكن الجهاز يُولَّد ويُخزَّن مشفّراً؛ يُعرَض هنا فقط ليُضبط على الجهاز.
@@ -81,6 +82,7 @@ class BiometricDeviceController
             'api_mode' => ['sometimes', Rule::in(BiometricDevice::API_MODES)],
             'ip_address' => ['nullable', 'ip'],
             'port' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'timezone' => ['nullable', 'timezone'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 

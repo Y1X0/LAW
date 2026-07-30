@@ -68,10 +68,14 @@
 
 | الجدول | الوصف |
 |--------|-------|
-| `biometric_devices` | الأجهزة: `vendor`, `api_mode` (push/pull), `ip_address`, `port`, `serial_number`, `auth_token` (مشفّر), `status`, `last_sync_at`, `is_active` |
+| `biometric_devices` | الأجهزة: `vendor`, `api_mode` (push/pull), `ip_address`, `port`, `serial_number`, `auth_token` (مشفّر), `timezone`, `status`, `last_sync_at`, `is_active`. **حذف ناعم** (تقاعد الجهاز لا يمسّ السجلات التاريخية) |
 | `attendance_logs` | Staging خام: `device_id`, `biometric_user_id`, `employee_id`, `punch_time`, `punch_type`, `verify_mode`, `source`, `status`, `raw_payload` (JSONB) |
 
 **منع التكرار (Idempotency):** `unique(device_id, biometric_user_id, punch_time)` — أي إعادة إرسال تُتجاهل.
+
+**المنطقة الزمنية:** الأعمدة الزمنية كلها `timestamptz`. عند وجود `biometric_devices.timezone` (مثل `Asia/Riyadh`) يُفسَّر وقت النبضة بمنطقة الجهاز ثم يُحوَّل إلى UTC قبل الحفظ (والمقارنة في منع التكرار تجري على القيمة المحوَّلة) — فلا انزياح بين أجهزة/فروع بمناطق مختلفة.
+
+**حماية التاريخ:** `biometric_devices` بحذف ناعم — حذف/تقاعد جهاز لا يمحو سجلات `attendance_logs` الخام (بيانات تدقيق).
 
 ## طبقة المحوّلات (Adapter Layer)
 

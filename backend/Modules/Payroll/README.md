@@ -1,13 +1,13 @@
 # وحدة Payroll
 
 **الملكية (Owns):** payroll_periods, employee_salary_profiles, payroll_runs, salary_components, employee_salary_components, payroll_attendance_summaries, payroll_leave_summaries, payroll_items
-**تُتيح (Exposes):** PayrollService, SalaryComponentService, PayrollAttendanceService, PayrollLeaveService, PayrollCalculationService
+**تُتيح (Exposes):** PayrollService, SalaryComponentService, PayrollAttendanceService, PayrollLeaveService, PayrollCalculationService, PayrollApprovalService, PayslipService
 
 > المرجع: [docs/module-boundaries.md](../../../docs/module-boundaries.md) · Epic #31
 
 **القاعدة الذهبية:** لا تصل هذه الوحدة إلى جداول وحدة أخرى مباشرةً — التواصل عبر الخدمات/الأحداث فقط. تقرأ من الحضور/الإجازات **قراءةً فقط** ولا تكتب فيهما.
 
-الحالة: **الأساس (#32) + المكوّنات (#33) + الحضور (#34) + الإجازات (#35) + محرّك الحساب (#36) جاهزة.** الكشوف/التقارير في #37–#38.
+الحالة: **الأساس (#32) + المكوّنات (#33) + الحضور (#34) + الإجازات (#35) + الحساب (#36) + الكشف والاعتماد (#37) جاهزة.** التقارير في #38.
 
 ## الجداول (Migrations)
 
@@ -83,6 +83,14 @@
 - **غير قابل لإعادة الحساب بعد الاعتماد:** يُرفض على مسير `approved/paid` (422)؛ idempotent على المسودة.
 - كل نتيجة تُحفظ كـ **snapshot نهائي** مع تفصيل قابل للتدقيق والكشف (#37).
 
+## الاعتماد والكشف (#37)
+
+**دورة المسير:** `draft/processing` (بعد الحساب #36 تُنتَج النتائج) → **approve** (`payroll.approve`) → `approved` → **lock** (`payroll.pay`) → `locked` (نهائي، غير قابل للتغيير).
+
+- **PayrollApprovalService:** `approve` (يشترط وجود نتائج محسوبة) · `lock` (يشترط الاعتماد أولاً). بعد `approved/locked` تُرفض إعادة الحساب/اللقطات تلقائياً (الحُرّاس السابقة). لا يمسّ منطق الحساب.
+- **PayslipService:** كشف راتب من `payroll_item` المجمّد (لا يعيد الحساب) — **JSON** + **مستند HTML مكتفٍ ذاتياً** للطباعة → PDF من المتصفح. **لا مكتبة PDF / لا تعديل composer** (تصدير PDF رسمي بشعار/توقيع = Issue مستقل لاحقاً).
+- تدقيق: `payroll_run_approved` · `payroll_run_locked` · `payslip_exported`.
+
 ## نقاط النهاية والصلاحيات
 
 | الطريقة | المسار | الصلاحية |
@@ -106,10 +114,14 @@
 | POST | `/api/payroll-runs/{id}/leave-snapshot` | `payroll.create` |
 | POST | `/api/payroll-runs/{id}/calculate` | `payroll.create` |
 | GET | `/api/payroll-runs/{id}/items` · `/api/payroll-items/{id}` | `payroll.view` |
+| POST | `/api/payroll-runs/{id}/approve` | `payroll.approve` |
+| POST | `/api/payroll-runs/{id}/lock` | `payroll.pay` |
+| GET | `/api/payroll-runs/{id}/payslips` | `payroll.view` |
+| GET | `/api/payroll-items/{id}/payslip` (JSON) · `/payslip/html` (طباعة) | `payroll.view` |
 
 ## سجل التدقيق (Audit)
 
-`payroll_period_created` · `salary_profile_set` · `payroll_run_created` · `salary_component_created` · `salary_component_updated` · `employee_component_assigned` · `employee_component_deactivated` · `payroll_attendance_snapshotted` · `payroll_leave_snapshotted` · `payroll_calculated`
+`payroll_period_created` · `salary_profile_set` · `payroll_run_created` · `salary_component_created` · `salary_component_updated` · `employee_component_assigned` · `employee_component_deactivated` · `payroll_attendance_snapshotted` · `payroll_leave_snapshotted` · `payroll_calculated` · `payroll_run_approved` · `payroll_run_locked` · `payslip_exported`
 
 ## مبادئ ثابتة عبر الـ Epic
 
@@ -120,4 +132,4 @@
 
 ## خارج النطاق الحالي
 
-الكشوف والاعتماد (#37)، التقارير (#38). لا Finance/Banking/AI.
+التقارير (#38). لا Finance/Banking/AI. تصدير PDF رسمي (شعار/توقيع) = Issue مستقل لاحقاً.

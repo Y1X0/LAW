@@ -4,6 +4,7 @@ namespace Tests\Feature\Payroll;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\HR\Models\Employee;
+use Modules\Payroll\Models\EmployeeSalaryProfile;
 use Modules\Payroll\Models\PayrollItem;
 use Modules\Payroll\Models\PayrollPeriod;
 use Modules\Payroll\Models\PayrollRun;
@@ -74,6 +75,24 @@ class PayslipTest extends TestCase
         $res->assertSee('أحمد', false);
         $res->assertSee('3,400.00', false); // صافي الراتب
         $this->assertDatabaseHas('audit_logs', ['action' => 'payslip_exported']);
+    }
+
+    public function test_locked_payslip_stays_frozen_when_source_salary_changes(): void
+    {
+        $viewer = $this->userWithPermissions(['payroll.view']);
+        [, $item, $employee] = $this->itemFor('locked');
+        EmployeeSalaryProfile::create(['employee_id' => $employee->id, 'basic_salary' => 3000, 'effective_from' => '2026-01-01', 'is_active' => true]);
+
+        $before = $this->actingAsToken($viewer)->getJson("/api/payroll-items/{$item->id}/payslip")->json('data.net');
+        $this->assertEquals(3400, $before);
+
+        // يتغيّر راتب الموظف لاحقاً (ملف نشط جديد) — الكشف المقفول لا يتأثر (يقرأ payroll_item المجمّد).
+        EmployeeSalaryProfile::where('employee_id', $employee->id)->update(['is_active' => false]);
+        EmployeeSalaryProfile::create(['employee_id' => $employee->id, 'basic_salary' => 9999, 'effective_from' => '2026-06-01', 'is_active' => true]);
+
+        $after = $this->actingAsToken($viewer)->getJson("/api/payroll-items/{$item->id}/payslip")->json('data.net');
+        $this->assertEquals($before, $after);
+        $this->assertEquals(3400, $after);
     }
 
     public function test_payslip_requires_permission(): void

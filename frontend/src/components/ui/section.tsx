@@ -1,18 +1,20 @@
 import type { ReactNode } from 'react'
-import { Card } from '../../components/ui/primitives'
+import { Card } from './primitives'
 
-/** بطاقة قسم بعنوان — مكوّن عرض قابل لإعادة الاستخدام عبر اللوحة. */
-export function DashboardCard({
+/** بطاقة قسم بعنوان — مكوّن عرض مشترك عبر الشاشات (لوحة/كشوف/…). */
+export function SectionCard({
   title,
   action,
   children,
+  className = '',
 }: {
   title: string
   action?: ReactNode
   children: ReactNode
+  className?: string
 }) {
   return (
-    <Card className="h-full">
+    <Card className={`h-full ${className}`}>
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-slate-700">{title}</h2>
         {action}

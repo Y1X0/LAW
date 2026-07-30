@@ -76,11 +76,10 @@ async function raw(path: string, options: RequestOptions): Promise<Response> {
   })
 }
 
-/** نداء API موحّد: يرفق التوكن، يعالج الغلاف، ويجدّد التوكن مرة عند 401. */
-export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+/** ينفّذ النداء ويجدّد التوكن مرة واحدة عند 401 (ويسجّل خروجاً إن تعذّر). */
+async function requestWithRefresh(path: string, options: RequestOptions): Promise<Response> {
   let res = await raw(path, options)
 
-  // 401: حاول التجديد مرة واحدة ثم أعد المحاولة؛ وإلا سجّل خروجاً.
   if (res.status === 401 && !options.skipRefresh) {
     const refreshed = await tryRefresh()
     if (refreshed) {
@@ -89,18 +88,32 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     if (res.status === 401) {
       tokenStorage.clear()
       onUnauthorized?.()
-      const env = await parse<T>(res)
-      throw toError(401, env)
     }
   }
 
+  return res
+}
+
+/** نداء API يعيد `data` من الغلاف الموحّد (JSON). */
+export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const res = await requestWithRefresh(path, options)
   const env = await parse<T>(res)
   if (!res.ok) throw toError(res.status, env)
   return env.data as T
+}
+
+/** نداء يعيد نصاً خاماً (مثل مستند HTML) بمصادقة — يرمي ApiError عند الفشل. */
+export async function apiText(path: string): Promise<string> {
+  const res = await requestWithRefresh(path, { method: 'GET', headers: { Accept: 'text/html' } })
+  if (!res.ok) {
+    throw toError(res.status, await parse<unknown>(res))
+  }
+  return res.text()
 }
 
 export const api = {
   get: <T>(path: string) => apiRequest<T>(path, { method: 'GET' }),
   post: <T>(path: string, body?: unknown) => apiRequest<T>(path, { method: 'POST', body }),
   patch: <T>(path: string, body?: unknown) => apiRequest<T>(path, { method: 'PATCH', body }),
+  text: (path: string) => apiText(path),
 }

@@ -83,6 +83,10 @@ class LeaveService
     {
         $this->assert($leave->isPending(), 'status', 'لا يمكن اعتماد طلب غير معلّق.');
 
+        // فصل المهام: من قدّم الطلب لا يعتمده بنفسه (docs/05، docs/10 §2.2 التصعيد).
+        $actorId = $request->user()?->id;
+        abort_if($actorId !== null && $actorId === $leave->created_by, 403, 'لا يمكنك اعتماد طلب قدّمته بنفسك.');
+
         $type = $leave->leaveType;
         if ($type->consumes_balance) {
             $balance = $this->balanceFor($leave->employee, $type, $leave->start_date->year);

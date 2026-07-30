@@ -105,4 +105,38 @@ class LeaveApprovalTest extends TestCase
         // اعتماد ثانٍ → 422
         $this->actingAsToken($approver)->postJson("/api/leave-requests/{$request->id}/approve")->assertStatus(422);
     }
+
+    public function test_submitter_cannot_approve_own_request(): void
+    {
+        // نفس المستخدم يملك تقديم واعتماد، لكنه لا يعتمد ما قدّمه بنفسه (فصل المهام).
+        $actor = $this->userWithPermissions(['leaves.request', 'leaves.approve']);
+        $employee = Employee::factory()->create();
+        $type = LeaveType::create([
+            'name' => 'سنوية', 'code' => 'annual', 'is_paid' => true,
+            'consumes_balance' => true, 'requires_attachment' => false, 'default_annual_days' => 20,
+        ]);
+        LeaveBalance::create(['employee_id' => $employee->id, 'leave_type_id' => $type->id, 'year' => 2026, 'entitled_days' => 20]);
+
+        $created = $this->actingAsToken($actor)->postJson('/api/leave-requests', [
+            'employee_id' => $employee->id, 'leave_type_id' => $type->id,
+            'start_date' => '2026-06-07', 'end_date' => '2026-06-08',
+        ])->assertCreated()->json('data.id');
+
+        $this->actingAsToken($actor)->postJson("/api/leave-requests/{$created}/approve")
+            ->assertStatus(403);
+        $this->assertDatabaseHas('leave_requests', ['id' => $created, 'status' => 'pending']);
+    }
+
+    public function test_can_list_and_filter_requests(): void
+    {
+        $viewer = $this->userWithPermissions(['leaves.view_all']);
+        [, , , $request] = $this->scenario();
+
+        $this->actingAsToken($viewer)->getJson('/api/leave-requests')
+            ->assertOk()
+            ->assertJsonStructure(['data', 'meta' => ['page', 'per_page', 'total', 'total_pages'], 'errors']);
+
+        $res = $this->actingAsToken($viewer)->getJson('/api/leave-requests?status=pending')->assertOk();
+        $this->assertSame(1, $res->json('meta.total'));
+    }
 }

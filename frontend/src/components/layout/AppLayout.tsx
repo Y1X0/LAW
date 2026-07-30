@@ -3,7 +3,6 @@ import { useAuth } from '../../auth/useAuth'
 import { Button } from '../ui/primitives'
 
 const NAV = [
-  { to: '/', label: 'الرئيسية', end: true },
   { to: '/dashboard', label: 'لوحتي' },
   { to: '/payslips', label: 'كشوف راتبي' },
   { to: '/attendance', label: 'حضوري' },
@@ -24,7 +23,6 @@ export function AppLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.end}
               className={({ isActive }) =>
                 `block rounded-lg px-3 py-2 text-sm ${
                   isActive ? 'bg-brand-50 font-medium text-brand-700' : 'text-slate-600 hover:bg-slate-100'

@@ -1,13 +1,13 @@
 # وحدة Payroll
 
 **الملكية (Owns):** payroll_periods, employee_salary_profiles, payroll_runs, salary_components, employee_salary_components, payroll_attendance_summaries, payroll_leave_summaries, payroll_items
-**تُتيح (Exposes):** PayrollService, SalaryComponentService, PayrollAttendanceService, PayrollLeaveService, PayrollCalculationService, PayrollApprovalService, PayslipService
+**تُتيح (Exposes):** PayrollService, SalaryComponentService, PayrollAttendanceService, PayrollLeaveService, PayrollCalculationService, PayrollApprovalService, PayslipService, PayrollReportService
 
 > المرجع: [docs/module-boundaries.md](../../../docs/module-boundaries.md) · Epic #31
 
 **القاعدة الذهبية:** لا تصل هذه الوحدة إلى جداول وحدة أخرى مباشرةً — التواصل عبر الخدمات/الأحداث فقط. تقرأ من الحضور/الإجازات **قراءةً فقط** ولا تكتب فيهما.
 
-الحالة: **الأساس (#32) + المكوّنات (#33) + الحضور (#34) + الإجازات (#35) + الحساب (#36) + الكشف والاعتماد (#37) جاهزة.** التقارير في #38.
+الحالة: **الأساس (#32) + المكوّنات (#33) + الحضور (#34) + الإجازات (#35) + الحساب (#36) + الكشف والاعتماد (#37) + التقارير (#38) جاهزة.** Epic Payroll (#31) مكتمل.
 
 ## الجداول (Migrations)
 
@@ -20,7 +20,7 @@
 | `employee_salary_components` | إسناد مكوّن لموظف (#33): `value`, `effective_from`/`effective_to`, `is_active` — تاريخي |
 | `payroll_attendance_summaries` | **لقطة (Snapshot)** ملخّص الحضور الشهري لموظف ضمن مسير (#34): `total_work_days`, `absent_days`, `worked/late/early_leave/overtime_minutes`. فريد `(payroll_run_id, employee_id)` |
 | `payroll_leave_summaries` | **لقطة (Snapshot)** ملخّص الإجازات الشهري لموظف ضمن مسير (#35): `paid_leave_days`, `unpaid_leave_days`. فريد `(payroll_run_id, employee_id)` |
-| `payroll_items` | **نتيجة الحساب النهائية** لموظف ضمن مسير (#36): `basic_salary`, `allowances_total`, `deductions_total`, `gross_amount`, `net_amount`, `breakdown` (JSONB). فريد `(payroll_run_id, employee_id)` |
+| `payroll_items` | **نتيجة الحساب النهائية** لموظف ضمن مسير (#36): `basic_salary`, `allowances_total`, `deductions_total`, `gross_amount`, `net_amount`, `breakdown` (JSONB) + **لقطة الموقع التنظيمي** `branch_id`/`department_id` مجمّدة لحظة الحساب (#38، بلا FK لحفظ التاريخ). فريد `(payroll_run_id, employee_id)` |
 
 ## PayrollService
 
@@ -91,6 +91,22 @@
 - **PayslipService:** كشف راتب من `payroll_item` المجمّد (لا يعيد الحساب) — **JSON** + **مستند HTML مكتفٍ ذاتياً** للطباعة → PDF من المتصفح. **لا مكتبة PDF / لا تعديل composer** (تصدير PDF رسمي بشعار/توقيع = Issue مستقل لاحقاً).
 - تدقيق: `payroll_run_approved` · `payroll_run_locked` · `payslip_exported`.
 
+## التقارير (#38) — PayrollReportService
+
+تقارير مالية للرواتب **من النتائج المجمّدة فقط** (`payroll_items` ← `payroll_runs` ← `payroll_periods` — كلها مملوكة لـ Payroll).
+
+| الدالة | الوظيفة |
+|--------|---------|
+| `costReport($filters)` | تكلفة الرواتب: إجماليات (headcount / basic / allowances / deductions / gross / net) + تفصيل مجمّع حسب `group_by` ∈ {branch, department, month} |
+| `employeeReport($employee, $filters)` | تاريخ رواتب موظف عبر المسيّرات + إجماليات |
+
+- **الفلاتر:** `year` · `month` · `branch_id` · `department_id` · `status` (للتكلفة) · `year`/`status` (للموظف).
+- **النزاهة التاريخية (المبدأ الحاكم):** لا يقرأ إطلاقاً من `attendance_records` / `leave_requests` / `employee_salary_components` الحيّة ولا من ملفات الرواتب النشطة. الموقع التنظيمي (`branch_id`/`department_id`) **مجمّد على العنصر** لحظة الحساب، فتبقى تقارير المسيّرات المقفولة ثابتة حتى لو انتقل الموظف أو تغيّر راتبه لاحقاً (اختبار حارس).
+- **عزل بالفرع:** تمرير `branch_id` يقصر الإجماليات/المجموعات على الفرع (لا تسرّب).
+- **تجميعات محمولة:** `SUM`/`COUNT(DISTINCT)` عبر SQLite/PostgreSQL. تسمية الفرع/القسم عبر نماذجها (قراءة هوية، دفعة واحدة).
+- **تدقيق كل عرض حسّاس:** `payroll_cost_report_viewed` · `payroll_employee_report_viewed`.
+- **خارج نطاق #38:** تصدير Excel/PDF ولوحات المؤشرات = Issue مستقل لاحقاً.
+
 ## نقاط النهاية والصلاحيات
 
 | الطريقة | المسار | الصلاحية |
@@ -118,10 +134,12 @@
 | POST | `/api/payroll-runs/{id}/lock` | `payroll.pay` |
 | GET | `/api/payroll-runs/{id}/payslips` | `payroll.view` |
 | GET | `/api/payroll-items/{id}/payslip` (JSON) · `/payslip/html` (طباعة) | `payroll.view` |
+| GET | `/api/payroll-reports/cost?year=&month=&branch_id=&department_id=&status=&group_by=` | `payroll.view` |
+| GET | `/api/payroll-reports/employees/{employee}?year=&status=` | `payroll.view` |
 
 ## سجل التدقيق (Audit)
 
-`payroll_period_created` · `salary_profile_set` · `payroll_run_created` · `salary_component_created` · `salary_component_updated` · `employee_component_assigned` · `employee_component_deactivated` · `payroll_attendance_snapshotted` · `payroll_leave_snapshotted` · `payroll_calculated` · `payroll_run_approved` · `payroll_run_locked` · `payslip_exported`
+`payroll_period_created` · `salary_profile_set` · `payroll_run_created` · `salary_component_created` · `salary_component_updated` · `employee_component_assigned` · `employee_component_deactivated` · `payroll_attendance_snapshotted` · `payroll_leave_snapshotted` · `payroll_calculated` · `payroll_run_approved` · `payroll_run_locked` · `payslip_exported` · `payroll_cost_report_viewed` · `payroll_employee_report_viewed`
 
 ## مبادئ ثابتة عبر الـ Epic
 
@@ -132,4 +150,4 @@
 
 ## خارج النطاق الحالي
 
-التقارير (#38). لا Finance/Banking/AI. تصدير PDF رسمي (شعار/توقيع) = Issue مستقل لاحقاً.
+Epic Payroll (#31) مكتمل. لا Finance/Banking/AI. مؤجّل كـ Issues مستقلة لاحقاً: تصدير Excel/PDF رسمي للتقارير والكشوف (شعار/توقيع) · لوحات المؤشرات · بوابة الخدمة الذاتية للموظف (`payslip.view_own`) · تسوية الإجازات↔الحضور.

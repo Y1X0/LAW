@@ -8,6 +8,7 @@ use Modules\Payroll\Http\Controllers\PayrollAttendanceController;
 use Modules\Payroll\Http\Controllers\PayrollCalculationController;
 use Modules\Payroll\Http\Controllers\PayrollLeaveController;
 use Modules\Payroll\Http\Controllers\PayrollPeriodController;
+use Modules\Payroll\Http\Controllers\PayrollReportController;
 use Modules\Payroll\Http\Controllers\PayrollRunController;
 use Modules\Payroll\Http\Controllers\PayslipController;
 use Modules\Payroll\Http\Controllers\SalaryComponentController;
@@ -45,6 +46,10 @@ Route::middleware('auth.token')->group(function () {
         Route::get('payroll-runs/{payroll_run}/payslips', [PayslipController::class, 'index'])->name('payslips.index');
         Route::get('payroll-items/{payroll_item}/payslip', [PayslipController::class, 'show'])->name('payslips.show');
         Route::get('payroll-items/{payroll_item}/payslip/html', [PayslipController::class, 'html'])->name('payslips.html');
+
+        // التقارير (#38) — من النتائج المجمّدة فقط
+        Route::get('payroll-reports/cost', [PayrollReportController::class, 'cost'])->name('payroll-reports.cost');
+        Route::get('payroll-reports/employees/{employee}', [PayrollReportController::class, 'employee'])->name('payroll-reports.employee');
     });
 
     // إنشاء/تعديل

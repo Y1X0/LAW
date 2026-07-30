@@ -68,6 +68,13 @@ class PayrollAttendanceService
      */
     public function snapshotRun(PayrollRun $run, Request $request): int
     {
+        // ثبات تاريخي: لا تُعاد اللقطة لمسير معتمد/مقفل — تُبنى وهو مسودة/قيد المعالجة فقط.
+        abort_unless(
+            in_array($run->status, ['draft', 'processing'], true),
+            422,
+            'لا يمكن إعادة لقطة الحضور لمسير معتمد أو مقفل.'
+        );
+
         $employeeIds = EmployeeSalaryProfile::where('is_active', true)->pluck('employee_id')->unique();
 
         $query = Employee::whereIn('id', $employeeIds);

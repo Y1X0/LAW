@@ -1,4 +1,5 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { tokenStorage } from '../auth/tokenStorage'
 import { renderWithProviders } from '../test/renderWithProviders'
@@ -54,5 +55,29 @@ describe('PayslipDetailPage', () => {
 
     renderDetail()
     expect(await screen.findByText('غير موجود')).toBeInTheDocument()
+  })
+
+  it('زر الطباعة يجلب HTML من الباك-إند ويفتح نافذة طباعة', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    const fakeWindow = {
+      document: { open: vi.fn(), write: vi.fn(), close: vi.fn() },
+      focus: vi.fn(),
+      print: vi.fn(),
+    }
+    vi.stubGlobal('open', vi.fn(() => fakeWindow))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) =>
+        url.endsWith('/html')
+          ? Promise.resolve(new Response('<html>كشف</html>', { status: 200, headers: { 'Content-Type': 'text/html' } }))
+          : Promise.resolve(jsonResponse(detailPayload)),
+      ),
+    )
+
+    renderDetail()
+    await userEvent.click(await screen.findByRole('button', { name: 'طباعة' }))
+
+    await waitFor(() => expect(fakeWindow.print).toHaveBeenCalled())
+    expect(fakeWindow.document.write).toHaveBeenCalledWith('<html>كشف</html>')
   })
 })

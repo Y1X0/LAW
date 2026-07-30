@@ -1,4 +1,10 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from 'react'
 
 /** زر أساسي (أساسي/ثانوي). */
 export function Button({
@@ -37,6 +43,42 @@ export function Field({
         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
         {...props}
       />
+      {error ? <span className="text-xs text-red-600">{error}</span> : null}
+    </label>
+  )
+}
+
+const controlClass =
+  'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
+
+/** قائمة منسدلة بعنوان ورسالة خطأ اختيارية. */
+export function SelectField({
+  label,
+  error,
+  children,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement> & { label: string; error?: string }) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <select className={controlClass} {...props}>
+        {children}
+      </select>
+      {error ? <span className="text-xs text-red-600">{error}</span> : null}
+    </label>
+  )
+}
+
+/** حقل نصّي متعدّد الأسطر بعنوان ورسالة خطأ اختيارية. */
+export function TextareaField({
+  label,
+  error,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string; error?: string }) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <textarea className={controlClass} {...props} />
       {error ? <span className="text-xs text-red-600">{error}</span> : null}
     </label>
   )

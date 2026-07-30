@@ -2,6 +2,7 @@
 
 namespace Modules\HR\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,7 +26,7 @@ class Employee extends Model
     public const SENSITIVE_FIELDS = ['basic_salary', 'bank_name', 'bank_account'];
 
     protected $fillable = [
-        'branch_id', 'department_id', 'employee_no', 'full_name_ar', 'full_name_en',
+        'user_id', 'branch_id', 'department_id', 'employee_no', 'full_name_ar', 'full_name_en',
         'national_id', 'birth_date', 'gender', 'phone', 'email', 'address', 'photo_path',
         'job_title', 'position_id', 'manager_id', 'hire_date', 'contract_type', 'contract_start', 'contract_end',
         'basic_salary', 'bank_name', 'bank_account', 'biometric_user_id', 'status', 'notes',
@@ -39,6 +40,20 @@ class Employee extends Model
         'contract_end' => 'date',
         'basic_salary' => 'decimal:2',
     ];
+
+    /**
+     * حساب المستخدم المرتبط بهذا الموظف (Issue #47). قد يكون null (موظف بلا حساب دخول).
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /** هل هذا السجلّ يخصّ المستخدم المُعطى؟ أساس عزل الخدمة الذاتية (لا وصول لموظف آخر). */
+    public function isOwnedBy(User $user): bool
+    {
+        return $this->user_id !== null && $this->user_id === $user->id;
+    }
 
     public function branch(): BelongsTo
     {

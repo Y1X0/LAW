@@ -5,6 +5,7 @@ use Modules\SelfService\Http\Controllers\MyAttendanceController;
 use Modules\SelfService\Http\Controllers\MyDashboardController;
 use Modules\SelfService\Http\Controllers\MyLeaveController;
 use Modules\SelfService\Http\Controllers\MyPayslipController;
+use Modules\SelfService\Http\Controllers\MyProfileController;
 
 /*
 | مسارات وحدة SelfService (Epic 9) — سطح الخدمة الذاتية للموظف تحت /api/me.
@@ -36,4 +37,10 @@ Route::middleware(['auth.token', 'employee.linked'])->prefix('me')->group(functi
     // تقديم طلب لنفسي (صلاحية مستقلة عن العرض)
     Route::middleware('permission:leave.request_own')
         ->post('leave/requests', [MyLeaveController::class, 'store'])->name('me.leave.store');
+
+    // ملفي (#52) — عرض/تعديل محدود
+    Route::middleware('permission:profile.update_own')->group(function () {
+        Route::get('profile', [MyProfileController::class, 'show'])->name('me.profile.show');
+        Route::patch('profile', [MyProfileController::class, 'update'])->name('me.profile.update');
+    });
 });

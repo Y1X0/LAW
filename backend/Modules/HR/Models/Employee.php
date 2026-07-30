@@ -29,8 +29,8 @@ class Employee extends Model
         'user_id', 'branch_id', 'department_id', 'employee_no', 'full_name_ar', 'full_name_en',
         'national_id', 'birth_date', 'gender', 'phone', 'email', 'address', 'photo_path',
         'job_title', 'position_id', 'manager_id', 'hire_date', 'contract_type', 'contract_start', 'contract_end',
-        'basic_salary', 'bank_name', 'bank_account', 'biometric_user_id', 'status', 'notes',
-        'created_by', 'updated_by',
+        'basic_salary', 'bank_name', 'bank_account', 'emergency_contact_name', 'emergency_contact_phone',
+        'biometric_user_id', 'status', 'notes', 'created_by', 'updated_by',
     ];
 
     protected $casts = [

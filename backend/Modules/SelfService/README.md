@@ -1,7 +1,7 @@
 # وحدة SelfService (Epic 9)
 
 **الملكية (Owns):** لا تملك جداول — سطح الخدمة الذاتية للموظف تحت `/api/me`.
-**تُتيح (Exposes):** MyDashboardService
+**تُتيح (Exposes):** MyDashboardService, MyPayslipService
 
 > المرجع: [docs/module-boundaries.md](../../../docs/module-boundaries.md) · Epic #46
 
@@ -25,11 +25,21 @@
 
 - صفر كتابة · صفر منطق جديد · صفر تسريب لموظف آخر.
 
+## My Payslips (#49) — `MyPayslipService`
+
+كشوف الموظف الذاتية — يعيد استخدام `PayslipService` (#37) بلا إعادة حساب:
+
+- قائمة/عرض كشوفي من مسيّرات **نهائية فقط** (approved/paid/locked) — لا مسوّدات.
+- **العزل:** كل كشف يُتحقَّق أنه يخصّ الموظف الحالي (`ownedItem`) — كشف موظف آخر → **403**.
+- تدقيق تصدير الكشف الذاتي: `payslip_self_exported`.
+
 ## نقاط النهاية
 
 | الطريقة | المسار | الحارس + الصلاحية |
 |---------|--------|-------------------|
 | GET | `/api/me/dashboard` | `auth.token` + `employee.linked` + `dashboard.view_own` |
+| GET | `/api/me/payslips` | `… + payslip.view_own` |
+| GET | `/api/me/payslips/{payroll_item}` (JSON) · `/html` (طباعة) | `… + payslip.view_own` |
 
 ## خارج النطاق الحالي
-Payslips/Attendance/Leave/Profile الذاتية (#49–#52). لا كتابة في أي وحدة. لا لوحة إدارة (تلك وحدة Dashboard المنفصلة، #18).
+Attendance/Leave/Profile الذاتية (#50–#52). لا كتابة في أي وحدة. لا لوحة إدارة (تلك وحدة Dashboard المنفصلة، #18).

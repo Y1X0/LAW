@@ -15,6 +15,19 @@ export function attendanceStatusLabel(status: string): string {
   return ATTENDANCE_STATUS[status] ?? status
 }
 
+const PAYROLL_STATUS: Record<string, string> = {
+  approved: 'معتمد',
+  paid: 'مدفوع',
+  locked: 'مقفل',
+  completed: 'مكتمل',
+}
+
+/** تسمية عربية لحالة المسير. */
+export function payrollStatusLabel(status: string | null): string {
+  if (!status) return '—'
+  return PAYROLL_STATUS[status] ?? status
+}
+
 /** دقائق → "Xس Yد" (أو "—" عند الصفر). */
 export function formatMinutes(minutes: number): string {
   if (!minutes) return '—'

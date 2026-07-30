@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import type { AttendanceToday, Dashboard, LastPayslip } from '../api/dashboard'
 import { useDashboard } from '../api/dashboard'
 import { ErrorState } from '../components/ui/states'
-import { DashboardCard, InfoRow, Stat } from '../features/dashboard/cards'
+import { InfoRow, SectionCard, Stat } from '../components/ui/section'
 import { DashboardSkeleton } from '../features/dashboard/DashboardSkeleton'
 import { attendanceStatusLabel, formatCurrency, formatMinutes, formatPeriod, formatTime } from '../lib/format'
 
@@ -27,20 +27,20 @@ export function DashboardPage() {
 
 function ProfileCard({ profile }: { profile: Dashboard['profile'] }) {
   return (
-    <DashboardCard title="بياناتي">
+    <SectionCard title="بياناتي">
       <InfoRow label="الاسم" value={profile.name} />
       <InfoRow label="الرقم الوظيفي" value={profile.employee_number} />
       <InfoRow label="المسمّى الوظيفي" value={profile.job_title} />
       <InfoRow label="الفرع" value={profile.branch} />
       <InfoRow label="القسم" value={profile.department} />
       <InfoRow label="المدير" value={profile.manager} />
-    </DashboardCard>
+    </SectionCard>
   )
 }
 
 function LeaveBalanceCard({ balance }: { balance: Dashboard['leave_balance'] }) {
   return (
-    <DashboardCard title={`رصيد الإجازات (${balance.year})`} action={<Link className="text-xs text-brand-600 hover:underline" to="/leave">التفاصيل</Link>}>
+    <SectionCard title={`رصيد الإجازات (${balance.year})`} action={<Link className="text-xs text-brand-600 hover:underline" to="/leave">التفاصيل</Link>}>
       <Stat label="أيام متبقّية" value={balance.total_remaining} hint="إجمالي كل الأنواع" />
       {balance.by_type.length > 0 ? (
         <div className="mt-3">
@@ -49,13 +49,13 @@ function LeaveBalanceCard({ balance }: { balance: Dashboard['leave_balance'] }) 
           ))}
         </div>
       ) : null}
-    </DashboardCard>
+    </SectionCard>
   )
 }
 
 function AttendanceTodayCard({ attendance }: { attendance: AttendanceToday }) {
   return (
-    <DashboardCard title="حضور اليوم" action={<Link className="text-xs text-brand-600 hover:underline" to="/attendance">السجلّ</Link>}>
+    <SectionCard title="حضور اليوم" action={<Link className="text-xs text-brand-600 hover:underline" to="/attendance">السجلّ</Link>}>
       {attendance === null ? (
         <p className="py-6 text-center text-sm text-slate-500">لم يُسجَّل حضور اليوم بعد.</p>
       ) : (
@@ -67,13 +67,13 @@ function AttendanceTodayCard({ attendance }: { attendance: AttendanceToday }) {
           <InfoRow label="الإضافي" value={formatMinutes(attendance.overtime_minutes)} />
         </>
       )}
-    </DashboardCard>
+    </SectionCard>
   )
 }
 
 function LastPayslipCard({ payslip }: { payslip: LastPayslip }) {
   return (
-    <DashboardCard title="آخر راتب" action={<Link className="text-xs text-brand-600 hover:underline" to="/payslips">كشوفي</Link>}>
+    <SectionCard title="آخر راتب" action={<Link className="text-xs text-brand-600 hover:underline" to="/payslips">كشوفي</Link>}>
       {payslip === null ? (
         <p className="py-6 text-center text-sm text-slate-500">لا يوجد راتب معتمد بعد.</p>
       ) : (
@@ -84,6 +84,6 @@ function LastPayslipCard({ payslip }: { payslip: LastPayslip }) {
           </div>
         </>
       )}
-    </DashboardCard>
+    </SectionCard>
   )
 }

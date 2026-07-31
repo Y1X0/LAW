@@ -12,9 +12,10 @@ import { PayslipDetailPage } from '@/employee/pages/PayslipDetailPage'
 import { PayslipsPage } from '@/employee/pages/PayslipsPage'
 import { ProfilePage } from '@/employee/pages/ProfilePage'
 import { CaseFilePage } from '@/lawyer/pages/CaseFilePage'
-import { ComingSoon } from '@/lawyer/pages/ComingSoon'
 import { LawyerDashboardPage } from '@/lawyer/pages/LawyerDashboardPage'
 import { MyCasesPage } from '@/lawyer/pages/MyCasesPage'
+import { TasksPage } from '@/lawyer/pages/TasksPage'
+import { WorklogPage } from '@/lawyer/pages/WorklogPage'
 
 /*
 | التوجيه بطبقات: مصادقة (ProtectedRoute) → كشف القدرة (CapabilitiesProvider) →
@@ -51,8 +52,8 @@ export const router = createBrowserRouter(
                     { path: 'home', element: <LawyerDashboardPage /> },
                     { path: 'cases', element: <MyCasesPage /> },
                     { path: 'cases/:id', element: <CaseFilePage /> },
-                    { path: 'tasks', element: <ComingSoon title="المهام" phase="LP-5" /> },
-                    { path: 'worklog', element: <ComingSoon title="الإنجازات اليومية" phase="LP-5" /> },
+                    { path: 'tasks', element: <TasksPage /> },
+                    { path: 'worklog', element: <WorklogPage /> },
                   ],
                 },
               ],

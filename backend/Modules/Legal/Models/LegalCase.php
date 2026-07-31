@@ -70,6 +70,11 @@ class LegalCase extends Model
         return $this->hasMany(CaseDocument::class, 'case_id');
     }
 
+    public function parties(): HasMany
+    {
+        return $this->hasMany(CaseParty::class, 'case_id');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

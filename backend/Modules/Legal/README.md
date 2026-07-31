@@ -38,5 +38,10 @@
 
 **Legal Core MVP مكتمل:** عملاء · قضايا (عزل) · إسناد · جلسات · خط زمني · مستندات · مهام · إنجاز يومي.
 
+## LG-2 — Case Parties + Automatic Timeline
+- **الأطراف** `case_parties`: `name` · `type` (plaintiff/defendant/witness/other) · `phone` · `notes` — مرتبطة بالقضية فقط (لا Client جديد). القراءة ترث القضية؛ الإضافة `cases.update`.
+  - `GET /api/cases/{case}/parties` · `POST /api/cases/{case}/parties`.
+- **أحداث Timeline تلقائية** بمفاتيح آلية (`event_type`) قابلة للترجمة/الفلترة: `case_created` · `lawyer_assigned` · `party_added` · `hearing_scheduled` · `hearing_postponed` · `case_closed` — مع بقاء الخط الزمني append-only.
+
 ## LG-1 — Lawyer Dashboard Aggregation (Legal Core+)
 - `GET /api/me/legal-summary` (employee.linked + `cases.view_own`) — تجميع ذاتي مُنطَّق على قضايا المحامي: `cases` (total/open/pending/closed) · `tasks.pending` · `next_hearing` · `recent_events` · `last_worklog`. نداء واحد لأول شاشة في واجهة المحامي.

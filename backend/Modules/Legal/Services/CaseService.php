@@ -15,6 +15,8 @@ class CaseService
 {
     use RecordsAudit;
 
+    public function __construct(private readonly TimelineService $timeline) {}
+
     public function create(array $data, Request $request): LegalCase
     {
         $data['created_by'] = $request->user()?->id;
@@ -26,6 +28,7 @@ class CaseService
         }
 
         $this->recordAudit($request, 'case_created', LegalCase::class, $case->id, ['internal_number' => $case->internal_number]);
+        $this->timeline->recordAuto($case, 'case_created', 'تم إنشاء القضية', $request);
 
         return $case;
     }
@@ -55,6 +58,7 @@ class CaseService
             'employee_id' => $employeeId,
             'role' => $role,
         ]);
+        $this->timeline->recordAuto($case, 'lawyer_assigned', 'تم إسناد محامٍ', $request, "employee_id={$employeeId}, role={$role}");
 
         return $assignment;
     }
@@ -74,6 +78,7 @@ class CaseService
     {
         $case->update(['status' => 'closed']);
         $this->recordAudit($request, 'case_closed', LegalCase::class, $case->id);
+        $this->timeline->recordAuto($case, 'case_closed', 'تم إغلاق القضية', $request);
 
         return $case;
     }

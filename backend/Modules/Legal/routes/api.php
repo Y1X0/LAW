@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Legal\Http\Controllers\CaseController;
+use Modules\Legal\Http\Controllers\CasePartyController;
 use Modules\Legal\Http\Controllers\ClientController;
 use Modules\Legal\Http\Controllers\DocumentController;
 use Modules\Legal\Http\Controllers\HearingController;
@@ -50,6 +51,13 @@ Route::middleware('auth.token')->group(function () {
 
     Route::middleware('permission:cases.close')
         ->post('cases/{case}/close', [CaseController::class, 'close'])->name('cases.close');
+
+    // ---- LG-2: أطراف القضية ----
+    // القراءة ترث عزل القضية؛ الإضافة تحت cases.update.
+    Route::middleware('permission:cases.view_own,cases.view_all')
+        ->get('cases/{case}/parties', [CasePartyController::class, 'index'])->name('cases.parties.index');
+    Route::middleware('permission:cases.update')
+        ->post('cases/{case}/parties', [CasePartyController::class, 'store'])->name('cases.parties.store');
 
     // ---- LC-3: الجلسات ----
     // القراءة ترث عزل القضية (view_own/view_all) — والتنطيق/الحارس داخل المتحكّم.

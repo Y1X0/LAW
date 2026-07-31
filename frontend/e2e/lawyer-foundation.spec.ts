@@ -62,11 +62,7 @@ test.describe('أساس بوابة المحامي', () => {
     await expect(page.getByRole('link', { name: 'الراتب' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'الملف الشخصي' })).toBeVisible()
     expect(await nav.count()).toBeGreaterThan(0)
-
-    // فتح «المهام» → مسار محامٍ محمي يعمل (شاشة أساس حتى LP-5)
-    await page.getByRole('link', { name: 'المهام' }).click()
-    await expect(page).toHaveURL(/\/tasks$/)
-    await expect(page.getByText(/قيد الإنشاء/)).toBeVisible()
+    // (التنقّل الفعلي إلى شاشات المحامي مغطّى في specs مخصّصة: القضايا/الإنجاز/المهام.)
   })
 
   test('المحامي يفتح خدمته الذاتية (الراتب) من نفس البوابة', async ({ page }) => {

@@ -46,6 +46,23 @@ class RbacSeeder extends Seeder
         'employee' => 'موظف',
     ];
 
+    /**
+     * صلاحيات دور «محامٍ» — المجال القانوني الذي تحتاجه بوابة المحامي (Lawyer Portal).
+     * يغطّي: اللوحة والقضايا بعزل view_own، وتبويبات ملف القضية (ترث عزل القضية)،
+     * والأرشيف، والمهام (عرض/إكمال)، والإنجاز اليومي (عرض/تسجيل).
+     * (لا يُغيّر نموذج الصلاحيات — يربط صلاحيات موجودة فقط.)
+     */
+    public const LAWYER_PERMISSIONS = [
+        'cases.view_own',
+        'hearings.view',
+        'documents.view',
+        'archive.view',
+        'tasks.view_own',
+        'tasks.complete',
+        'worklog.view_own',
+        'worklog.submit_own',
+    ];
+
     public function run(): void
     {
         foreach (self::PERMISSIONS as $name) {
@@ -62,5 +79,9 @@ class RbacSeeder extends Seeder
         // المدير العام يملك كل الصلاحيات.
         Role::where('name', 'admin')->first()
             ?->permissions()->sync(Permission::pluck('id'));
+
+        // دور «محامٍ» يملك صلاحيات بوابة المحامي (المجال القانوني).
+        Role::where('name', 'lawyer')->first()
+            ?->permissions()->sync(Permission::whereIn('name', self::LAWYER_PERMISSIONS)->pluck('id'));
     }
 }

@@ -32,4 +32,21 @@ class RbacSeederTest extends TestCase
         $this->assertSame(count(RbacSeeder::PERMISSIONS), Permission::count());
         $this->assertSame(count(RbacSeeder::SYSTEM_ROLES), Role::count());
     }
+
+    public function test_seeder_grants_lawyer_role_its_portal_permissions(): void
+    {
+        $this->seed(RbacSeeder::class);
+
+        $lawyer = Role::where('name', 'lawyer')->first();
+        $this->assertNotNull($lawyer);
+
+        $names = $lawyer->permissions()->pluck('name')->all();
+        $this->assertSame(count(RbacSeeder::LAWYER_PERMISSIONS), count($names));
+        foreach (RbacSeeder::LAWYER_PERMISSIONS as $permission) {
+            $this->assertContains($permission, $names);
+        }
+        // لا صلاحيات إدارية مسرّبة للدور.
+        $this->assertNotContains('users.manage', $names);
+        $this->assertNotContains('cases.delete', $names);
+    }
 }

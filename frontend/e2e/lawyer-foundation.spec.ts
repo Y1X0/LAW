@@ -1,13 +1,20 @@
 import { expect, test, type Page } from '@playwright/test'
 import { mockApi } from './support/mock-api'
 
-/** ملخّص قانوني بسيط ليكتشفه الـ probe كمحامٍ (يكفي أن تكون data غير فارغة). */
+/** ملخّص قانوني للمحامي (يكتشفه الـ probe ويغذّي لوحة LP-2). */
 const LEGAL_SUMMARY = {
   cases: { total: 4, open: 3, pending: 1, closed: 0 },
   tasks: { pending: 2 },
-  next_hearing: null,
-  recent_events: [],
-  last_worklog: null,
+  next_hearing: {
+    id: 9,
+    scheduled_at: '2026-08-05T09:30:00Z',
+    type: 'مرافعة',
+    status: 'scheduled',
+    location: 'قاعة 3',
+    case: { id: 100, internal_number: 'C-100', title: 'نزاع عقد إيجار' },
+  },
+  recent_events: [{ id: 1, case_id: 100, title: 'إيداع لائحة الدعوى', event_date: '2026-07-20' }],
+  last_worklog: { id: 5, work_date: '2026-07-30', done_today: 'مراجعة مذكرة الرد' },
 }
 
 function asLawyer(page: Page) {
@@ -39,6 +46,14 @@ test.describe('أساس بوابة المحامي', () => {
     // «/» وُجّه إلى رئيسية المحامي (لا لوحة الموظف)
     await expect(page).toHaveURL(/\/home$/)
     await expect(page.getByRole('heading', { name: 'الرئيسية' })).toBeVisible()
+
+    // لوحة LP-2: البطاقات بقيمها + أقرب جلسة + الإنجاز
+    await expect(page.getByText('إجمالي القضايا')).toBeVisible()
+    await expect(page.getByText('المهام المعلّقة')).toBeVisible()
+    await expect(page.getByText('C-100')).toBeVisible()
+    await expect(page.getByText('نزاع عقد إيجار')).toBeVisible()
+    await expect(page.getByText('إيداع لائحة الدعوى')).toBeVisible()
+    await expect(page.getByText('مراجعة مذكرة الرد')).toBeVisible()
 
     // التنقّل الموحّد: قانوني + خدمة ذاتية
     const nav = page.getByRole('link')

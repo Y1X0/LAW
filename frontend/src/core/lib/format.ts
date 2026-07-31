@@ -67,3 +67,26 @@ export function formatTime(iso: string | null): string {
   if (Number.isNaN(d.getTime())) return '—'
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
+
+/**
+ * تاريخ "YYYY/MM/DD" أو "—". يتعامل مع تاريخ فقط (YYYY-MM-DD) بلا انزياح منطقة
+ * زمنية (يقرأ من النص مباشرة)، ومع ISO كامل يأخذ جزء التاريخ.
+ */
+export function formatDate(value: string | null): string {
+  if (!value) return '—'
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value)
+  if (m) return `${m[1]}/${m[2]}/${m[3]}`
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return '—'
+  const y = d.getFullYear()
+  return `${y}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** تاريخ ووقت من ISO ("YYYY/MM/DD HH:MM" بالتوقيت المحلي) أو "—". */
+export function formatDateTime(iso: string | null): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  const date = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`
+  return `${date} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}

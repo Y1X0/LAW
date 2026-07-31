@@ -49,4 +49,21 @@ class RbacSeederTest extends TestCase
         $this->assertNotContains('users.manage', $names);
         $this->assertNotContains('cases.delete', $names);
     }
+
+    public function test_seeder_grants_employee_role_self_service_permissions(): void
+    {
+        $this->seed(RbacSeeder::class);
+
+        $employee = Role::where('name', 'employee')->first();
+        $this->assertNotNull($employee);
+
+        $names = $employee->permissions()->pluck('name')->all();
+        $this->assertSame(count(RbacSeeder::EMPLOYEE_PERMISSIONS), count($names));
+        foreach (RbacSeeder::EMPLOYEE_PERMISSIONS as $permission) {
+            $this->assertContains($permission, $names);
+        }
+        // خدمة ذاتية فقط — لا صلاحيات قانونية/إدارية مسرّبة.
+        $this->assertNotContains('cases.view_own', $names);
+        $this->assertNotContains('users.manage', $names);
+    }
 }

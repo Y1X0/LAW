@@ -63,6 +63,19 @@ class RbacSeeder extends Seeder
         'worklog.submit_own',
     ];
 
+    /**
+     * صلاحيات دور «موظف» — الخدمة الذاتية (docs/05). أي موظف (ومنه المحامي حين
+     * يُسنَد الدورين) يرى لوحته وحضوره وإجازاته وكشوفه ويحدّث ملفه — بياناته وحده.
+     */
+    public const EMPLOYEE_PERMISSIONS = [
+        'dashboard.view_own',
+        'attendance.view_own',
+        'leave.view_own',
+        'leave.request_own',
+        'payslip.view_own',
+        'profile.update_own',
+    ];
+
     public function run(): void
     {
         foreach (self::PERMISSIONS as $name) {
@@ -83,5 +96,9 @@ class RbacSeeder extends Seeder
         // دور «محامٍ» يملك صلاحيات بوابة المحامي (المجال القانوني).
         Role::where('name', 'lawyer')->first()
             ?->permissions()->sync(Permission::whereIn('name', self::LAWYER_PERMISSIONS)->pluck('id'));
+
+        // دور «موظف» يملك صلاحيات الخدمة الذاتية.
+        Role::where('name', 'employee')->first()
+            ?->permissions()->sync(Permission::whereIn('name', self::EMPLOYEE_PERMISSIONS)->pluck('id'));
     }
 }

@@ -3,10 +3,12 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Legal\Http\Controllers\CaseController;
 use Modules\Legal\Http\Controllers\ClientController;
+use Modules\Legal\Http\Controllers\HearingController;
 
 /*
 | مسارات وحدة Legal — تُحمّل تلقائياً تحت /api عبر ModuleServiceProvider.
-| LC-1: العملاء (clients.*) · LC-2: القضايا + الإسناد (cases.*) بعزل view_own.
+| LC-1: العملاء (clients.*) · LC-2: القضايا + الإسناد (cases.*) بعزل view_own
+| · LC-3: الجلسات (hearings) — الرؤية ترث القضية، الكتابة hearings.manage.
 */
 Route::middleware('auth.token')->group(function () {
     // ---- LC-1: العملاء ----
@@ -43,4 +45,19 @@ Route::middleware('auth.token')->group(function () {
 
     Route::middleware('permission:cases.close')
         ->post('cases/{case}/close', [CaseController::class, 'close'])->name('cases.close');
+
+    // ---- LC-3: الجلسات ----
+    // القراءة ترث عزل القضية (view_own/view_all) — والتنطيق/الحارس داخل المتحكّم.
+    Route::middleware('permission:cases.view_own,cases.view_all')->group(function () {
+        Route::get('hearings', [HearingController::class, 'index'])->name('hearings.index');
+        Route::get('cases/{case}/hearings', [HearingController::class, 'caseIndex'])->name('cases.hearings.index');
+        Route::get('hearings/{hearing}', [HearingController::class, 'show'])->name('hearings.show');
+    });
+
+    Route::middleware('permission:hearings.manage')->group(function () {
+        Route::post('cases/{case}/hearings', [HearingController::class, 'store'])->name('hearings.store');
+        Route::put('hearings/{hearing}', [HearingController::class, 'update'])->name('hearings.update');
+        Route::post('hearings/{hearing}/postpone', [HearingController::class, 'postpone'])->name('hearings.postpone');
+        Route::post('hearings/{hearing}/cancel', [HearingController::class, 'cancel'])->name('hearings.cancel');
+    });
 });

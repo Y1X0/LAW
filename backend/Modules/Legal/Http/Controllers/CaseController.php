@@ -2,10 +2,10 @@
 
 namespace Modules\Legal\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\HR\Models\Employee;
+use Modules\Legal\Concerns\AuthorizesCaseAccess;
 use Modules\Legal\Http\Requests\AssignLawyerRequest;
 use Modules\Legal\Http\Requests\StoreCaseRequest;
 use Modules\Legal\Http\Requests\UpdateCaseRequest;
@@ -20,6 +20,8 @@ use Modules\Legal\Services\CaseService;
  */
 class CaseController
 {
+    use AuthorizesCaseAccess;
+
     public function __construct(private readonly CaseService $service) {}
 
     /** GET /api/cases — قائمة مُنطَّقة (own/all) مع تصفية وبحث وترقيم. */
@@ -31,7 +33,7 @@ class CaseController
         if (! $user->hasPermission('cases.view_all')) {
             $employee = $user->employee;
             if ($employee === null) {
-                return $this->forbidden('NO_LINKED_EMPLOYEE');
+                return $this->caseForbidden('NO_LINKED_EMPLOYEE');
             }
             $query->whereHas('assignments', fn ($a) => $a->where('employee_id', $employee->id));
         }
@@ -68,7 +70,7 @@ class CaseController
     /** GET /api/cases/{case} — 403 إن لم تكن القضية مسندة للمحامي (بلا view_all). */
     public function show(Request $request, LegalCase $case): JsonResponse
     {
-        if ($denied = $this->guardView($request->user(), $case)) {
+        if ($denied = $this->guardCaseView($request->user(), $case)) {
             return $denied;
         }
 
@@ -114,25 +116,6 @@ class CaseController
         $case = $this->service->close($case, $request);
 
         return $this->ok($case);
-    }
-
-    /** يتحقّق من صلاحية رؤية قضية بعينها؛ يعيد ردّ 403 موحّداً عند المنع، أو null عند السماح. */
-    private function guardView(User $user, LegalCase $case): ?JsonResponse
-    {
-        if ($user->hasPermission('cases.view_all')) {
-            return null;
-        }
-        $employee = $user->employee;
-        if ($employee === null) {
-            return $this->forbidden('NO_LINKED_EMPLOYEE');
-        }
-
-        return $case->isAssignedTo($employee->id) ? null : $this->forbidden('FORBIDDEN');
-    }
-
-    private function forbidden(string $code): JsonResponse
-    {
-        return response()->json(['data' => null, 'meta' => null, 'errors' => ['code' => $code]], 403);
     }
 
     private function ok($data, int $status = 200): JsonResponse

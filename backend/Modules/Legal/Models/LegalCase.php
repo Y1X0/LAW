@@ -55,6 +55,11 @@ class LegalCase extends Model
         return $this->hasMany(CaseAssignment::class, 'case_id');
     }
 
+    public function hearings(): HasMany
+    {
+        return $this->hasMany(Hearing::class, 'case_id');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

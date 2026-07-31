@@ -16,12 +16,15 @@ class HearingService
 {
     use RecordsAudit;
 
+    public function __construct(private readonly TimelineService $timeline) {}
+
     public function create(LegalCase $case, array $data, Request $request): Hearing
     {
         $data['case_id'] = $case->id;
         $data['created_by'] = $request->user()?->id;
         $hearing = Hearing::create($data);
         $this->recordAudit($request, 'hearing_created', Hearing::class, $hearing->id, ['case_id' => $case->id]);
+        $this->timeline->recordAuto($case, 'hearing_scheduled', 'تمت إضافة جلسة', $request, 'scheduled_at='.$hearing->scheduled_at);
 
         return $hearing;
     }
@@ -63,6 +66,7 @@ class HearingService
             'new_hearing_id' => $new->id,
             'scheduled_at' => $newDate,
         ]);
+        $this->timeline->recordAuto($hearing->case, 'hearing_postponed', 'تم تأجيل جلسة', $request, "new_date={$newDate}");
 
         return [$hearing, $new];
     }

@@ -27,4 +27,20 @@ class TimelineService
 
         return $event;
     }
+
+    /**
+     * تسجيل حدث تلقائي بمفتاح آلي (event_type) — يُستدعى من إجراءات المجال
+     * (إنشاء/إسناد/جلسة/تأجيل/إغلاق/إضافة طرف). التدقيق يتكفّل به الإجراء الأصلي.
+     */
+    public function recordAuto(LegalCase $case, string $eventType, string $title, Request $request, ?string $description = null): CaseTimelineEvent
+    {
+        return CaseTimelineEvent::create([
+            'case_id' => $case->id,
+            'title' => $title,
+            'event_type' => $eventType,
+            'event_date' => now()->toDateString(),
+            'description' => $description,
+            'created_by' => $request->user()?->id,
+        ]);
+    }
 }

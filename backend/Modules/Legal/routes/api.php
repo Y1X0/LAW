@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Legal\Http\Controllers\ArchiveController;
 use Modules\Legal\Http\Controllers\CaseController;
 use Modules\Legal\Http\Controllers\CasePartyController;
 use Modules\Legal\Http\Controllers\ClientController;
@@ -120,4 +121,15 @@ Route::middleware('auth.token')->group(function () {
     // ---- LG-1: لوحة المحامي (تجميع ذاتي) ----
     Route::middleware(['employee.linked', 'permission:cases.view_own'])
         ->get('me/legal-summary', [LawyerDashboardController::class, 'summary'])->name('me.legal-summary');
+
+    // ---- LG-3: فهرسة الأرشيف الورقي (عدّة مواقع لكل قضية) ----
+    // صلاحيات أرشيف مستقلة + العزل يرث القضية.
+    Route::middleware('permission:archive.view')
+        ->get('cases/{case}/archive-locations', [ArchiveController::class, 'index'])->name('cases.archive.index');
+    Route::middleware('permission:archive.create')
+        ->post('cases/{case}/archive-locations', [ArchiveController::class, 'store'])->name('cases.archive.store');
+    Route::middleware('permission:archive.update')
+        ->put('archive-locations/{location}', [ArchiveController::class, 'update'])->name('archive.update');
+    Route::middleware('permission:archive.delete')
+        ->delete('archive-locations/{location}', [ArchiveController::class, 'destroy'])->name('archive.destroy');
 });

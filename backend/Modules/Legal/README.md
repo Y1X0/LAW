@@ -38,6 +38,11 @@
 
 **Legal Core MVP مكتمل:** عملاء · قضايا (عزل) · إسناد · جلسات · خط زمني · مستندات · مهام · إنجاز يومي.
 
+## LG-3 — Physical Archive Index
+- `case_archive_locations`: **عدّة مواقع لكل قضية** — `file_title` · `archive_room` · `cabinet` · `shelf` · `drawer` · `file_number` · `notes`. **فهرسة فقط، بلا رفع ملفات.**
+- صلاحيات مستقلة: `archive.view`/`create`/`update`/`delete` + العزل يرث القضية (الحارس المشترك).
+- `GET/POST /api/cases/{case}/archive-locations` · `PUT/DELETE /api/archive-locations/{id}`.
+
 ## LG-2 — Case Parties + Automatic Timeline
 - **الأطراف** `case_parties`: `name` · `type` (plaintiff/defendant/witness/other) · `phone` · `notes` — مرتبطة بالقضية فقط (لا Client جديد). القراءة ترث القضية؛ الإضافة `cases.update`.
   - `GET /api/cases/{case}/parties` · `POST /api/cases/{case}/parties`.

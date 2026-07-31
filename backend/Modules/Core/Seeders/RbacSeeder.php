@@ -30,6 +30,7 @@ class RbacSeeder extends Seeder
         'tasks.view_own', 'tasks.view_all', 'tasks.create', 'tasks.assign', 'tasks.complete',
         'worklog.view_own', 'worklog.submit_own', 'worklog.view_all',
         'documents.view', 'documents.upload', 'documents.view_confidential', 'documents.delete',
+        'archive.view', 'archive.create', 'archive.update', 'archive.delete',
         'users.manage', 'roles.manage', 'settings.manage', 'audit.view', 'backup.manage',
         'reports.hr', 'reports.finance', 'reports.cases', 'reports.marketing',
     ];

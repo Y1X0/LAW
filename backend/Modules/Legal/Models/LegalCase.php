@@ -75,6 +75,11 @@ class LegalCase extends Model
         return $this->hasMany(CaseParty::class, 'case_id');
     }
 
+    public function archiveLocations(): HasMany
+    {
+        return $this->hasMany(CaseArchiveLocation::class, 'case_id');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

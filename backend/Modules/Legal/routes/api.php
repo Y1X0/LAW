@@ -5,6 +5,7 @@ use Modules\Legal\Http\Controllers\CaseController;
 use Modules\Legal\Http\Controllers\ClientController;
 use Modules\Legal\Http\Controllers\DocumentController;
 use Modules\Legal\Http\Controllers\HearingController;
+use Modules\Legal\Http\Controllers\LawyerDashboardController;
 use Modules\Legal\Http\Controllers\TaskController;
 use Modules\Legal\Http\Controllers\TimelineController;
 use Modules\Legal\Http\Controllers\WorklogController;
@@ -107,4 +108,8 @@ Route::middleware('auth.token')->group(function () {
     // اطّلاع الإدارة على كل السجلات.
     Route::middleware('permission:worklog.view_all')
         ->get('worklog', [WorklogController::class, 'index'])->name('worklog.index');
+
+    // ---- LG-1: لوحة المحامي (تجميع ذاتي) ----
+    Route::middleware(['employee.linked', 'permission:cases.view_own'])
+        ->get('me/legal-summary', [LawyerDashboardController::class, 'summary'])->name('me.legal-summary');
 });

@@ -37,3 +37,6 @@
   - `GET /api/me/worklog` · `POST /api/me/worklog` (employee.linked) · `GET /api/worklog` (إدارة).
 
 **Legal Core MVP مكتمل:** عملاء · قضايا (عزل) · إسناد · جلسات · خط زمني · مستندات · مهام · إنجاز يومي.
+
+## LG-1 — Lawyer Dashboard Aggregation (Legal Core+)
+- `GET /api/me/legal-summary` (employee.linked + `cases.view_own`) — تجميع ذاتي مُنطَّق على قضايا المحامي: `cases` (total/open/pending/closed) · `tasks.pending` · `next_hearing` · `recent_events` · `last_worklog`. نداء واحد لأول شاشة في واجهة المحامي.

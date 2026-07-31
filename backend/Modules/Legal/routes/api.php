@@ -3,12 +3,15 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Legal\Http\Controllers\CaseController;
 use Modules\Legal\Http\Controllers\ClientController;
+use Modules\Legal\Http\Controllers\DocumentController;
 use Modules\Legal\Http\Controllers\HearingController;
+use Modules\Legal\Http\Controllers\TimelineController;
 
 /*
 | مسارات وحدة Legal — تُحمّل تلقائياً تحت /api عبر ModuleServiceProvider.
 | LC-1: العملاء (clients.*) · LC-2: القضايا + الإسناد (cases.*) بعزل view_own
-| · LC-3: الجلسات (hearings) — الرؤية ترث القضية، الكتابة hearings.manage.
+| · LC-3: الجلسات (hearings) · LC-4: الخط الزمني (append-only) + المستندات (metadata).
+| القراءة في LC-3/LC-4 ترث عزل القضية؛ الكتابة بصلاحياتها.
 */
 Route::middleware('auth.token')->group(function () {
     // ---- LC-1: العملاء ----
@@ -60,4 +63,21 @@ Route::middleware('auth.token')->group(function () {
         Route::post('hearings/{hearing}/postpone', [HearingController::class, 'postpone'])->name('hearings.postpone');
         Route::post('hearings/{hearing}/cancel', [HearingController::class, 'cancel'])->name('hearings.cancel');
     });
+
+    // ---- LC-4: الخط الزمني (Append-Only) + المستندات (Metadata) ----
+    // القراءة ترث عزل القضية (view_own/view_all) — والحارس داخل المتحكّم.
+    Route::middleware('permission:cases.view_own,cases.view_all')->group(function () {
+        Route::get('cases/{case}/timeline', [TimelineController::class, 'index'])->name('cases.timeline.index');
+        Route::get('cases/{case}/documents', [DocumentController::class, 'index'])->name('cases.documents.index');
+    });
+
+    // الخط الزمني: إضافة فقط (لا PUT/DELETE) — تحت cases.update.
+    Route::middleware('permission:cases.update')
+        ->post('cases/{case}/timeline', [TimelineController::class, 'store'])->name('cases.timeline.store');
+
+    // المستندات: إضافة (documents.upload) وحذف (documents.delete).
+    Route::middleware('permission:documents.upload')
+        ->post('cases/{case}/documents', [DocumentController::class, 'store'])->name('cases.documents.store');
+    Route::middleware('permission:documents.delete')
+        ->delete('documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 });

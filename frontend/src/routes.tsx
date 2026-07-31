@@ -11,6 +11,7 @@ import { LeavePage } from '@/employee/pages/LeavePage'
 import { PayslipDetailPage } from '@/employee/pages/PayslipDetailPage'
 import { PayslipsPage } from '@/employee/pages/PayslipsPage'
 import { ProfilePage } from '@/employee/pages/ProfilePage'
+import { CaseFilePage } from '@/lawyer/pages/CaseFilePage'
 import { ComingSoon } from '@/lawyer/pages/ComingSoon'
 import { LawyerDashboardPage } from '@/lawyer/pages/LawyerDashboardPage'
 import { MyCasesPage } from '@/lawyer/pages/MyCasesPage'
@@ -49,7 +50,7 @@ export const router = createBrowserRouter(
                   children: [
                     { path: 'home', element: <LawyerDashboardPage /> },
                     { path: 'cases', element: <MyCasesPage /> },
-                    { path: 'cases/:id', element: <ComingSoon title="ملف القضية" phase="LP-4" /> },
+                    { path: 'cases/:id', element: <CaseFilePage /> },
                     { path: 'tasks', element: <ComingSoon title="المهام" phase="LP-5" /> },
                     { path: 'worklog', element: <ComingSoon title="الإنجازات اليومية" phase="LP-5" /> },
                   ],

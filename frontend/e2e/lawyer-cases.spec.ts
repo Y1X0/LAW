@@ -41,9 +41,32 @@ function asLawyerWithCases(page: Page) {
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: LEGAL_SUMMARY, meta: null, errors: null }) }),
       'GET cases': (route) =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(CASES_PAGE) }),
+      'GET cases/7': (route) =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: CASE_DETAIL_7, meta: null, errors: null }) }),
+      'GET cases/7/parties': (route) =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: PARTIES_7, meta: null, errors: null }) }),
     },
   })
 }
+
+const CASE_DETAIL_7 = {
+  id: 7,
+  internal_number: 'C-100',
+  court_case_number: '2026/7',
+  title: 'نزاع عقد إيجار',
+  case_type: 'تجاري',
+  court_name: 'محكمة الرياض',
+  value: '50000.00',
+  status: 'open',
+  progress: 40,
+  opened_date: '2026-07-01',
+  description: 'تفاصيل النزاع',
+  client: { id: 1, name: 'شركة الأمل', phone: '0500000000', email: 'c@c.co' },
+  responsibleLawyer: { id: 9, full_name_ar: 'أحمد المصري' },
+  assignments: [{ id: 1, role: 'lead', employee: { id: 9, full_name_ar: 'أحمد المصري' } }],
+}
+
+const PARTIES_7 = [{ id: 1, name: 'خالد الشهري', type: 'plaintiff', phone: '0551112223', notes: null }]
 
 async function loginLawyer(page: Page) {
   await page.goto('/login')
@@ -53,9 +76,9 @@ async function loginLawyer(page: Page) {
   await expect(page).toHaveURL(/\/home$/)
 }
 
-/** قائمة قضايا المحامي (LP-3): عرض الصفوف + فتح ملف القضية (placeholder حتى LP-4). */
+/** قائمة قضايا المحامي (LP-3) + فتح ملف القضية بتبويباته (LP-4). */
 test.describe('قائمة قضايا المحامي', () => {
-  test('يفتح قضاياي → يرى الصفوف → يفتح قضية', async ({ page }) => {
+  test('يفتح قضاياي → يرى الصفوف → يفتح ملف القضية ويتنقّل بين تبويباته', async ({ page }) => {
     await asLawyerWithCases(page)
     await loginLawyer(page)
 
@@ -73,10 +96,19 @@ test.describe('قائمة قضايا المحامي', () => {
     await expect(page.getByLabel('بحث (رقم أو عنوان القضية)')).toBeVisible()
     await expect(page.getByLabel('الحالة')).toBeVisible()
 
-    // فتح ملف القضية → placeholder حتى LP-4
+    // فتح ملف القضية (LP-4) — رأس + نظرة عامة
     await page.getByRole('link', { name: 'C-100' }).click()
     await expect(page).toHaveURL(/\/cases\/7$/)
-    await expect(page.getByRole('heading', { name: 'ملف القضية' })).toBeVisible()
-    await expect(page.getByText(/قيد الإنشاء/)).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'نزاع عقد إيجار' })).toBeVisible()
+    await expect(page.getByText('رقم الملف: C-100')).toBeVisible()
+    await expect(page.getByText('محكمة الرياض')).toBeVisible()
+
+    // التنقّل إلى تبويب الأطراف
+    await page.getByRole('tab', { name: 'الأطراف' }).click()
+    await expect(page.getByText('خالد الشهري')).toBeVisible()
+
+    // تبويب المستندات (لا بيانات → حالة فارغة)
+    await page.getByRole('tab', { name: 'المستندات' }).click()
+    await expect(page.getByText(/لا توجد مستندات مفهرسة/)).toBeVisible()
   })
 })

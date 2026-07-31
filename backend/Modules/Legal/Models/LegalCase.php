@@ -60,6 +60,16 @@ class LegalCase extends Model
         return $this->hasMany(Hearing::class, 'case_id');
     }
 
+    public function timelineEvents(): HasMany
+    {
+        return $this->hasMany(CaseTimelineEvent::class, 'case_id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(CaseDocument::class, 'case_id');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

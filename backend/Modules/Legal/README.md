@@ -24,5 +24,11 @@
 - التأجيل (`POST /api/hearings/{id}/postpone`) يحفظ القديمة (`postponed` + `postponed_to` + `postponed_reason`) ويُنشئ جلسة `scheduled` جديدة.
 - لا يُعدَّل سجل جلسة `held`.
 
+## LC-4 — Timeline + Documents
+- **الخط الزمني** `case_timeline_events`: **Append-Only** (لا تعديل/حذف — يُفرَض بالنموذج + غياب مسارات التعديل). القراءة ترث القضية؛ الإضافة تحت `cases.update`.
+  - `GET /api/cases/{case}/timeline` · `POST /api/cases/{case}/timeline`.
+- **المستندات** `case_documents`: بيانات وصفية فقط (`document_type` · `storage_disk` · `storage_path` · `description` · `uploaded_by`) — بلا رفع فعلي. القراءة ترث القضية؛ `documents.upload` للإضافة، `documents.delete` للحذف.
+  - `GET /api/cases/{case}/documents` · `POST /api/cases/{case}/documents` · `DELETE /api/documents/{document}`.
+
 ## قادم (Epic #69)
-LC-4 الخط الزمني والمستندات · LC-5 المهام والإنجازات اليومية.
+LC-5 المهام والإنجازات اليومية.

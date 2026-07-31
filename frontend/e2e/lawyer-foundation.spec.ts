@@ -63,9 +63,9 @@ test.describe('أساس بوابة المحامي', () => {
     await expect(page.getByRole('link', { name: 'الملف الشخصي' })).toBeVisible()
     expect(await nav.count()).toBeGreaterThan(0)
 
-    // فتح «قضاياي» → مسار المحامي يعمل (شاشة أساس حتى LP-3)
-    await page.getByRole('link', { name: 'قضاياي' }).click()
-    await expect(page).toHaveURL(/\/cases$/)
+    // فتح «المهام» → مسار محامٍ محمي يعمل (شاشة أساس حتى LP-5)
+    await page.getByRole('link', { name: 'المهام' }).click()
+    await expect(page).toHaveURL(/\/tasks$/)
     await expect(page.getByText(/قيد الإنشاء/)).toBeVisible()
   })
 

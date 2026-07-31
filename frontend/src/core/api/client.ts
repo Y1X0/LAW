@@ -102,6 +102,14 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   return env.data as T
 }
 
+/** نداء يعيد الغلاف كاملاً `{data, meta, errors}` — يُستخدم عند الحاجة إلى meta (الترقيم). */
+export async function apiRequestEnvelope<T>(path: string, options: RequestOptions = {}): Promise<ApiEnvelope<T>> {
+  const res = await requestWithRefresh(path, options)
+  const env = await parse<T>(res)
+  if (!res.ok) throw toError(res.status, env)
+  return env
+}
+
 /** نداء يعيد نصاً خاماً (مثل مستند HTML) بمصادقة — يرمي ApiError عند الفشل. */
 export async function apiText(path: string): Promise<string> {
   const res = await requestWithRefresh(path, { method: 'GET', headers: { Accept: 'text/html' } })
@@ -113,6 +121,8 @@ export async function apiText(path: string): Promise<string> {
 
 export const api = {
   get: <T>(path: string) => apiRequest<T>(path, { method: 'GET' }),
+  /** GET يعيد الغلاف كاملاً (data + meta) — للقوائم المرقّمة. */
+  getPage: <T>(path: string) => apiRequestEnvelope<T>(path, { method: 'GET' }),
   post: <T>(path: string, body?: unknown) => apiRequest<T>(path, { method: 'POST', body }),
   patch: <T>(path: string, body?: unknown) => apiRequest<T>(path, { method: 'PATCH', body }),
   text: (path: string) => apiText(path),

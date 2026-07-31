@@ -12,7 +12,7 @@ import { PayslipDetailPage } from '@/employee/pages/PayslipDetailPage'
 import { PayslipsPage } from '@/employee/pages/PayslipsPage'
 import { ProfilePage } from '@/employee/pages/ProfilePage'
 import { ComingSoon } from '@/lawyer/pages/ComingSoon'
-import { LawyerHomePage } from '@/lawyer/pages/LawyerHomePage'
+import { LawyerDashboardPage } from '@/lawyer/pages/LawyerDashboardPage'
 
 /*
 | التوجيه بطبقات: مصادقة (ProtectedRoute) → كشف القدرة (CapabilitiesProvider) →
@@ -46,7 +46,7 @@ export const router = createBrowserRouter(
                 {
                   element: <RequireLawyer />,
                   children: [
-                    { path: 'home', element: <LawyerHomePage /> },
+                    { path: 'home', element: <LawyerDashboardPage /> },
                     { path: 'cases', element: <ComingSoon title="قضاياي" phase="LP-3" /> },
                     { path: 'tasks', element: <ComingSoon title="المهام" phase="LP-5" /> },
                     { path: 'worklog', element: <ComingSoon title="الإنجازات اليومية" phase="LP-5" /> },

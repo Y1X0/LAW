@@ -5,13 +5,14 @@ use Modules\Legal\Http\Controllers\CaseController;
 use Modules\Legal\Http\Controllers\ClientController;
 use Modules\Legal\Http\Controllers\DocumentController;
 use Modules\Legal\Http\Controllers\HearingController;
+use Modules\Legal\Http\Controllers\TaskController;
 use Modules\Legal\Http\Controllers\TimelineController;
+use Modules\Legal\Http\Controllers\WorklogController;
 
 /*
 | مسارات وحدة Legal — تُحمّل تلقائياً تحت /api عبر ModuleServiceProvider.
-| LC-1: العملاء (clients.*) · LC-2: القضايا + الإسناد (cases.*) بعزل view_own
-| · LC-3: الجلسات (hearings) · LC-4: الخط الزمني (append-only) + المستندات (metadata).
-| القراءة في LC-3/LC-4 ترث عزل القضية؛ الكتابة بصلاحياتها.
+| LC-1: العملاء · LC-2: القضايا + الإسناد (عزل view_own) · LC-3: الجلسات
+| · LC-4: الخط الزمني (append-only) + المستندات · LC-5: المهام + الإنجاز اليومي.
 */
 Route::middleware('auth.token')->group(function () {
     // ---- LC-1: العملاء ----
@@ -80,4 +81,30 @@ Route::middleware('auth.token')->group(function () {
         ->post('cases/{case}/documents', [DocumentController::class, 'store'])->name('cases.documents.store');
     Route::middleware('permission:documents.delete')
         ->delete('documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
+
+    // ---- LC-5: المهام (عزل بالإسناد) ----
+    Route::middleware('permission:tasks.view_own,tasks.view_all')->group(function () {
+        Route::get('tasks', [TaskController::class, 'index'])->name('tasks.index');
+        Route::get('tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+    });
+    Route::middleware('permission:tasks.create')->group(function () {
+        Route::post('tasks', [TaskController::class, 'store'])->name('tasks.store');
+        Route::put('tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+    });
+    Route::middleware('permission:tasks.assign')
+        ->patch('tasks/{task}/assign', [TaskController::class, 'assign'])->name('tasks.assign');
+    Route::middleware('permission:tasks.complete')
+        ->patch('tasks/{task}/complete', [TaskController::class, 'complete'])->name('tasks.complete');
+
+    // ---- LC-5: الإنجاز اليومي ----
+    // ذاتي: يتطلّب ربطاً بموظف (employee.linked).
+    Route::middleware('employee.linked')->group(function () {
+        Route::middleware('permission:worklog.view_own')
+            ->get('me/worklog', [WorklogController::class, 'mine'])->name('me.worklog.index');
+        Route::middleware('permission:worklog.submit_own')
+            ->post('me/worklog', [WorklogController::class, 'submit'])->name('me.worklog.submit');
+    });
+    // اطّلاع الإدارة على كل السجلات.
+    Route::middleware('permission:worklog.view_all')
+        ->get('worklog', [WorklogController::class, 'index'])->name('worklog.index');
 });

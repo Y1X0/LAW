@@ -30,5 +30,10 @@
 - **المستندات** `case_documents`: بيانات وصفية فقط (`document_type` · `storage_disk` · `storage_path` · `description` · `uploaded_by`) — بلا رفع فعلي. القراءة ترث القضية؛ `documents.upload` للإضافة، `documents.delete` للحذف.
   - `GET /api/cases/{case}/documents` · `POST /api/cases/{case}/documents` · `DELETE /api/documents/{document}`.
 
-## قادم (Epic #69)
-LC-5 المهام والإنجازات اليومية.
+## LC-5 — Tasks + Daily Worklog
+- **المهام** `case_tasks`: مسندة لموظف واحد (`assigned_to`) · `priority` · `due_date` · `status` (open/done) · `completed_at` · `case_id` اختياري. العزل بالإسناد: `tasks.view_own` / `tasks.view_all`؛ `tasks.create` · `tasks.assign` · `tasks.complete`.
+  - `GET /api/tasks` · `GET /api/tasks/{id}` · `POST /api/tasks` · `PUT /api/tasks/{id}` · `PATCH /api/tasks/{id}/assign` · `PATCH /api/tasks/{id}/complete`.
+- **الإنجاز اليومي** `daily_worklogs`: ذاتي (سجل واحد لكل يوم، يُكتب/يُحدَّث لليوم فقط). المحامي يرى سجله فقط؛ الإدارة `worklog.view_all`.
+  - `GET /api/me/worklog` · `POST /api/me/worklog` (employee.linked) · `GET /api/worklog` (إدارة).
+
+**Legal Core MVP مكتمل:** عملاء · قضايا (عزل) · إسناد · جلسات · خط زمني · مستندات · مهام · إنجاز يومي.

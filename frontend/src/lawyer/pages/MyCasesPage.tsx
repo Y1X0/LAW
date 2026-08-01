@@ -101,16 +101,21 @@ export function MyCasesPage() {
         </Card>
       ) : (
         <>
-          <Card className="overflow-x-auto p-0">
-            <table className="w-full min-w-[720px] text-right text-sm">
+          <Card className="lp-table-wrap p-0">
+            <table
+              className={`lp-table min-w-[720px] text-right text-sm transition-opacity ${
+                isFetching ? 'opacity-60' : ''
+              }`}
+              aria-busy={isFetching}
+            >
               <thead>
-                <tr className="border-b border-slate-200 text-xs text-slate-500">
-                  <th className="px-4 py-3 font-medium">رقم القضية</th>
-                  <th className="px-4 py-3 font-medium">العنوان</th>
-                  <th className="px-4 py-3 font-medium">العميل</th>
-                  <th className="px-4 py-3 font-medium">الحالة</th>
-                  <th className="px-4 py-3 font-medium">التقدّم</th>
-                  <th className="px-4 py-3 font-medium">تاريخ الفتح</th>
+                <tr className="text-xs">
+                  <th className="px-4 py-3 text-right">رقم القضية</th>
+                  <th className="px-4 py-3 text-right">العنوان</th>
+                  <th className="px-4 py-3 text-right">العميل</th>
+                  <th className="px-4 py-3 text-right">الحالة</th>
+                  <th className="px-4 py-3 text-right">التقدّم</th>
+                  <th className="px-4 py-3 text-right">تاريخ الفتح</th>
                 </tr>
               </thead>
               <tbody>
@@ -137,7 +142,7 @@ export function MyCasesPage() {
 
 function CaseRow({ c }: { c: CaseListItem }) {
   return (
-    <tr className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+    <tr className="border-b border-slate-100 last:border-0">
       <td className="px-4 py-3">
         <Link to={`/cases/${c.id}`} className="font-medium text-brand-700 hover:underline tabular-nums">
           {c.internal_number}

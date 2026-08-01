@@ -30,15 +30,15 @@ export function AsyncTab<T>({
   return <>{render(q.data)}</>
 }
 
-/** جدول بسيط RTL بعناوين — يُعاد استخدامه عبر التبويبات. */
+/** جدول RTL Premium بعناوين — رأس لاصق وتناوب/تحويم — يُعاد استخدامه عبر التبويبات. */
 export function DataTable({ head, children }: { head: string[]; children: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-      <table className="w-full min-w-[640px] text-right text-sm">
+    <div className="lp-table-wrap rounded-xl border border-slate-200 bg-white shadow-card">
+      <table className="lp-table min-w-[640px] text-right text-sm">
         <thead>
-          <tr className="border-b border-slate-200 text-xs text-slate-500">
+          <tr className="text-xs">
             {head.map((h) => (
-              <th key={h} className="px-4 py-3 font-medium">
+              <th key={h} className="px-4 py-3 text-right">
                 {h}
               </th>
             ))}

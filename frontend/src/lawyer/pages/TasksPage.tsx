@@ -91,15 +91,20 @@ export function TasksPage() {
         </Card>
       ) : (
         <>
-          <Card className="overflow-x-auto p-0">
-            <table className="w-full min-w-[720px] text-right text-sm">
+          <Card className="lp-table-wrap p-0">
+            <table
+              className={`lp-table min-w-[720px] text-right text-sm transition-opacity ${
+                query.isFetching ? 'opacity-60' : ''
+              }`}
+              aria-busy={query.isFetching}
+            >
               <thead>
-                <tr className="border-b border-slate-200 text-xs text-slate-500">
-                  <th className="px-4 py-3 font-medium">المهمة</th>
-                  <th className="px-4 py-3 font-medium">القضية</th>
-                  <th className="px-4 py-3 font-medium">الأولوية</th>
-                  <th className="px-4 py-3 font-medium">الاستحقاق</th>
-                  <th className="px-4 py-3 font-medium">{tab === 'open' ? 'إجراء' : 'أُنجزت في'}</th>
+                <tr className="text-xs">
+                  <th className="px-4 py-3 text-right">المهمة</th>
+                  <th className="px-4 py-3 text-right">القضية</th>
+                  <th className="px-4 py-3 text-right">الأولوية</th>
+                  <th className="px-4 py-3 text-right">الاستحقاق</th>
+                  <th className="px-4 py-3 text-right">{tab === 'open' ? 'إجراء' : 'أُنجزت في'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -151,7 +156,7 @@ function TaskRow({
   onComplete: () => void
 }) {
   return (
-    <tr className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+    <tr className="border-b border-slate-100 last:border-0">
       <td className="px-4 py-3 font-medium text-slate-800">{t.title}</td>
       <td className="px-4 py-3">
         {t.case ? (

@@ -3,6 +3,7 @@
 namespace Modules\Payroll\Services;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\HR\Models\Employee;
 use Modules\Payroll\Models\EmployeeSalaryComponent;
@@ -52,13 +53,17 @@ class PayrollCalculationService
         }
         $employees = $query->get();
 
-        foreach ($employees as $employee) {
-            $this->calculateEmployee($run, $employee, $request);
-        }
+        // F6 (تكامل مالي): لفّ حساب كل الموظفين في معاملة واحدة — فشل موظف في منتصف
+        // المسير يتراجع بالكامل بدل ترك مسير محسوب جزئياً يبدو قابلاً للاعتماد.
+        DB::transaction(function () use ($employees, $run, $request) {
+            foreach ($employees as $employee) {
+                $this->calculateEmployee($run, $employee, $request);
+            }
 
-        $this->recordAudit($request, 'payroll_calculated', PayrollRun::class, $run->id, [
-            'payroll_period_id' => $run->payroll_period_id, 'employees' => $employees->count(),
-        ]);
+            $this->recordAudit($request, 'payroll_calculated', PayrollRun::class, $run->id, [
+                'payroll_period_id' => $run->payroll_period_id, 'employees' => $employees->count(),
+            ]);
+        });
 
         return $employees->count();
     }

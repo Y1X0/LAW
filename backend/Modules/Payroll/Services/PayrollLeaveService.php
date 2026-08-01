@@ -4,6 +4,7 @@ namespace Modules\Payroll\Services;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\HR\Models\Employee;
 use Modules\Leave\Models\LeaveRequest;
@@ -95,13 +96,16 @@ class PayrollLeaveService
         }
         $employees = $query->get();
 
-        foreach ($employees as $employee) {
-            $this->snapshotEmployee($run, $employee, $request);
-        }
+        // F6 (تكامل مالي): لقطة كل الموظفين في معاملة واحدة — فشل في المنتصف يتراجع بالكامل.
+        DB::transaction(function () use ($employees, $run, $request) {
+            foreach ($employees as $employee) {
+                $this->snapshotEmployee($run, $employee, $request);
+            }
 
-        $this->recordAudit($request, 'payroll_leave_snapshotted', PayrollRun::class, $run->id, [
-            'payroll_period_id' => $run->payroll_period_id, 'employees' => $employees->count(),
-        ]);
+            $this->recordAudit($request, 'payroll_leave_snapshotted', PayrollRun::class, $run->id, [
+                'payroll_period_id' => $run->payroll_period_id, 'employees' => $employees->count(),
+            ]);
+        });
 
         return $employees->count();
     }

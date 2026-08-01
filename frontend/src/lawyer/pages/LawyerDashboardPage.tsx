@@ -1,10 +1,26 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { Button, Card } from '@/core/ui/primitives'
-import { InfoRow, PageHeader, SectionCard, Stat } from '@/core/ui/section'
+import { InfoRow, PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
+import { Reveal } from '@/core/ui/Reveal'
+import { useCountUp } from '@/core/ui/useCountUp'
 import { formatDate, formatDateTime } from '@/core/lib/format'
 import { fetchLegalSummary, hearingStatusLabel } from '@/lawyer/api/dashboard'
+
+/** بطاقة إحصائية بعدّاد متحرّك + ظهور متدرّج + رفعة عند المرور + لمسة ذهبية علوية. */
+function StatCard({ value, label, delay }: { value: number; label: string; delay: number }) {
+  const n = useCountUp(value)
+  return (
+    <Reveal delay={delay} className="h-full">
+      <Card interactive className="relative h-full overflow-hidden">
+        <span className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-l from-transparent via-gold-400 to-transparent" />
+        <div className="text-[32px] font-extrabold leading-none tabular-nums text-brand-700">{n}</div>
+        <div className="mt-2 text-sm text-slate-500">{label}</div>
+      </Card>
+    </Reveal>
+  )
+}
 
 /**
  * لوحة المحامي (LP-2) — أول شاشة بيانات حقيقية.
@@ -44,24 +60,17 @@ function DashboardContent({ data }: { data: Awaited<ReturnType<typeof fetchLegal
         <Card className="text-center text-sm text-slate-500">لا توجد قضايا مسندة إليك بعد.</Card>
       ) : null}
 
-      {/* 1) البطاقات الرئيسية */}
+      {/* 1) البطاقات الرئيسية — عدّادات متحركة وظهور متدرّج */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Card>
-          <Stat label="إجمالي القضايا" value={cases.total} />
-        </Card>
-        <Card>
-          <Stat label="القضايا المفتوحة" value={cases.open} />
-        </Card>
-        <Card>
-          <Stat label="القضايا المعلّقة" value={cases.pending} />
-        </Card>
-        <Card>
-          <Stat label="المهام المعلّقة" value={tasks.pending} />
-        </Card>
+        <StatCard label="إجمالي القضايا" value={cases.total} delay={0} />
+        <StatCard label="القضايا المفتوحة" value={cases.open} delay={70} />
+        <StatCard label="القضايا المعلّقة" value={cases.pending} delay={140} />
+        <StatCard label="المهام المعلّقة" value={tasks.pending} delay={210} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* 2) قسم العمل القريب — أقرب جلسة قادمة */}
+        <Reveal delay={290} className="h-full">
         <SectionCard title="أقرب جلسة قادمة">
           {next_hearing ? (
             <div className="space-y-0.5">
@@ -79,8 +88,10 @@ function DashboardContent({ data }: { data: Awaited<ReturnType<typeof fetchLegal
             <EmptyState message="لا توجد جلسات قادمة." />
           )}
         </SectionCard>
+        </Reveal>
 
         {/* 4) الإنجاز اليومي */}
+        <Reveal delay={350} className="h-full">
         <SectionCard
           title="آخر إنجاز يومي"
           action={
@@ -103,23 +114,30 @@ function DashboardContent({ data }: { data: Awaited<ReturnType<typeof fetchLegal
             <EmptyState message="لم تسجّل إنجازاً بعد." />
           )}
         </SectionCard>
+        </Reveal>
       </div>
 
-      {/* 3) النشاط الأخير */}
-      <SectionCard title="النشاط الأخير">
-        {recent_events.length > 0 ? (
-          <ul className="divide-y divide-slate-100">
-            {recent_events.map((ev) => (
-              <li key={ev.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                <span className="text-slate-800">{ev.title}</span>
-                <span className="shrink-0 tabular-nums text-slate-500">{formatDate(ev.event_date)}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EmptyState message="لا يوجد نشاط حديث." />
-        )}
-      </SectionCard>
+      {/* 3) النشاط الأخير — ظهور متدرّج للعناصر */}
+      <Reveal delay={430}>
+        <SectionCard title="النشاط الأخير">
+          {recent_events.length > 0 ? (
+            <ul className="divide-y divide-slate-100">
+              {recent_events.map((ev, i) => (
+                <li
+                  key={ev.id}
+                  className="lp-reveal flex items-center justify-between gap-3 py-2.5 text-sm"
+                  style={{ animationDelay: `${480 + i * 70}ms` }}
+                >
+                  <span className="text-slate-800">{ev.title}</span>
+                  <span className="shrink-0 tabular-nums text-slate-500">{formatDate(ev.event_date)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState message="لا يوجد نشاط حديث." />
+          )}
+        </SectionCard>
+      </Reveal>
     </div>
   )
 }

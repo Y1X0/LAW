@@ -45,7 +45,7 @@ class UserController
             $query->where('status', $request->query('status'));
         }
 
-        $perPage = min((int) $request->query('per_page', 15), 100);
+        $perPage = max(1, min((int) $request->query('per_page', 15), 100));
         $page = $query->orderBy('name')->paginate($perPage);
 
         return response()->json([
@@ -109,8 +109,9 @@ class UserController
             'username' => ['sometimes', 'nullable', 'string', 'max:60', Rule::unique('users', 'username')->ignore($user->id)],
         ]);
 
+        $old = $user->only(array_keys($data)); // before-image للحقول المتغيّرة فقط
         $user->fill($data)->save();
-        $this->recordAudit($request, 'user_updated', User::class, $user->id, $data);
+        $this->recordAudit($request, 'user_updated', User::class, $user->id, $data, $old);
 
         return $this->ok($this->present($user->fresh(['roles', 'employee'])));
     }

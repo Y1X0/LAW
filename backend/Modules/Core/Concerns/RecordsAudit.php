@@ -16,12 +16,14 @@ trait RecordsAudit
         string $auditableType,
         int $auditableId,
         ?array $context = null,
+        ?array $old = null,
     ): void {
         AuditLog::create([
             'user_id' => $request->user()?->id,
             'action' => $action,
             'auditable_type' => $auditableType,
             'auditable_id' => $auditableId,
+            'old_values' => $old,
             'new_values' => $context,
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),

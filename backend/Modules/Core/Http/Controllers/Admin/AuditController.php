@@ -15,25 +15,33 @@ class AuditController
     /** GET /api/admin/audit — قائمة أحداث التدقيق مع فلترة وترقيم. */
     public function index(Request $request): JsonResponse
     {
+        $filters = $request->validate([
+            'action' => ['sometimes', 'string', 'max:80'],
+            'user_id' => ['sometimes', 'integer'],
+            'from' => ['sometimes', 'date'],
+            'to' => ['sometimes', 'date'],
+            'per_page' => ['sometimes', 'integer'],
+        ]);
+
         $query = AuditLog::query()->with('user:id,name')->latest('id');
 
-        if ($action = trim((string) $request->query('action'))) {
+        if ($action = trim((string) ($filters['action'] ?? ''))) {
             $query->where('action', 'like', "%{$action}%");
         }
 
-        if ($request->filled('user_id')) {
-            $query->where('user_id', (int) $request->query('user_id'));
+        if (isset($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
         }
 
-        if ($from = $request->query('from')) {
-            $query->whereDate('created_at', '>=', $from);
+        if (isset($filters['from'])) {
+            $query->whereDate('created_at', '>=', $filters['from']);
         }
 
-        if ($to = $request->query('to')) {
-            $query->whereDate('created_at', '<=', $to);
+        if (isset($filters['to'])) {
+            $query->whereDate('created_at', '<=', $filters['to']);
         }
 
-        $perPage = min((int) $request->query('per_page', 20), 100);
+        $perPage = max(1, min((int) ($filters['per_page'] ?? 20), 100));
         $page = $query->paginate($perPage);
 
         return response()->json([

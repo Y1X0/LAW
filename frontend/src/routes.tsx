@@ -2,9 +2,11 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { LoginPage } from '@/core/auth/LoginPage'
 import { ProtectedRoute } from '@/core/auth/ProtectedRoute'
 import { CapabilitiesProvider } from '@/core/capabilities/CapabilitiesProvider'
+import { RequireHr } from '@/core/capabilities/RequireHr'
 import { RequireLawyer } from '@/core/capabilities/RequireLawyer'
 import { IndexRedirect } from '@/core/layout/IndexRedirect'
 import { RoleLayout } from '@/core/layout/RoleLayout'
+import { HrHomePage } from '@/hr/pages/HrHomePage'
 import { AttendancePage } from '@/employee/pages/AttendancePage'
 import { DashboardPage } from '@/employee/pages/DashboardPage'
 import { LeavePage } from '@/employee/pages/LeavePage'
@@ -44,6 +46,12 @@ export const router = createBrowserRouter(
                 { path: 'attendance', element: <AttendancePage /> },
                 { path: 'leave', element: <LeavePage /> },
                 { path: 'profile', element: <ProfilePage /> },
+
+                // ---- إدارة الموارد البشرية (يملك employees.view) — HR-1: الأساس ----
+                {
+                  element: <RequireHr />,
+                  children: [{ path: 'hr', element: <HrHomePage /> }],
+                },
 
                 // ---- المجال القانوني (محامٍ فقط) — الشاشات تُبنى في LP-2..LP-5 ----
                 {

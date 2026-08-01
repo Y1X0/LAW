@@ -8,6 +8,7 @@ import { tokenStorage } from '@/core/auth/tokenStorage'
 import { RoleLayout } from '@/core/layout/RoleLayout'
 import { IndexRedirect } from '@/core/layout/IndexRedirect'
 import { CapabilitiesProvider } from './CapabilitiesProvider'
+import { RequireHr } from './RequireHr'
 import { RequireLawyer } from './RequireLawyer'
 
 const future = { v7_startTransition: true, v7_relativeSplatPath: true } as const
@@ -16,8 +17,8 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
-/** يوجّه fetch حسب المسار: مصادقة + كشف قدرة المحامي (200/403). */
-function stubFetch(isLawyer: boolean) {
+/** يوجّه fetch حسب المسار: مصادقة + كشفَا قدرة المحامي وإدارة HR (200/403). */
+function stubFetch({ isLawyer = false, isHr = false }: { isLawyer?: boolean; isHr?: boolean }) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
@@ -26,6 +27,9 @@ function stubFetch(isLawyer: boolean) {
       if (url.includes('auth/logout')) return json({ data: null })
       if (url.includes('me/legal-summary')) {
         return isLawyer ? json({ data: { cases: { total: 2 } } }) : json({ data: null, errors: { code: 'FORBIDDEN' } }, 403)
+      }
+      if (url.includes('employees')) {
+        return isHr ? json({ data: [], meta: { total: 0 } }) : json({ data: null, errors: { code: 'FORBIDDEN' } }, 403)
       }
       return json({ data: null })
     }),
@@ -47,6 +51,9 @@ function renderAppAt(route: string) {
                   <Route index element={<IndexRedirect />} />
                   <Route path="dashboard" element={<div>لوحة الموظف</div>} />
                   <Route path="leave" element={<div>إجازاتي</div>} />
+                  <Route element={<RequireHr />}>
+                    <Route path="hr" element={<div>محتوى لوحة HR</div>} />
+                  </Route>
                   <Route element={<RequireLawyer />}>
                     <Route path="home" element={<div>رئيسية المحامي</div>} />
                     <Route path="cases" element={<div>شاشة القضايا</div>} />
@@ -66,44 +73,71 @@ afterEach(() => {
   tokenStorage.clear()
 })
 
-describe('توجيه الدورين + الحماية', () => {
+describe('توجيه الأدوار الثلاثة + الحماية', () => {
   it('غير المصادق يُعاد إلى /login', async () => {
-    stubFetch(false) // لا توكن → لا نداءات فعلية
+    stubFetch({}) // لا توكن → لا نداءات فعلية
     renderAppAt('/')
     expect(await screen.findByText('شاشة الدخول')).toBeInTheDocument()
   })
 
   it('المحامي: «/» يوجّه إلى رئيسيته ويظهر تنقّل المحامي (قضاياي)', async () => {
     tokenStorage.set({ access_token: 't', refresh_token: 'r' })
-    stubFetch(true)
+    stubFetch({ isLawyer: true })
     renderAppAt('/')
     expect(await screen.findByText('رئيسية المحامي')).toBeInTheDocument()
-    // التنقّل الموحّد للمحامي يحوي «قضاياي» و«الإنجازات اليومية».
     expect(screen.getAllByText('قضاياي').length).toBeGreaterThan(0)
     expect(screen.getAllByText('الإنجازات اليومية').length).toBeGreaterThan(0)
+    // المحامي لا يرى بوابة الموارد البشرية.
+    expect(screen.queryByText('بوابة الموارد البشرية')).not.toBeInTheDocument()
   })
 
   it('الموظف العادي: «/» يوجّه إلى لوحته وتنقّله لا يحوي «قضاياي»', async () => {
     tokenStorage.set({ access_token: 't', refresh_token: 'r' })
-    stubFetch(false)
+    stubFetch({})
     renderAppAt('/')
     expect(await screen.findByText('لوحة الموظف')).toBeInTheDocument()
     expect(screen.getAllByText('لوحتي').length).toBeGreaterThan(0)
+    expect(screen.queryByText('قضاياي')).not.toBeInTheDocument()
+    expect(screen.queryByText('بوابة الموارد البشرية')).not.toBeInTheDocument()
+  })
+
+  it('مستخدم HR: «/» يوجّه إلى /hr ويظهر هيكل الموارد البشرية', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    stubFetch({ isHr: true })
+    renderAppAt('/')
+    expect(await screen.findByText('محتوى لوحة HR')).toBeInTheDocument()
+    // هيكل HR ظاهر (عنوان البوابة في الشعار) ولا يظهر تنقّل المحامي.
+    expect(screen.getAllByText('بوابة الموارد البشرية').length).toBeGreaterThan(0)
     expect(screen.queryByText('قضاياي')).not.toBeInTheDocument()
   })
 
   it('المحامي يصل إلى /cases', async () => {
     tokenStorage.set({ access_token: 't', refresh_token: 'r' })
-    stubFetch(true)
+    stubFetch({ isLawyer: true })
     renderAppAt('/cases')
     expect(await screen.findByText('شاشة القضايا')).toBeInTheDocument()
   })
 
   it('الموظف يُمنع من مسار المحامي /cases ويُعاد إلى لوحته', async () => {
     tokenStorage.set({ access_token: 't', refresh_token: 'r' })
-    stubFetch(false)
+    stubFetch({})
     renderAppAt('/cases')
     expect(await screen.findByText('لوحة الموظف')).toBeInTheDocument()
     expect(screen.queryByText('شاشة القضايا')).not.toBeInTheDocument()
+  })
+
+  it('غير الـ HR يُمنع من /hr ويُعاد إلى بوابته', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    stubFetch({}) // موظف عادي
+    renderAppAt('/hr')
+    expect(await screen.findByText('لوحة الموظف')).toBeInTheDocument()
+    expect(screen.queryByText('محتوى لوحة HR')).not.toBeInTheDocument()
+  })
+
+  it('مستخدم HR يصل إلى /hr', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    stubFetch({ isHr: true })
+    renderAppAt('/hr')
+    expect(await screen.findByText('محتوى لوحة HR')).toBeInTheDocument()
   })
 })

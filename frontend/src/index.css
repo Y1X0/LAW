@@ -231,6 +231,21 @@ body {
   animation: lp-dot-in var(--dur) var(--ease-out-soft) both;
 }
 
+/* توست — دخول ناعم (تلاشٍ + انزلاق للأعلى). */
+@keyframes lp-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.lp-toast {
+  animation: lp-toast-in var(--dur) var(--ease-out-soft) both;
+}
+
 /* احترام تفضيل تقليل الحركة. */
 @media (prefers-reduced-motion: reduce) {
   html {

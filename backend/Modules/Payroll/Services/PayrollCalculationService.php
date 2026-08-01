@@ -3,6 +3,7 @@
 namespace Modules\Payroll\Services;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\HR\Models\Employee;
@@ -53,11 +54,15 @@ class PayrollCalculationService
         }
         $employees = $query->get();
 
+        // PERF-1: تحميل مُسبق (Eager) لكل بيانات الموظفين دفعةً واحدة — يزيل الـ 4N+1
+        // استعلام دون أي تغيير في النتيجة (نفس البيانات ونفس الترتيب).
+        $context = $this->preloadContext($run, $employees);
+
         // F6 (تكامل مالي): لفّ حساب كل الموظفين في معاملة واحدة — فشل موظف في منتصف
         // المسير يتراجع بالكامل بدل ترك مسير محسوب جزئياً يبدو قابلاً للاعتماد.
-        DB::transaction(function () use ($employees, $run, $request) {
+        DB::transaction(function () use ($employees, $run, $request, $context) {
             foreach ($employees as $employee) {
-                $this->calculateEmployee($run, $employee, $request);
+                $this->calculateEmployee($run, $employee, $request, $context[$employee->id] ?? null);
             }
 
             $this->recordAudit($request, 'payroll_calculated', PayrollRun::class, $run->id, [
@@ -68,10 +73,17 @@ class PayrollCalculationService
         return $employees->count();
     }
 
-    /** حساب راتب موظف واحد ضمن مسير (idempotent لكل run+employee). */
-    public function calculateEmployee(PayrollRun $run, Employee $employee, Request $request): ?PayrollItem
+    /**
+     * حساب راتب موظف واحد ضمن مسير (idempotent لكل run+employee).
+     *
+     * @param  array{profile:?EmployeeSalaryProfile,components:iterable,attendance:?PayrollAttendanceSummary,leave:?PayrollLeaveSummary}|null  $pre
+     *                                                                                                                                               بيانات مُحمَّلة مُسبقاً (Eager) من calculateRun؛ null ⇒ يجلبها بنفسه (توافق خلفي).
+     */
+    public function calculateEmployee(PayrollRun $run, Employee $employee, Request $request, ?array $pre = null): ?PayrollItem
     {
-        $profile = EmployeeSalaryProfile::where('employee_id', $employee->id)->where('is_active', true)->first();
+        $profile = $pre !== null
+            ? ($pre['profile'] ?? null)
+            : EmployeeSalaryProfile::where('employee_id', $employee->id)->where('is_active', true)->first();
         if ($profile === null) {
             return null;
         }
@@ -85,10 +97,12 @@ class PayrollCalculationService
         $deductions = [];
 
         // مكوّنات الموظف النشطة (fixed = مبلغ ثابت، percentage = نسبة من الأساسي).
-        $components = EmployeeSalaryComponent::where('employee_id', $employee->id)
-            ->where('is_active', true)
-            ->with('component:id,code,type,value_type')
-            ->get();
+        $components = $pre !== null
+            ? ($pre['components'] ?? collect())
+            : EmployeeSalaryComponent::where('employee_id', $employee->id)
+                ->where('is_active', true)
+                ->with('component:id,code,type,value_type')
+                ->get();
 
         foreach ($components as $ec) {
             $comp = $ec->component;
@@ -103,7 +117,9 @@ class PayrollCalculationService
         }
 
         // مشتقّات الحضور (من اللقطة المجمّدة #34).
-        $att = PayrollAttendanceSummary::where('payroll_run_id', $run->id)->where('employee_id', $employee->id)->first();
+        $att = $pre !== null
+            ? ($pre['attendance'] ?? null)
+            : PayrollAttendanceSummary::where('payroll_run_id', $run->id)->where('employee_id', $employee->id)->first();
         $absentDays = $att?->absent_days ?? 0;
         $lateMinutes = $att?->late_minutes ?? 0;
         $overtimeMinutes = $att?->overtime_minutes ?? 0;
@@ -119,7 +135,9 @@ class PayrollCalculationService
         }
 
         // خصم الإجازات بدون راتب (من اللقطة المجمّدة #35). المدفوعة لا تُخصم.
-        $leave = PayrollLeaveSummary::where('payroll_run_id', $run->id)->where('employee_id', $employee->id)->first();
+        $leave = $pre !== null
+            ? ($pre['leave'] ?? null)
+            : PayrollLeaveSummary::where('payroll_run_id', $run->id)->where('employee_id', $employee->id)->first();
         $unpaidDays = (float) ($leave?->unpaid_leave_days ?? 0);
         if ($unpaidDays > 0) {
             $deductions[] = ['code' => 'unpaid_leave', 'amount' => $this->round($daily * $unpaidDays), 'days' => $unpaidDays];
@@ -150,6 +168,43 @@ class PayrollCalculationService
                 'created_by' => $request->user()?->id,
             ],
         );
+    }
+
+    /**
+     * PERF-1: تحميل مُسبق لبيانات كل موظفي المسير دفعةً — يحوّل 4N+1 إلى ~4 استعلامات.
+     * النتيجة مطابقة تمامًا لجلبها فردياً (نفس الصفوف بنفس ترتيب المعرّف التصاعدي).
+     *
+     * @return array<int, array{profile:?EmployeeSalaryProfile,components:iterable,attendance:?PayrollAttendanceSummary,leave:?PayrollLeaveSummary}>
+     */
+    private function preloadContext(PayrollRun $run, Collection $employees): array
+    {
+        $ids = $employees->pluck('id')->all();
+        if ($ids === []) {
+            return [];
+        }
+
+        $profiles = EmployeeSalaryProfile::where('is_active', true)
+            ->whereIn('employee_id', $ids)->get()->keyBy('employee_id');
+        $components = EmployeeSalaryComponent::where('is_active', true)
+            ->whereIn('employee_id', $ids)
+            ->with('component:id,code,type,value_type')
+            ->get()->groupBy('employee_id');
+        $attendance = PayrollAttendanceSummary::where('payroll_run_id', $run->id)
+            ->whereIn('employee_id', $ids)->get()->keyBy('employee_id');
+        $leave = PayrollLeaveSummary::where('payroll_run_id', $run->id)
+            ->whereIn('employee_id', $ids)->get()->keyBy('employee_id');
+
+        $context = [];
+        foreach ($ids as $id) {
+            $context[$id] = [
+                'profile' => $profiles->get($id),
+                'components' => $components->get($id, collect()),
+                'attendance' => $attendance->get($id),
+                'leave' => $leave->get($id),
+            ];
+        }
+
+        return $context;
     }
 
     private function round(float $value): float

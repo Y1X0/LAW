@@ -1,22 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useContext } from 'react'
+import { ToastContext, type ToastApi } from './toastContext'
 
-export type ToastTone = 'success' | 'error'
-export interface ToastState {
-  message: string
-  tone: ToastTone
-}
+const noop: ToastApi = { show: () => {} }
 
 /**
- * توست بسيط محلّي (بلا مزوّد عام) — يُظهر رسالة نجاح/خطأ مؤقّتة ذاتية الإخفاء.
- * (نظام موحّد أشمل لاحقاً في UP-7؛ هذا كافٍ لتغذية راجعة إجراءات HR.)
+ * الوصول إلى نظام التوست الموحّد من أي شاشة (تحت ToastProvider).
+ * يرجع no-op آمناً إن غاب المزوّد (لا يكسر مكوّناً مركّباً منفرداً).
  */
-export function useToast(duration = 2600): { toast: ToastState | null; show: (message: string, tone?: ToastTone) => void } {
-  const [toast, setToast] = useState<ToastState | null>(null)
-  const show = useCallback((message: string, tone: ToastTone = 'success') => setToast({ message, tone }), [])
-  useEffect(() => {
-    if (!toast) return
-    const t = window.setTimeout(() => setToast(null), duration)
-    return () => window.clearTimeout(t)
-  }, [toast, duration])
-  return { toast, show }
+export function useToast(): ToastApi {
+  return useContext(ToastContext) ?? noop
 }

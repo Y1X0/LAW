@@ -4,7 +4,6 @@ import { Badge, Button, Card, Field, TextareaField } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { Tabs } from '@/core/ui/Tabs'
-import { Toast } from '@/core/ui/Toast'
 import { useToast } from '@/core/ui/useToast'
 import { formatDate } from '@/core/lib/format'
 import {
@@ -28,7 +27,7 @@ const TABS = LEAVE_TABS.map((key) => ({ key, label: TAB_LABEL[key] }))
  */
 export function HrLeavePage() {
   const qc = useQueryClient()
-  const { toast, show } = useToast()
+  const { show } = useToast()
   const [tab, setTab] = useState<LeaveTab>('pending')
   const [page, setPage] = useState(1)
   const [nameFilter, setNameFilter] = useState('')
@@ -165,8 +164,6 @@ export function HrLeavePage() {
           </div>
         </>
       )}
-
-      <Toast toast={toast} />
     </div>
   )
 }

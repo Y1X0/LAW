@@ -231,7 +231,7 @@ body {
   animation: lp-dot-in var(--dur) var(--ease-out-soft) both;
 }
 
-/* توست — دخول ناعم (تلاشٍ + انزلاق للأعلى). */
+/* توست — دخول/خروج ناعم (تلاشٍ + انزلاق). */
 @keyframes lp-toast-in {
   from {
     opacity: 0;
@@ -242,8 +242,36 @@ body {
     transform: none;
   }
 }
+@keyframes lp-toast-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
 .lp-toast {
   animation: lp-toast-in var(--dur) var(--ease-out-soft) both;
+}
+.lp-toast-out {
+  animation: lp-toast-out var(--dur) var(--ease-premium) both;
+}
+
+/* انتقال صفحة خفيف عند التنقّل (يُفتَح المحتوى بتلاشٍ + انزلاق بسيط). */
+@keyframes lp-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.lp-page {
+  animation: lp-page-in var(--dur) var(--ease-out-soft) both;
 }
 
 /* احترام تفضيل تقليل الحركة. */

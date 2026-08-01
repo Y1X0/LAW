@@ -3,7 +3,9 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
+import { Tabs } from '@/core/ui/Tabs'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
+import { useToast } from '@/core/ui/useToast'
 import { formatDate } from '@/core/lib/format'
 import { taskPriorityLabel } from '@/lawyer/api/caseFile'
 import { completeTask, fetchTasks, type Task, type TaskStatus } from '@/lawyer/api/tasks'
@@ -27,6 +29,7 @@ function priorityTone(p: string): 'green' | 'amber' | 'slate' | 'navy' {
  */
 export function TasksPage() {
   const qc = useQueryClient()
+  const { show } = useToast()
   const [tab, setTab] = useState<TaskStatus>('open')
   const [page, setPage] = useState(1)
 
@@ -38,7 +41,11 @@ export function TasksPage() {
 
   const complete = useMutation({
     mutationFn: (id: number) => completeTask(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      show('تم إكمال المهمة')
+      void qc.invalidateQueries({ queryKey: ['tasks'] })
+    },
+    onError: () => show('تعذّر إكمال المهمة', 'error'),
   })
 
   function switchTab(next: TaskStatus) {
@@ -50,26 +57,8 @@ export function TasksPage() {
     <div className="space-y-5">
       <PageHeader title="المهام" subtitle="مهامك المسندة" />
 
-      {/* تبويبات الحالة */}
-      <div className="border-b border-slate-200">
-        <div role="tablist" className="flex gap-1">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              role="tab"
-              aria-selected={tab === t.key}
-              onClick={() => switchTab(t.key)}
-              className={`border-b-2 px-4 py-2 text-sm transition ${
-                tab === t.key
-                  ? 'border-brand-600 font-semibold text-brand-700'
-                  : 'border-transparent text-slate-500 hover:text-brand-700'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* تبويبات الحالة — مؤشّر ذهبي موحّد */}
+      <Tabs tabs={TABS} active={tab} onChange={(k) => switchTab(k as TaskStatus)} />
 
       {query.isPending ? (
         <Card>

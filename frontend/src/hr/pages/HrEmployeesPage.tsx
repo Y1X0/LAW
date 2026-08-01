@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Badge, Button, Card, Field, SelectField } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
+import { useToast } from '@/core/ui/useToast'
 import {
   EMPLOYEE_STATUSES,
   deactivateEmployee,
@@ -21,6 +22,7 @@ const PER_PAGE = 15
  */
 export function HrEmployeesPage() {
   const qc = useQueryClient()
+  const { show } = useToast()
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
@@ -37,8 +39,10 @@ export function HrEmployeesPage() {
     mutationFn: (id: number) => deactivateEmployee(id),
     onSuccess: () => {
       setConfirmingId(null)
+      show('تم تعطيل الموظف')
       void qc.invalidateQueries({ queryKey: ['hr', 'employees'] })
     },
+    onError: () => show('تعذّر تعطيل الموظف', 'error'),
   })
 
   function onSearch(e: FormEvent) {

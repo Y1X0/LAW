@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { tokenStorage } from '@/core/auth/tokenStorage'
-import { probeCanManageHr, probeIsLawyer } from './probe'
+import { probeCanManageHr, probeIsAdmin, probeIsLawyer } from './probe'
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -57,5 +57,23 @@ describe('probeCanManageHr', () => {
   it('يُعيد false عند خطأ شبكة', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
     expect(await probeCanManageHr()).toBe(false)
+  })
+})
+
+describe('probeIsAdmin', () => {
+  it('يُعيد true عند 200 على /roles (يملك roles.manage)', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({ data: [{ id: 1, name: 'admin' }], meta: null, errors: null })))
+    expect(await probeIsAdmin()).toBe(true)
+  })
+
+  it('يُعيد false عند 403 (ليس Admin)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({ data: null, meta: null, errors: { code: 'FORBIDDEN' } }, 403)))
+    expect(await probeIsAdmin()).toBe(false)
+  })
+
+  it('يُعيد false عند خطأ شبكة', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
+    expect(await probeIsAdmin()).toBe(false)
   })
 })

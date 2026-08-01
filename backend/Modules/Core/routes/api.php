@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Core\Http\Controllers\Admin\AdminSummaryController;
+use Modules\Core\Http\Controllers\Admin\AuditController;
+use Modules\Core\Http\Controllers\Admin\SettingsController;
 use Modules\Core\Http\Controllers\Admin\UserController;
 use Modules\Core\Http\Controllers\Auth\AuthController;
 use Modules\Core\Http\Controllers\Auth\PasswordController;
@@ -60,5 +62,16 @@ Route::middleware('auth.token')->group(function () {
 
         // لوحة نظام وحدة التحكّم (ADMIN-4) — تجميع إحصاءات للقراءة فقط.
         Route::get('admin/summary', AdminSummaryController::class)->name('admin.summary');
+    });
+
+    // سجلّ التدقيق (ADMIN-5) — قراءة فقط، يفرض صلاحية audit.view القائمة.
+    Route::middleware('permission:audit.view')->group(function () {
+        Route::get('admin/audit', [AuditController::class, 'index'])->name('admin.audit.index');
+    });
+
+    // إعدادات المنصّة العامّة (ADMIN-5) — يفرض صلاحية settings.manage القائمة.
+    Route::middleware('permission:settings.manage')->group(function () {
+        Route::get('admin/settings', [SettingsController::class, 'index'])->name('admin.settings.index');
+        Route::put('admin/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
     });
 });

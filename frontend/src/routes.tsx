@@ -8,6 +8,7 @@ import { RequireLawyer } from '@/core/capabilities/RequireLawyer'
 import { IndexRedirect } from '@/core/layout/IndexRedirect'
 import { RoleLayout } from '@/core/layout/RoleLayout'
 import { AdminHomePage } from '@/admin/pages/AdminHomePage'
+import { AdminUsersPage } from '@/admin/pages/AdminUsersPage'
 import { HrDashboardPage } from '@/hr/pages/HrDashboardPage'
 import { HrEmployeesPage } from '@/hr/pages/HrEmployeesPage'
 import { HrEmployeeProfilePage } from '@/hr/pages/HrEmployeeProfilePage'
@@ -45,10 +46,13 @@ export const router = createBrowserRouter(
               children: [
                 { index: true, element: <IndexRedirect /> },
 
-                // ---- وحدة التحكّم (Super Admin — يملك roles.manage) — ADMIN-1: الأساس ----
+                // ---- وحدة التحكّم (Super Admin — يملك roles.manage) — ADMIN-1..2 ----
                 {
                   element: <RequireAdmin />,
-                  children: [{ path: 'admin', element: <AdminHomePage /> }],
+                  children: [
+                    { path: 'admin', element: <AdminHomePage /> },
+                    { path: 'admin/users', element: <AdminUsersPage /> },
+                  ],
                 },
 
                 // ---- خدمة ذاتية (HR) — للدورين ----

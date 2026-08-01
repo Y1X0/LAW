@@ -45,6 +45,9 @@ Route::middleware('auth.token')->group(function () {
         Route::put('roles/{role}/permissions', [RoleController::class, 'syncPermissions'])->name('roles.permissions.sync');
     });
 
+    // ملاحظة أمنية: users.manage صلاحية «مالك المنصّة» الكاملة — من يملكها يستطيع
+    // إسناد أي دور (بما فيه ما يمنح roles.manage) وإعادة تعيين كلمات المرور. تُمنَح
+    // لدور المالك/المدير العام فقط. راجع docs/adr/006-users-manage-super-admin.md.
     Route::middleware('permission:users.manage')->group(function () {
         Route::get('users/{user}/roles', [UserRoleController::class, 'index'])->name('users.roles.index');
         Route::post('users/{user}/roles', [UserRoleController::class, 'store'])->name('users.roles.store');

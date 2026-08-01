@@ -7,6 +7,8 @@ import { RequireLawyer } from '@/core/capabilities/RequireLawyer'
 import { IndexRedirect } from '@/core/layout/IndexRedirect'
 import { RoleLayout } from '@/core/layout/RoleLayout'
 import { HrDashboardPage } from '@/hr/pages/HrDashboardPage'
+import { HrEmployeesPage } from '@/hr/pages/HrEmployeesPage'
+import { HrEmployeeProfilePage } from '@/hr/pages/HrEmployeeProfilePage'
 import { AttendancePage } from '@/employee/pages/AttendancePage'
 import { DashboardPage } from '@/employee/pages/DashboardPage'
 import { LeavePage } from '@/employee/pages/LeavePage'
@@ -50,7 +52,11 @@ export const router = createBrowserRouter(
                 // ---- إدارة الموارد البشرية (يملك employees.view) — HR-1: الأساس ----
                 {
                   element: <RequireHr />,
-                  children: [{ path: 'hr', element: <HrDashboardPage /> }],
+                  children: [
+                    { path: 'hr', element: <HrDashboardPage /> },
+                    { path: 'hr/employees', element: <HrEmployeesPage /> },
+                    { path: 'hr/employees/:id', element: <HrEmployeeProfilePage /> },
+                  ],
                 },
 
                 // ---- المجال القانوني (محامٍ فقط) — الشاشات تُبنى في LP-2..LP-5 ----

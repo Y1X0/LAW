@@ -5,6 +5,7 @@ namespace Modules\Core\Http\Controllers\Rbac;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Modules\Core\Concerns\GuardsLastAdmin;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\Core\Models\Permission;
 use Modules\Core\Models\Role;
@@ -15,7 +16,7 @@ use Modules\Core\Models\Role;
  */
 class RoleController
 {
-    use RecordsAudit;
+    use GuardsLastAdmin, RecordsAudit;
 
     public function index(): JsonResponse
     {
@@ -66,6 +67,14 @@ class RoleController
             ], 422);
         }
 
+        // حماية إضافية: حذف دور يمنح users.manage يجب ألا يُسقط آخر مدير فعّال.
+        if ($this->roleGrantsAdmin($role) && ! $this->activeAdminRemainsWithoutRole($role)) {
+            return response()->json([
+                'data' => null, 'meta' => null,
+                'errors' => ['code' => 'LAST_ADMIN_PROTECTED', 'message' => 'لا يمكن حذف آخر دور يمنح إدارة المستخدمين لمدير فعّال.'],
+            ], 422);
+        }
+
         $id = $role->id;
         $role->delete();
         $this->recordAudit($request, 'role_deleted', Role::class, $id);
@@ -80,6 +89,18 @@ class RoleController
             'permissions' => ['present', 'array'],
             'permissions.*' => ['integer', 'exists:permissions,id'],
         ]);
+
+        // حماية إضافية: تجريد الدور من users.manage يجب ألا يُسقط آخر مدير فعّال.
+        $adminPermId = $this->adminPermissionId();
+        $stripsAdmin = $this->roleGrantsAdmin($role)
+            && $adminPermId !== null
+            && ! in_array($adminPermId, array_map('intval', $data['permissions']), true);
+        if ($stripsAdmin && ! $this->activeAdminRemainsWithoutRole($role)) {
+            return response()->json([
+                'data' => null, 'meta' => null,
+                'errors' => ['code' => 'LAST_ADMIN_PROTECTED', 'message' => 'لا يمكن نزع صلاحية إدارة المستخدمين عن آخر دور يمنحها لمدير فعّال.'],
+            ], 422);
+        }
 
         $role->permissions()->sync($data['permissions']);
         $this->recordAudit($request, 'role_permissions_synced', Role::class, $role->id, [

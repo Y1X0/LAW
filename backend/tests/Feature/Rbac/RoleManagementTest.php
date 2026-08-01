@@ -84,4 +84,59 @@ class RoleManagementTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath('errors.code', 'VALIDATION_ERROR');
     }
+
+    /**
+     * SEC-1: حامل roles.manage (وليس مالك منصّة) لا يستطيع تصعيد صلاحياته بمنح
+     * users.manage لدور — وإلّا لأصبح مديراً كاملاً عبر Gate::before، خلافاً لـ ADR-006.
+     */
+    public function test_roles_manage_holder_cannot_escalate_by_granting_users_manage(): void
+    {
+        $actor = $this->userWithPermissions(['roles.manage']); // لا يملك users.manage
+        $role = Role::create(['name' => 'clerk', 'display_name' => 'كاتب']);
+        $usersManage = Permission::firstOrCreate(['name' => 'users.manage'], ['module' => 'users']);
+
+        $this->actingAsToken($actor)
+            ->putJson("/api/roles/{$role->id}/permissions", ['permissions' => [$usersManage->id]])
+            ->assertStatus(403)
+            ->assertJsonPath('errors.code', 'FORBIDDEN');
+
+        $this->assertFalse(
+            $role->fresh()->permissions->contains('name', 'users.manage'),
+            'users.manage يجب ألا تُمنح للدور عبر تصعيد.'
+        );
+    }
+
+    /** SEC-1: مالك منصّة يملك users.manage فعلاً يستطيع منحها لدور آخر (سلوك مشروع). */
+    public function test_platform_owner_can_grant_users_manage(): void
+    {
+        $owner = $this->userWithPermissions(['roles.manage', 'users.manage']);
+        $role = Role::create(['name' => 'co-admin', 'display_name' => 'مدير مساعد']);
+        $usersManage = Permission::firstOrCreate(['name' => 'users.manage'], ['module' => 'users']);
+
+        $this->actingAsToken($owner)
+            ->putJson("/api/roles/{$role->id}/permissions", ['permissions' => [$usersManage->id]])
+            ->assertOk();
+
+        $this->assertTrue(
+            $role->fresh()->permissions->contains('name', 'users.manage'),
+            'مالك المنصّة يجب أن يستطيع منح users.manage.'
+        );
+    }
+
+    /**
+     * SEC-1 (عدم انحدار): حامل roles.manage يبقى قادراً على مزامنة الصلاحيات العادية —
+     * الحارس يخصّ users.manage فقط ولا يعيق إدارة الأدوار المشروعة.
+     */
+    public function test_roles_manage_holder_can_still_sync_non_admin_permissions(): void
+    {
+        $actor = $this->userWithPermissions(['roles.manage']);
+        $role = Role::create(['name' => 'clerk2', 'display_name' => 'كاتب']);
+        $p = Permission::firstOrCreate(['name' => 'cases.view', 'module' => 'cases']);
+
+        $this->actingAsToken($actor)
+            ->putJson("/api/roles/{$role->id}/permissions", ['permissions' => [$p->id]])
+            ->assertOk();
+
+        $this->assertTrue($role->fresh()->permissions->contains('name', 'cases.view'));
+    }
 }

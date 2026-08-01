@@ -90,11 +90,25 @@ class RoleController
             'permissions.*' => ['integer', 'exists:permissions,id'],
         ]);
 
-        // حماية إضافية: تجريد الدور من users.manage يجب ألا يُسقط آخر مدير فعّال.
         $adminPermId = $this->adminPermissionId();
-        $stripsAdmin = $this->roleGrantsAdmin($role)
+        $newIds = array_map('intval', $data['permissions']);
+        $roleGrantsAdmin = $this->roleGrantsAdmin($role);
+
+        // SEC-1: منع تصعيد الصلاحيات. صلاحية users.manage هي صلاحية «مالك المنصّة»
+        // (ADR-006). إضافتها إلى دور لا يمنحها حالياً مسموحة فقط لمن يملكها فعلاً —
+        // حتى لا يستطيع حامل roles.manage (فقط) أن يمنحها لدوره ويصبح مديراً كاملاً.
+        $grantsAdminNow = $adminPermId !== null && in_array($adminPermId, $newIds, true);
+        if ($grantsAdminNow && ! $roleGrantsAdmin && ! $request->user()?->hasPermission('users.manage')) {
+            return response()->json([
+                'data' => null, 'meta' => null,
+                'errors' => ['code' => 'FORBIDDEN', 'message' => 'لا يمكن منح صلاحية إدارة المستخدمين إلا لمالك منصّة يملكها بالفعل.'],
+            ], 403);
+        }
+
+        // حماية إضافية: تجريد الدور من users.manage يجب ألا يُسقط آخر مدير فعّال.
+        $stripsAdmin = $roleGrantsAdmin
             && $adminPermId !== null
-            && ! in_array($adminPermId, array_map('intval', $data['permissions']), true);
+            && ! in_array($adminPermId, $newIds, true);
         if ($stripsAdmin && ! $this->activeAdminRemainsWithoutRole($role)) {
             return response()->json([
                 'data' => null, 'meta' => null,

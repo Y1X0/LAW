@@ -138,16 +138,22 @@ class LeaveService
     {
         $this->assert(in_array($leave->status, ['pending', 'approved'], true), 'status', 'لا يمكن إلغاء هذا الطلب.');
 
-        $wasApproved = $leave->status === 'approved';
-
-        // معاملة + قفل: يمنع الاستعادة المزدوجة للرصيد عند إلغاءين متزامنين.
-        DB::transaction(function () use ($leave, $wasApproved) {
+        // SEC-5: معاملة + قفل الصف + إعادة قراءة الحالة داخل القفل (مثل approve).
+        // بلا إعادة الفحص، إلغاءان متزامنان يقرآن 'approved' قبل أي التزام فيخصمان
+        // الرصيد مرّتين (استعادة مزدوجة). الفحص داخل القفل يمنع ذلك.
+        $wasApproved = DB::transaction(function () use ($leave) {
             $leave->newQuery()->lockForUpdate()->find($leave->id);
+            $leave->refresh();
+            $this->assert(in_array($leave->status, ['pending', 'approved'], true), 'status', 'لا يمكن إلغاء هذا الطلب.');
+
+            $wasApproved = $leave->status === 'approved';
             if ($wasApproved && $leave->leaveType->consumes_balance) {
                 $balance = $this->balanceFor($leave->employee, $leave->leaveType, $leave->start_date->year, lock: true);
                 $balance?->decrement('consumed_days', $leave->days);
             }
             $leave->update(['status' => 'cancelled']);
+
+            return $wasApproved;
         });
 
         if ($wasApproved) {

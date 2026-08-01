@@ -8,6 +8,7 @@ import { Shell, type NavItem } from '@/core/layout/Shell'
 const NAV: NavItem[] = [
   { to: '/hr', label: 'الرئيسية', icon: 'dashboard' },
   { to: '/hr/employees', label: 'الموظفون', icon: 'profile', end: false },
+  { to: '/hr/leave', label: 'الإجازات', icon: 'leave' },
 ]
 
 export function HrLayout() {

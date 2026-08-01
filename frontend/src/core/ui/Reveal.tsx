@@ -18,7 +18,11 @@ export function Reveal({
 
   useEffect(() => {
     const el = ref.current
-    if (!el) return
+    // بيئات بلا IntersectionObserver (jsdom/SSR) أو غياب العنصر → أظهر فوراً.
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setShown(true)
+      return
+    }
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {

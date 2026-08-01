@@ -25,6 +25,7 @@ use Modules\Legal\Seeders\PilotDemoSeeder;
  * التشغيل: php artisan db:seed --class="Database\\Seeders\\DemoSeeder"
  *
  * حسابات العرض (كلمة المرور للجميع: Passw0rd!):
+ *   admin@demo.law     — مالك المنصّة (وحدة تحكّم Super Admin) — دور admin بكل الصلاحيات
  *   hr@demo.law        — مدير الموارد البشرية (بوابة HR)
  *   lawyer@demo.law    — محامٍ (بوابة المحامي) — من PilotDemoSeeder
  *   employee@demo.law  — موظف عادي (الخدمة الذاتية)
@@ -64,6 +65,10 @@ class DemoSeeder extends Seeder
         foreach (['التقاضي', 'الاستشارات', 'المالية', 'الموارد البشرية', 'الإدارة'] as $name) {
             $departments[$name] = Department::firstOrCreate(['branch_id' => $branch->id, 'name' => $name], []);
         }
+
+        // 4b) حساب مالك المنصّة (Super Admin) — دور admin النظامي يملك كل الصلاحيات
+        //     (بما فيها roles.manage الذي يكشفه الـ probe لعرض وحدة التحكّم). ليس موظفاً.
+        $this->makeUser('admin@demo.law', 'مالك المكتب', ['admin']);
 
         // 5) حساب مدير الموارد البشرية + موظفه.
         $hrUser = $this->makeUser('hr@demo.law', 'أحمد المصري', ['hr', 'employee']);
@@ -158,9 +163,14 @@ class DemoSeeder extends Seeder
                 $date = now()->subDays($d);
                 $status = $statuses[($i + $d) % count($statuses)];
                 $hasTime = in_array($status, ['present', 'late'], true);
-                AttendanceRecord::firstOrCreate(
-                    ['employee_id' => $emp->id, 'work_date' => $date->toDateString()],
-                    [
+                // work_date مُحوَّل إلى date؛ نتحقّق بـ whereDate لضمان idempotency (كـ LeaveRequest).
+                $exists = AttendanceRecord::where('employee_id', $emp->id)
+                    ->whereDate('work_date', $date->toDateString())
+                    ->exists();
+                if (! $exists) {
+                    AttendanceRecord::create([
+                        'employee_id' => $emp->id,
+                        'work_date' => $date->toDateString(),
                         'branch_id' => $branch->id,
                         'check_in' => $hasTime ? $date->copy()->setTime($status === 'late' ? 8 : 8, $status === 'late' ? 25 : 2) : null,
                         'check_out' => $hasTime ? $date->copy()->setTime(17, 3) : null,
@@ -169,8 +179,8 @@ class DemoSeeder extends Seeder
                         'source' => 'manual',
                         // اليوم غير معتمد (لعرض زرّ الاعتماد)، والأيام الأقدم معتمدة.
                         'approved_at' => $d === 0 ? null : $date->copy()->setTime(18, 0),
-                    ]
-                );
+                    ]);
+                }
             }
         }
     }

@@ -1,14 +1,11 @@
 import { Shell, type NavItem } from '@/core/layout/Shell'
 
-/**
- * تنقّل بوابة الموارد البشرية.
- * تُضاف عناصر «الإجازات/الحضور» في المراحل التالية مع بناء شاشاتها،
- * لتجنّب روابط معطّلة قبل وجود مساراتها.
- */
+/** تنقّل بوابة الموارد البشرية. */
 const NAV: NavItem[] = [
   { to: '/hr', label: 'الرئيسية', icon: 'dashboard' },
   { to: '/hr/employees', label: 'الموظفون', icon: 'profile', end: false },
   { to: '/hr/leave', label: 'الإجازات', icon: 'leave' },
+  { to: '/hr/attendance', label: 'الحضور', icon: 'attendance' },
 ]
 
 export function HrLayout() {

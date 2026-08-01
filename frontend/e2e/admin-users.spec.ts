@@ -39,6 +39,16 @@ function asAdmin(page: Page) {
     overrides: {
       // كشف الدور: GET /roles ينجح ⇒ isAdmin=true (غير مبذور لغير المدير).
       'GET roles': (route) => envelope(route, [{ id: 1, name: 'admin', display_name: 'مدير' }]),
+      // لوحة النظام (صفحة /admin).
+      'GET admin/summary': (route) =>
+        envelope(route, {
+          users: { total: 2, active: 1, suspended: 1, locked: 0, without_roles: 0 },
+          employees: { total: 0, active: 0, on_leave: 0, suspended: 0, terminated: 0 },
+          rbac: { roles: 1, permissions: 1 },
+          legal: { cases_total: 0, cases_open: 0, cases_closed: 0, hearings_upcoming: 0 },
+          hr: { leave_pending: 0 },
+          activity: [],
+        }),
       // قائمة المستخدمين.
       'GET users': (route) => envelope(route, USERS, 200, listMeta),
       // تعطيل/تفعيل.

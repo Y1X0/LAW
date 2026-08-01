@@ -4,6 +4,7 @@ namespace Modules\Core\Http\Controllers\Admin;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\Core\Models\Setting;
 
@@ -15,6 +16,14 @@ use Modules\Core\Models\Setting;
 class SettingsController
 {
     use RecordsAudit;
+
+    /**
+     * قائمة السماح للمفاتيح القابلة للكتابة (group => keys). تمنع إنشاء مفاتيح
+     * عشوائية أو الكتابة فوق مفاتيح حسّاسة تقرأها وحدات أخرى (تصلّب أمني — Stabilization).
+     */
+    private const ALLOWED = [
+        'general' => ['org_name_ar', 'org_name_en', 'contact_email', 'contact_phone'],
+    ];
 
     /** GET /api/admin/settings — الإعدادات العامّة مجمّعة حسب المجموعة. */
     public function index(): JsonResponse
@@ -36,23 +45,39 @@ class SettingsController
     /** PUT /api/admin/settings — تحديث/إنشاء دفعة إعدادات عامّة (idempotent). */
     public function update(Request $request): JsonResponse
     {
+        $allowedKeys = array_merge(...array_values(self::ALLOWED));
+
         $data = $request->validate([
-            'settings' => ['present', 'array'],
-            'settings.*.group' => ['required', 'string', 'max:40'],
-            'settings.*.key' => ['required', 'string', 'max:80'],
-            'settings.*.value' => ['present'],
+            'settings' => ['present', 'array', 'max:50'],
+            'settings.*.group' => ['required', 'string', Rule::in(array_keys(self::ALLOWED))],
+            'settings.*.key' => ['required', 'string', Rule::in($allowedKeys)],
+            'settings.*.value' => ['nullable', 'string', 'max:2000'], // نصّ محدود فقط (يمنع type-confusion والحمولات الكبيرة)
         ]);
 
+        // رفض تركيب group/key غير مسموح (مفتاح صحيح لكن في مجموعة خاطئة).
         foreach ($data['settings'] as $item) {
+            abort_unless(
+                in_array($item['key'], self::ALLOWED[$item['group']] ?? [], true),
+                422,
+                "المفتاح {$item['key']} غير مسموح ضمن المجموعة {$item['group']}."
+            );
+        }
+
+        // لقطة القيم القديمة قبل الكتابة (للتدقيق — before-image).
+        $before = [];
+        foreach ($data['settings'] as $item) {
+            $existing = Setting::whereNull('branch_id')->where('group', $item['group'])->where('key', $item['key'])->first();
+            $before["{$item['group']}.{$item['key']}"] = $existing?->value;
+
             Setting::updateOrCreate(
                 ['branch_id' => null, 'group' => $item['group'], 'key' => $item['key']],
                 ['value' => $item['value']],
             );
         }
 
-        $this->recordAudit($request, 'settings_updated', Setting::class, 0, [
-            'keys' => collect($data['settings'])->map(fn ($i) => "{$i['group']}.{$i['key']}")->all(),
-        ]);
+        $after = collect($data['settings'])->mapWithKeys(fn ($i) => ["{$i['group']}.{$i['key']}" => $i['value']])->all();
+
+        $this->recordAudit($request, 'settings_updated', Setting::class, 0, $after, $before);
 
         return $this->index();
     }

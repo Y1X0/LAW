@@ -43,4 +43,25 @@ class AuthSecurityTest extends TestCase
             ->assertOk()
             ->assertJsonStructure(['data' => ['message']]);
     }
+
+    public function test_login_is_rate_limited_per_ip(): void
+    {
+        // تصلّب أمني: تجاوز حدّ المعدّل (30/دقيقة) يردّ 429 بصرف النظر عن صحّة البيانات.
+        $last = null;
+        for ($i = 0; $i < 31; $i++) {
+            $last = $this->postJson('/api/auth/login', ['email' => 'x@y.test', 'password' => 'nope']);
+        }
+
+        $this->assertSame(429, $last->getStatusCode());
+    }
+
+    public function test_forgot_password_is_rate_limited_per_ip(): void
+    {
+        $last = null;
+        for ($i = 0; $i < 11; $i++) {
+            $last = $this->postJson('/api/auth/forgot-password', ['email' => 'ghost@none.test']);
+        }
+
+        $this->assertSame(429, $last->getStatusCode());
+    }
 }

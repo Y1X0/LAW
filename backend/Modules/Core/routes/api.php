@@ -20,11 +20,12 @@ use Modules\Core\Http\Controllers\Rbac\UserRoleController;
 Route::get('/health', HealthController::class)->name('core.health');
 
 // المصادقة (Issue #11) — لا RBAC هنا (يأتي في #12).
+// تصلّب أمني (Stabilization): محدِّدات معدّل على النقاط العامّة غير المصادَق عليها.
 Route::prefix('auth')->group(function () {
-    Route::post('login', [AuthController::class, 'login'])->name('auth.login');
-    Route::post('refresh', [AuthController::class, 'refresh'])->name('auth.refresh');
-    Route::post('forgot-password', [PasswordController::class, 'forgot'])->name('auth.forgot');
-    Route::post('reset-password', [PasswordController::class, 'reset'])->name('auth.reset');
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:auth-login')->name('auth.login');
+    Route::post('refresh', [AuthController::class, 'refresh'])->middleware('throttle:auth-login')->name('auth.refresh');
+    Route::post('forgot-password', [PasswordController::class, 'forgot'])->middleware('throttle:auth-password')->name('auth.forgot');
+    Route::post('reset-password', [PasswordController::class, 'reset'])->middleware('throttle:auth-password')->name('auth.reset');
 
     Route::middleware('auth.token')->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
@@ -44,6 +45,9 @@ Route::middleware('auth.token')->group(function () {
         Route::put('roles/{role}/permissions', [RoleController::class, 'syncPermissions'])->name('roles.permissions.sync');
     });
 
+    // ملاحظة أمنية: users.manage صلاحية «مالك المنصّة» الكاملة — من يملكها يستطيع
+    // إسناد أي دور (بما فيه ما يمنح roles.manage) وإعادة تعيين كلمات المرور. تُمنَح
+    // لدور المالك/المدير العام فقط. راجع docs/adr/006-users-manage-super-admin.md.
     Route::middleware('permission:users.manage')->group(function () {
         Route::get('users/{user}/roles', [UserRoleController::class, 'index'])->name('users.roles.index');
         Route::post('users/{user}/roles', [UserRoleController::class, 'store'])->name('users.roles.store');

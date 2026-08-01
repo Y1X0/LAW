@@ -32,3 +32,20 @@ export async function probeCanManageHr(): Promise<boolean> {
     return false
   }
 }
+
+/**
+ * كشف قدرة «مالك المنصة / Super Admin» دون تغيير الباك-إند: نداء خفيف لقائمة الأدوار.
+ * الخادم يحرس `GET /roles` بصلاحية `roles.manage` — وهي غير مبذورة لـ محامٍ/موظف/HR،
+ * فالنجاح (200) يعني فعلاً أن المستخدم يملك التحكّم الإداري بالنظام. ليس مساراً عامّاً.
+ * - 200 ⇒ Admin.
+ * - 403 / 401 / خطأ شبكة / data=null ⇒ ليس Admin (تدرّج آمن).
+ * إشارة توجيه فقط — الباك-إند يبقى الحكم النهائي على كل عملية.
+ */
+export async function probeIsAdmin(): Promise<boolean> {
+  try {
+    const data = await api.get<unknown>('roles')
+    return data != null
+  } catch {
+    return false
+  }
+}

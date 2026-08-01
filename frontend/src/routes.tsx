@@ -2,10 +2,12 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { LoginPage } from '@/core/auth/LoginPage'
 import { ProtectedRoute } from '@/core/auth/ProtectedRoute'
 import { CapabilitiesProvider } from '@/core/capabilities/CapabilitiesProvider'
+import { RequireAdmin } from '@/core/capabilities/RequireAdmin'
 import { RequireHr } from '@/core/capabilities/RequireHr'
 import { RequireLawyer } from '@/core/capabilities/RequireLawyer'
 import { IndexRedirect } from '@/core/layout/IndexRedirect'
 import { RoleLayout } from '@/core/layout/RoleLayout'
+import { AdminHomePage } from '@/admin/pages/AdminHomePage'
 import { HrDashboardPage } from '@/hr/pages/HrDashboardPage'
 import { HrEmployeesPage } from '@/hr/pages/HrEmployeesPage'
 import { HrEmployeeProfilePage } from '@/hr/pages/HrEmployeeProfilePage'
@@ -42,6 +44,12 @@ export const router = createBrowserRouter(
               element: <RoleLayout />,
               children: [
                 { index: true, element: <IndexRedirect /> },
+
+                // ---- وحدة التحكّم (Super Admin — يملك roles.manage) — ADMIN-1: الأساس ----
+                {
+                  element: <RequireAdmin />,
+                  children: [{ path: 'admin', element: <AdminHomePage /> }],
+                },
 
                 // ---- خدمة ذاتية (HR) — للدورين ----
                 { path: 'dashboard', element: <DashboardPage /> },

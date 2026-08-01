@@ -9,6 +9,8 @@ export interface CapabilitiesValue {
   isLawyer: boolean
   /** هل يملك المستخدم وصولاً إدارياً للموارد البشرية (صلاحية employees.view)؟ */
   canManageHr: boolean
+  /** هل المستخدم مالك المنصة / Super Admin (صلاحية roles.manage)؟ */
+  isAdmin: boolean
 }
 
 export const CapabilitiesContext = createContext<CapabilitiesValue | null>(null)

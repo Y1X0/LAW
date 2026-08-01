@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Outlet } from 'react-router-dom'
 import { FullPageLoader } from '@/core/ui/states'
 import { CapabilitiesContext, type CapabilitiesValue } from './capabilitiesContext'
-import { probeCanManageHr, probeIsLawyer } from './probe'
+import { probeCanManageHr, probeIsAdmin, probeIsLawyer } from './probe'
 
 const probeOptions = {
   staleTime: Infinity,
@@ -19,12 +19,14 @@ const probeOptions = {
 export function CapabilitiesProvider() {
   const lawyer = useQuery({ queryKey: ['capabilities', 'lawyer'], queryFn: probeIsLawyer, ...probeOptions })
   const hr = useQuery({ queryKey: ['capabilities', 'hr'], queryFn: probeCanManageHr, ...probeOptions })
+  const admin = useQuery({ queryKey: ['capabilities', 'admin'], queryFn: probeIsAdmin, ...probeOptions })
 
-  const isPending = lawyer.isPending || hr.isPending
+  const isPending = lawyer.isPending || hr.isPending || admin.isPending
   const value: CapabilitiesValue = {
     status: isPending ? 'loading' : 'ready',
     isLawyer: lawyer.data ?? false,
     canManageHr: hr.data ?? false,
+    isAdmin: admin.data ?? false,
   }
 
   return (

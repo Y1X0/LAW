@@ -65,7 +65,7 @@ test.describe('وحدة التحكّم — إدارة المستخدمين', () 
     await login(page)
 
     await expect(page).toHaveURL(/\/admin$/)
-    await expect(page.getByRole('link', { name: 'المستخدمون' })).toBeVisible()
+    await expect(page.getByRole('navigation').getByRole('link', { name: 'المستخدمون' })).toBeVisible()
     // لا يرى تنقّل المحامي.
     await expect(page.getByRole('link', { name: 'قضاياي' })).toHaveCount(0)
   })
@@ -75,7 +75,7 @@ test.describe('وحدة التحكّم — إدارة المستخدمين', () 
     await login(page)
     await expect(page).toHaveURL(/\/admin$/)
 
-    await page.getByRole('link', { name: 'المستخدمون' }).click()
+    await page.getByRole('navigation').getByRole('link', { name: 'المستخدمون' }).click()
     await expect(page).toHaveURL(/\/admin\/users$/)
 
     // القائمة ظاهرة بالبيانات.
@@ -94,7 +94,7 @@ test.describe('وحدة التحكّم — إدارة المستخدمين', () 
   test('نموذج إنشاء مستخدم يظهر ويقبل الإدخال', async ({ page }) => {
     await asAdmin(page)
     await login(page)
-    await page.getByRole('link', { name: 'المستخدمون' }).click()
+    await page.getByRole('navigation').getByRole('link', { name: 'المستخدمون' }).click()
     await expect(page).toHaveURL(/\/admin\/users$/)
 
     await page.getByRole('button', { name: 'إنشاء مستخدم' }).click()

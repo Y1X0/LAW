@@ -73,9 +73,15 @@ class TaskController
         return $this->ok($task, 201);
     }
 
-    /** PUT /api/tasks/{task} */
+    /** PUT /api/tasks/{task} — تعديل (المُسنَد إليه أو الإدارة) — نفس عزل show/complete. */
     public function update(UpdateTaskRequest $request, CaseTask $task): JsonResponse
     {
+        // SEC-2: أغلق IDOR — من لا يملك tasks.view_all لا يعدّل إلا مهمة مُسنَدة إليه،
+        // تماماً كـ show()/complete(). بلا هذا الحارس كان حامل tasks.create يعدّل أي مهمة بالمُعرّف.
+        if ($denied = $this->guardTaskAccess($request->user(), $task)) {
+            return $denied;
+        }
+
         $task = $this->service->update($task, $request->validated(), $request);
 
         return $this->ok($task);

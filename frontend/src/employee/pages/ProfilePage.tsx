@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useProfile, useUpdateProfile, type Profile } from '@/employee/api/profile'
 import { ApiError } from '@/core/api/types'
 import { Button, Field, TextareaField } from '@/core/ui/primitives'
@@ -51,12 +51,17 @@ function EditCard({ profile }: { profile: Profile }) {
   const [ecName, setEcName] = useState('')
   const [ecPhone, setEcPhone] = useState('')
 
+  // تعبئة مرّة واحدة فقط — كي لا تمسح إعادة الجلب الخلفية (عند تبديل النافذة)
+  // ما يكتبه المستخدم قبل الحفظ.
+  const hydrated = useRef(false)
   useEffect(() => {
+    if (hydrated.current) return
     setPhone(profile.phone ?? '')
     setAddress(profile.address ?? '')
     setPhotoPath(profile.photo_path ?? '')
     setEcName(profile.emergency_contact_name ?? '')
     setEcPhone(profile.emergency_contact_phone ?? '')
+    hydrated.current = true
   }, [profile])
 
   function onSubmit(e: FormEvent) {

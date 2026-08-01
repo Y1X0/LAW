@@ -4,6 +4,7 @@ namespace Modules\Leave\Services;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\HR\Models\Employee;
@@ -81,24 +82,29 @@ class LeaveService
     /** اعتماد الطلب: خصم الرصيد + حدث تحديث الحضور. */
     public function approve(LeaveRequest $leave, Request $request): LeaveRequest
     {
-        $this->assert($leave->isPending(), 'status', 'لا يمكن اعتماد طلب غير معلّق.');
-
         // فصل المهام: من قدّم الطلب لا يعتمده بنفسه (docs/05، docs/10 §2.2 التصعيد).
         $actorId = $request->user()?->id;
         abort_if($actorId !== null && $actorId === $leave->created_by, 403, 'لا يمكنك اعتماد طلب قدّمته بنفسك.');
 
-        $type = $leave->leaveType;
-        if ($type->consumes_balance) {
-            $balance = $this->balanceFor($leave->employee, $type, $leave->start_date->year);
-            $this->assert($balance !== null && $balance->remaining_days >= $leave->days, 'status', 'الرصيد لم يعد كافياً.');
-            $balance->increment('consumed_days', $leave->days);
-        }
+        // معاملة + قفل الصفوف: يمنع الخصم المزدوج للرصيد عند اعتمادين متزامنين (سباق).
+        DB::transaction(function () use ($leave, $request) {
+            $leave->newQuery()->lockForUpdate()->find($leave->id); // قفل صف الطلب
+            $leave->refresh();
+            $this->assert($leave->isPending(), 'status', 'لا يمكن اعتماد طلب غير معلّق.');
 
-        $leave->update([
-            'status' => 'approved',
-            'decided_by' => $request->user()?->id,
-            'decided_at' => now(),
-        ]);
+            $type = $leave->leaveType;
+            if ($type->consumes_balance) {
+                $balance = $this->balanceFor($leave->employee, $type, $leave->start_date->year, lock: true);
+                $this->assert($balance !== null && $balance->remaining_days >= $leave->days, 'status', 'الرصيد لم يعد كافياً.');
+                $balance->increment('consumed_days', $leave->days);
+            }
+
+            $leave->update([
+                'status' => 'approved',
+                'decided_by' => $request->user()?->id,
+                'decided_at' => now(),
+            ]);
+        });
 
         LeaveApproved::dispatch($leave);
         $this->recordAudit($request, 'leave_approved', LeaveRequest::class, $leave->id, [
@@ -133,12 +139,16 @@ class LeaveService
         $this->assert(in_array($leave->status, ['pending', 'approved'], true), 'status', 'لا يمكن إلغاء هذا الطلب.');
 
         $wasApproved = $leave->status === 'approved';
-        if ($wasApproved && $leave->leaveType->consumes_balance) {
-            $balance = $this->balanceFor($leave->employee, $leave->leaveType, $leave->start_date->year);
-            $balance?->decrement('consumed_days', $leave->days);
-        }
 
-        $leave->update(['status' => 'cancelled']);
+        // معاملة + قفل: يمنع الاستعادة المزدوجة للرصيد عند إلغاءين متزامنين.
+        DB::transaction(function () use ($leave, $wasApproved) {
+            $leave->newQuery()->lockForUpdate()->find($leave->id);
+            if ($wasApproved && $leave->leaveType->consumes_balance) {
+                $balance = $this->balanceFor($leave->employee, $leave->leaveType, $leave->start_date->year, lock: true);
+                $balance?->decrement('consumed_days', $leave->days);
+            }
+            $leave->update(['status' => 'cancelled']);
+        });
 
         if ($wasApproved) {
             LeaveCancelled::dispatch($leave);
@@ -163,11 +173,12 @@ class LeaveService
         return $days;
     }
 
-    private function balanceFor(Employee $employee, LeaveType $type, int $year): ?LeaveBalance
+    private function balanceFor(Employee $employee, LeaveType $type, int $year, bool $lock = false): ?LeaveBalance
     {
         return LeaveBalance::where('employee_id', $employee->id)
             ->where('leave_type_id', $type->id)
             ->where('year', $year)
+            ->when($lock, fn ($q) => $q->lockForUpdate())
             ->first();
     }
 

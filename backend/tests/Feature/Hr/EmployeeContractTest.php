@@ -80,4 +80,26 @@ class EmployeeContractTest extends TestCase
             'contract_type' => 'permanent', 'start_date' => '2026-01-01',
         ])->assertStatus(403);
     }
+
+    public function test_contract_list_hides_basic_salary_without_salary_permission(): void
+    {
+        $employee = Employee::factory()->create();
+        EmployeeContract::create([
+            'employee_id' => $employee->id, 'contract_type' => 'permanent',
+            'start_date' => '2026-01-01', 'basic_salary' => 15000,
+        ]);
+
+        // employees.view دون employees.salary.view → الراتب مخفي (لا تسريب عبر العقود).
+        $viewer = $this->userWithPermissions(['employees.view']);
+        $row = $this->actingAsToken($viewer)->getJson("/api/employees/{$employee->id}/contracts")
+            ->assertOk()->json('data.0');
+        $this->assertArrayNotHasKey('basic_salary', $row);
+
+        // مع employees.salary.view → الراتب ظاهر.
+        $payroll = $this->userWithPermissions(['employees.view', 'employees.salary.view']);
+        $row = $this->actingAsToken($payroll)->getJson("/api/employees/{$employee->id}/contracts")
+            ->assertOk()->json('data.0');
+        $this->assertArrayHasKey('basic_salary', $row);
+        $this->assertEquals(15000, $row['basic_salary']);
+    }
 }

@@ -41,5 +41,11 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('auth-password', fn (Request $request) => [
             Limit::perMinute(10)->by($request->ip()),
         ]);
+
+        // Webhook البصمة (غير مصادَق عليه بمستخدم؛ يُصادَق بتوكن الجهاز): حدّ لكل جهاز
+        // لمنع الإغراق/الاستنزاف غير المصادَق عليه (لا يعطّل الدفع الطبيعي للأجهزة).
+        RateLimiter::for('biometric-webhook', fn (Request $request) => [
+            Limit::perMinute(120)->by('device:'.$request->route('device')),
+        ]);
     }
 }

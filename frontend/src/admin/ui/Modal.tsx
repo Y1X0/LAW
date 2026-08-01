@@ -1,8 +1,11 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
+
+const FOCUSABLE = 'a[href],button:not([disabled]),textarea,input,select,[tabindex]:not([tabindex="-1"])'
 
 /**
- * حوار مركزي بسيط (RTL) — خلفية معتّمة + بطاقة. يُغلق بمفتاح Esc أو النقر خارجه.
- * خفيف بلا اعتماديات؛ يُستخدم لنماذج إدارة المستخدمين (إنشاء/كلمة مرور/ربط).
+ * حوار مركزي (RTL) — خلفية معتّمة + بطاقة. يُغلق بـ Esc أو النقر خارجه.
+ * إتاحة: يُركّز داخل الحوار عند الفتح، يحبس Tab داخله، يعيد التركيز للعنصر السابق
+ * عند الإغلاق، ويقفل تمرير الصفحة خلفه. خفيف بلا اعتماديات.
  */
 export function Modal({
   title,
@@ -13,12 +16,49 @@ export function Modal({
   onClose: () => void
   children: ReactNode
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const dialog = dialogRef.current
+
+    // تركيز أوّل عنصر قابل للتركيز داخل الحوار (أو الحوار نفسه).
+    const first = dialog?.querySelector<HTMLElement>(FOCUSABLE)
+    ;(first ?? dialog)?.focus()
+
+    // قفل تمرير الصفحة خلف الحوار.
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab' || !dialog) return
+      // حبس التركيز: دوران Tab/Shift+Tab داخل الحوار فقط.
+      const items = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+        (el) => el.offsetParent !== null,
+      )
+      if (items.length === 0) return
+      const firstEl = items[0]
+      const lastEl = items[items.length - 1]
+      const active = document.activeElement
+      if (e.shiftKey && active === firstEl) {
+        e.preventDefault()
+        lastEl.focus()
+      } else if (!e.shiftKey && active === lastEl) {
+        e.preventDefault()
+        firstEl.focus()
+      }
     }
+
     document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+      previouslyFocused?.focus?.() // إعادة التركيز للعنصر الذي فتح الحوار
+    }
   }, [onClose])
 
   return (
@@ -28,11 +68,13 @@ export function Modal({
       role="presentation"
     >
       <div
+        ref={dialogRef}
         className="lp-reveal w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
         onMouseDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        tabIndex={-1}
       >
         <h2 className="mb-4 text-lg font-semibold text-brand-800">{title}</h2>
         {children}

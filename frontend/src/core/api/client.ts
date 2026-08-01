@@ -41,8 +41,8 @@ function toError(status: number, env: ApiEnvelope<unknown>): ApiError {
   )
 }
 
-/** يحاول تجديد التوكن مرة واحدة عبر refresh_token. يعيد true عند النجاح. */
-async function tryRefresh(): Promise<boolean> {
+/** نداء التجديد الفعلي (يُستدعى مرة واحدة فقط عبر البوابة أدناه). */
+async function doRefresh(): Promise<boolean> {
   const tokens = tokenStorage.get()
   if (!tokens?.refresh_token) return false
 
@@ -58,6 +58,20 @@ async function tryRefresh(): Promise<boolean> {
 
   tokenStorage.set(env.data.tokens)
   return true
+}
+
+/**
+ * تجديد التوكن مع «single-flight»: عند وصول عدّة طلبات 401 متزامنة، يُنفَّذ نداء
+ * تجديد **واحد** فقط ويتشاركه الجميع. بدون هذا، الطلب الأول يُدوّر (ويُبطِل) الـ
+ * refresh token، فتفشل بقيّة نداءات التجديد بالتوكن المُبطَل → تسجيل خروج زائف
+ * رغم صحّة الجلسة (سباق حقيقي مع نداءات اللوحات المتوازية).
+ */
+let refreshInFlight: Promise<boolean> | null = null
+function tryRefresh(): Promise<boolean> {
+  refreshInFlight ??= doRefresh().finally(() => {
+    refreshInFlight = null
+  })
+  return refreshInFlight
 }
 
 async function raw(path: string, options: RequestOptions): Promise<Response> {

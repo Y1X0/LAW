@@ -39,10 +39,12 @@ class CaseController
         }
 
         if ($search = $request->query('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('internal_number', 'like', "%{$search}%")
-                    ->orWhere('court_case_number', 'like', "%{$search}%")
-                    ->orWhere('title', 'like', "%{$search}%");
+            // LOWER(...) LIKE: بحث غير حسّاس لحالة الأحرف عبر Postgres وsqlite معاً.
+            $needle = '%'.mb_strtolower($search).'%';
+            $query->where(function ($q) use ($needle) {
+                $q->whereRaw('LOWER(internal_number) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(court_case_number) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(title) LIKE ?', [$needle]);
             });
         }
 

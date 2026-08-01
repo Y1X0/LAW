@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError } from '@/core/api/types'
 import { Button, Card, TextareaField } from '@/core/ui/primitives'
@@ -29,10 +29,14 @@ export function WorklogPage() {
   const hasToday = !!todayLog
   const todayDone = todayLog?.done_today ?? ''
   const todayPlan = todayLog?.plan_tomorrow ?? ''
+  // تعبئة مرّة واحدة عند أوّل ظهور لسجلّ اليوم — كي لا تمسح إعادة الجلب الخلفية
+  // ما يكتبه المستخدم قبل الحفظ.
+  const hydrated = useRef(false)
   useEffect(() => {
-    if (hasToday) {
+    if (hasToday && !hydrated.current) {
       setDoneToday(todayDone)
       setPlanTomorrow(todayPlan)
+      hydrated.current = true
     }
   }, [hasToday, todayDone, todayPlan])
 

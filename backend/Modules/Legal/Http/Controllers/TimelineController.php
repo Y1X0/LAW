@@ -34,6 +34,8 @@ class TimelineController
     /** POST /api/cases/{case}/timeline — إضافة حدث (لا يُعدَّل لاحقاً). */
     public function store(StoreTimelineEventRequest $request, LegalCase $case): JsonResponse
     {
+        // ملاحظة: الإضافة محميّة بصلاحية الإدارة cases.update (مسار)، ولا تُقيَّد برؤية
+        // القضية عمداً — يتّسق مع العقد القائم (حامل cases.update يديـر أي قضية).
         $event = $this->service->append($case, $request->validated(), $request);
 
         return $this->ok($event, 201);

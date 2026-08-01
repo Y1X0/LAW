@@ -5,6 +5,7 @@ namespace Modules\Core\Http\Controllers\Admin;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\Core\Models\AuthToken;
@@ -34,10 +35,12 @@ class UserController
         $query = User::query()->with(['roles:id,name,display_name', 'employee:id,user_id,employee_no,full_name_ar']);
 
         if ($search = trim((string) $request->query('search'))) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('username', 'like', "%{$search}%");
+            // LOWER(...) LIKE: بحث غير حسّاس لحالة الأحرف عبر Postgres وsqlite معاً.
+            $needle = '%'.mb_strtolower($search).'%';
+            $query->where(function ($q) use ($needle) {
+                $q->whereRaw('LOWER(name) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(username) LIKE ?', [$needle]);
             });
         }
 
@@ -79,18 +82,23 @@ class UserController
             'role_ids.*' => ['integer', 'exists:roles,id'],
         ]);
 
-        $user = new User;
-        $user->name = $data['name'];
-        $user->email = $data['email'];
-        $user->username = $data['username'] ?? null;
-        $user->password = $data['password']; // hashed cast
-        $user->status = $data['status'] ?? 'active';
-        $user->password_changed_at = now();
-        $user->save();
+        // معاملة: إنشاء المستخدم وإسناد أدواره عملية ذرّية (لا حالة جزئية عند الفشل).
+        $user = DB::transaction(function () use ($data) {
+            $user = new User;
+            $user->name = $data['name'];
+            $user->email = $data['email'];
+            $user->username = $data['username'] ?? null;
+            $user->password = $data['password']; // hashed cast
+            $user->status = $data['status'] ?? 'active';
+            $user->password_changed_at = now();
+            $user->save();
 
-        foreach ($data['role_ids'] ?? [] as $roleId) {
-            $user->assignRole(Role::findOrFail($roleId));
-        }
+            foreach ($data['role_ids'] ?? [] as $roleId) {
+                $user->assignRole(Role::findOrFail($roleId));
+            }
+
+            return $user;
+        });
 
         $this->recordAudit($request, 'user_created', User::class, $user->id, [
             'email' => $user->email,

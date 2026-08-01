@@ -48,12 +48,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [reset])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { user: u, tokens } = await authApi.login(email, password)
-    tokenStorage.set(tokens)
-    setUser(u)
-    setStatus('authenticated')
-  }, [])
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const { user: u, tokens } = await authApi.login(email, password)
+      tokenStorage.set(tokens)
+      // امسح كاش المستخدم السابق (كشوف القدرات مخزّنة بلا نهاية) قبل تثبيت الجلسة
+      // الجديدة، وإلّا قد يرث المستخدم الجديد بوابة/تنقّل المستخدم السابق في تبويب مشترك.
+      queryClient.clear()
+      setUser(u)
+      setStatus('authenticated')
+    },
+    [queryClient],
+  )
 
   const logout = useCallback(async () => {
     try {

@@ -7,7 +7,9 @@ import { probeCanManageHr, probeIsAdmin, probeIsLawyer } from './probe'
 const probeOptions = {
   staleTime: Infinity,
   gcTime: Infinity,
-  retry: false,
+  // 401/403 تُحسم إلى false داخل الـ probe (لا تُرمى)، فإعادة المحاولة هنا تخصّ
+  // أخطاء الشبكة/5xx فقط: تعافٍ من انقطاع عابر بدل حبس المستخدم في البوابة الخطأ.
+  retry: 2,
   refetchOnWindowFocus: false,
 } as const
 

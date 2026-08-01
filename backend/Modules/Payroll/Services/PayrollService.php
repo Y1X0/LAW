@@ -4,6 +4,7 @@ namespace Modules\Payroll\Services;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\HR\Models\Employee;
@@ -55,23 +56,26 @@ class PayrollService
     {
         $effectiveFrom = $data['effective_from'] ?? Carbon::now()->toDateString();
 
-        // أرشفة الملف النشط السابق (نهايته قبل بداية الجديد) — لا حذف.
-        EmployeeSalaryProfile::where('employee_id', $employee->id)
-            ->where('is_active', true)
-            ->update([
-                'is_active' => false,
-                'effective_to' => Carbon::parse($effectiveFrom)->subDay()->toDateString(),
-            ]);
+        // معاملة: الأرشفة + الإنشاء عملية ذرّية — يمنع بقاء الموظف بلا ملف راتب نشط
+        // (وإسقاطه صامتاً من المسير) إذا فشل الإنشاء بعد الأرشفة.
+        $profile = DB::transaction(function () use ($employee, $data, $effectiveFrom, $request) {
+            EmployeeSalaryProfile::where('employee_id', $employee->id)
+                ->where('is_active', true)
+                ->update([
+                    'is_active' => false,
+                    'effective_to' => Carbon::parse($effectiveFrom)->subDay()->toDateString(),
+                ]);
 
-        $profile = EmployeeSalaryProfile::create([
-            'employee_id' => $employee->id,
-            'basic_salary' => $data['basic_salary'],
-            'currency' => $data['currency'] ?? 'SAR',
-            'payment_method' => $data['payment_method'] ?? 'bank',
-            'effective_from' => $effectiveFrom,
-            'is_active' => true,
-            'created_by' => $request->user()?->id,
-        ]);
+            return EmployeeSalaryProfile::create([
+                'employee_id' => $employee->id,
+                'basic_salary' => $data['basic_salary'],
+                'currency' => $data['currency'] ?? 'SAR',
+                'payment_method' => $data['payment_method'] ?? 'bank',
+                'effective_from' => $effectiveFrom,
+                'is_active' => true,
+                'created_by' => $request->user()?->id,
+            ]);
+        });
 
         $this->recordAudit($request, 'salary_profile_set', EmployeeSalaryProfile::class, $profile->id, [
             'employee_id' => $employee->id, 'basic_salary' => $data['basic_salary'],

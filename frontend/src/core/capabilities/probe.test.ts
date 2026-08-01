@@ -31,9 +31,9 @@ describe('probeIsLawyer', () => {
     expect(await probeIsLawyer()).toBe(false)
   })
 
-  it('يُعيد false عند خطأ شبكة', async () => {
+  it('يرمي عند خطأ شبكة (ليعيد React Query المحاولة)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
-    expect(await probeIsLawyer()).toBe(false)
+    await expect(probeIsLawyer()).rejects.toThrow()
   })
 })
 
@@ -54,9 +54,9 @@ describe('probeCanManageHr', () => {
     expect(await probeCanManageHr()).toBe(false)
   })
 
-  it('يُعيد false عند خطأ شبكة', async () => {
+  it('يرمي عند خطأ شبكة (ليعيد React Query المحاولة)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
-    expect(await probeCanManageHr()).toBe(false)
+    await expect(probeCanManageHr()).rejects.toThrow()
   })
 })
 
@@ -72,8 +72,8 @@ describe('probeIsAdmin', () => {
     expect(await probeIsAdmin()).toBe(false)
   })
 
-  it('يُعيد false عند خطأ شبكة', async () => {
+  it('يرمي عند خطأ شبكة (ليعيد React Query المحاولة)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
-    expect(await probeIsAdmin()).toBe(false)
+    await expect(probeIsAdmin()).rejects.toThrow()
   })
 })

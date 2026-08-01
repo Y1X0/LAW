@@ -56,7 +56,10 @@ export async function printPayslip(id: number): Promise<void> {
   // نافذة فارغة (نفس الأصل) نكتب فيها مستند الباك-إند ثم نطبع.
   // ملاحظة: لا نمرّر noopener هنا — فهو يُرجع null في المتصفّحات ويمنعنا من الكتابة في النافذة.
   const win = window.open('', '_blank')
-  if (!win) return
+  if (!win) {
+    // النافذة المنبثقة محجوبة — لا تفشل بصمت؛ ارمِ ليعرض المستدعي رسالة.
+    throw new Error('تعذّر فتح نافذة الطباعة. اسمح بالنوافذ المنبثقة لهذا الموقع ثم أعد المحاولة.')
+  }
   win.document.open()
   win.document.write(html)
   win.document.close()

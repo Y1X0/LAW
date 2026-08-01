@@ -1,51 +1,57 @@
 import { api } from '@/core/api/client'
+import { ApiError } from '@/core/api/types'
 
 /**
- * كشف قدرة «محامٍ» دون تغيير الباك-إند: `GET /api/auth/me` لا يُعيد الصلاحيات،
- * لذا نستنتج الدور من نداء واحد خفيف لملخّص المحامي (يرث حارس الخادم: employee.linked + cases.view_own).
- * - نجاح بـ `data` غير فارغة ⇒ محامٍ.
- * - 403 / 401 / خطأ شبكة / `data=null` ⇒ ليس محامياً (تدرّج آمن إلى بوابة الموظف).
- * الباك-إند يبقى الحكم النهائي؛ هذه إشارة توجيه فقط، لا تُستخدم لعرض بيانات.
+ * «لا» حاسمة: 401/403 يعني قطعاً أن المستخدم لا يملك هذه القدرة → false.
+ * أمّا أخطاء الشبكة/5xx فليست حسماً — نعيد رميها ليعيد React Query المحاولة،
+ * بدل حسم خاطئ يحبس المستخدم في البوابة الخطأ طوال الجلسة.
+ */
+function isDefinitiveNo(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 401 || error.status === 403)
+}
+
+/**
+ * كشف قدرة «محامٍ» دون تغيير الباك-إند: نداء واحد خفيف لملخّص المحامي
+ * (يرث حارس الخادم: employee.linked + cases.view_own).
+ * - نجاح بـ `data` غير فارغة ⇒ محامٍ. · 200 بـ data=null أو 401/403 ⇒ ليس محامياً.
+ * - خطأ شبكة/5xx ⇒ يُعاد رميه (إعادة محاولة)، لا حسم.
  */
 export async function probeIsLawyer(): Promise<boolean> {
   try {
     const summary = await api.get<unknown>('me/legal-summary')
     return summary != null
-  } catch {
-    return false
+  } catch (error) {
+    if (isDefinitiveNo(error)) return false
+    throw error
   }
 }
 
 /**
- * كشف قدرة «إدارة الموارد البشرية» دون تغيير الباك-إند: نداء خفيف لقائمة الموظفين.
- * الخادم يحرسها بصلاحية `employees.view` — فالنجاح (200) يعني أن المستخدم يملكها فعلاً،
- * لا مجرّد وجود المسار. القدرة صلاحية-أوّلاً (HR/مدير/محاسب قد يملكونها لاحقاً باختلاف).
- * - 200 (مصفوفة ولو فارغة) ⇒ يملك الوصول الإداري.
- * - 403 / 401 / خطأ شبكة / data=null ⇒ لا يملكه (تدرّج آمن).
- * إشارة توجيه فقط — الباك-إند يبقى الحكم النهائي على كل عملية.
+ * كشف قدرة «إدارة الموارد البشرية»: نداء خفيف لقائمة الموظفين (يحرسها employees.view).
+ * - 200 (ولو مصفوفة فارغة) ⇒ يملك الوصول. · 401/403 ⇒ لا يملكه.
+ * - خطأ شبكة/5xx ⇒ يُعاد رميه (إعادة محاولة).
  */
 export async function probeCanManageHr(): Promise<boolean> {
   try {
     const data = await api.get<unknown>('employees?per_page=1')
     return data != null
-  } catch {
-    return false
+  } catch (error) {
+    if (isDefinitiveNo(error)) return false
+    throw error
   }
 }
 
 /**
- * كشف قدرة «مالك المنصة / Super Admin» دون تغيير الباك-إند: نداء خفيف لقائمة الأدوار.
- * الخادم يحرس `GET /roles` بصلاحية `roles.manage` — وهي غير مبذورة لـ محامٍ/موظف/HR،
- * فالنجاح (200) يعني فعلاً أن المستخدم يملك التحكّم الإداري بالنظام. ليس مساراً عامّاً.
- * - 200 ⇒ Admin.
- * - 403 / 401 / خطأ شبكة / data=null ⇒ ليس Admin (تدرّج آمن).
- * إشارة توجيه فقط — الباك-إند يبقى الحكم النهائي على كل عملية.
+ * كشف قدرة «مالك المنصّة / Super Admin»: نداء خفيف لقائمة الأدوار (يحرسها roles.manage،
+ * غير مبذورة لمحامٍ/موظف/HR). - 200 ⇒ Admin. · 401/403 ⇒ ليس Admin.
+ * - خطأ شبكة/5xx ⇒ يُعاد رميه (إعادة محاولة).
  */
 export async function probeIsAdmin(): Promise<boolean> {
   try {
     const data = await api.get<unknown>('roles')
     return data != null
-  } catch {
-    return false
+  } catch (error) {
+    if (isDefinitiveNo(error)) return false
+    throw error
   }
 }

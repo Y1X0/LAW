@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { printPayslip, usePayslip, type PayslipDetail } from '@/employee/api/payslips'
-import { ApiError } from '@/core/api/types'
 import { Button, Card } from '@/core/ui/primitives'
 import { InfoRow, SectionCard, Stat } from '@/core/ui/section'
 import { ErrorState, Skeleton } from '@/core/ui/states'
@@ -42,7 +41,8 @@ function PayslipView({ id, slip }: { id: number; slip: PayslipDetail }) {
     try {
       await printPayslip(id)
     } catch (e) {
-      setPrintError(e instanceof ApiError ? e.message : 'تعذّرت الطباعة.')
+      // ApiError وError العادي كلاهما يحمل رسالة مفيدة (منها حجب النافذة المنبثقة).
+      setPrintError(e instanceof Error ? e.message : 'تعذّرت الطباعة.')
     } finally {
       setPrinting(false)
     }

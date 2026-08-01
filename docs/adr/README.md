@@ -21,5 +21,6 @@
 | [004](004-laravel-backend.md) | اعتماد Laravel 11 للـ Backend | معتمَد |
 | [005](005-multitenancy-strategy.md) | استراتيجية العزل: Branch الآن، Tenant مستقبلاً | معتمَد |
 | [006](006-users-manage-super-admin.md) | اعتبار `users.manage` صلاحيةَ مالك المنصّة (Super Admin) | معتمَد |
+| [007](007-leave-on-behalf-not-idor.md) | تقديم الإجازة نيابةً (`POST /leave-requests`) مقصود — SEC-3 إيجابية كاذبة | معتمَد |
 
 > أي قرار معماري جديد يُضاف كملف ADR مرقّم، ولا يُحذف القرار القديم بل تُحدَّث حالته إلى "مستبدَل" مع الإشارة للـ ADR البديل.

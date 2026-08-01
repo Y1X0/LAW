@@ -14,7 +14,7 @@ export function PageHeader({
   return (
     <div className="flex items-start justify-between gap-3">
       <div>
-        <h1 className="text-xl font-bold text-brand-700">{title}</h1>
+        <h1 className="text-[22px] font-extrabold tracking-tight text-brand-700">{title}</h1>
         {subtitle ? <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p> : null}
       </div>
       {action}

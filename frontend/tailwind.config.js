@@ -35,6 +35,16 @@ export default {
           'sans-serif',
         ],
       },
+      // ظلال هادئة فاخرة (Premium elevation) — مربوطة بمتغيّرات CSS.
+      boxShadow: {
+        card: 'var(--shadow-card)',
+        'card-hover': 'var(--shadow-card-hover)',
+        header: 'var(--shadow-header)',
+      },
+      borderRadius: {
+        xl: '0.875rem',
+        '2xl': '1.125rem',
+      },
     },
   },
   plugins: [],

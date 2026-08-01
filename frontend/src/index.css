@@ -2,19 +2,145 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   نظام الحركة والارتفاع (Premium) — CSS-first، GPU-friendly.
+   كل الحركات على transform/opacity فقط، وتُعطَّل مع prefers-reduced-motion.
+   ============================================================ */
+:root {
+  --ease-premium: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 140ms;
+  --dur: 220ms;
+  --dur-slow: 380ms;
+  --shadow-card: 0 1px 2px rgba(15, 37, 71, 0.05), 0 6px 16px -6px rgba(15, 37, 71, 0.08);
+  --shadow-card-hover: 0 16px 38px -12px rgba(15, 37, 71, 0.2), 0 5px 12px rgba(15, 37, 71, 0.08);
+  --shadow-header: 0 1px 0 rgba(15, 37, 71, 0.05), 0 8px 24px -16px rgba(15, 37, 71, 0.22);
+}
+
+/* شريط جانبي كحلي فاخر بتدرّج عمق. */
+.lp-sidebar {
+  background: linear-gradient(180deg, #0a1c38 0%, #0f2547 55%, #16305c 100%);
+}
+/* مؤشّر العنصر النشِط: قضيب ذهبي على الحافة القائدة (يمين في RTL). */
+.lp-nav-active {
+  box-shadow: inset -3px 0 0 0 #d4af37;
+}
+
+html {
+  scroll-behavior: smooth;
+}
 html,
 body,
 #root {
   height: 100%;
 }
-
 body {
   margin: 0;
+  background: #f8fafc;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
+::selection {
+  background: #0f2547;
+  color: #fff;
+}
 
-/* أرقام لاتينية متّسقة داخل واجهة RTL (تواريخ/مبالغ). */
+/* حلقة تركيز موحّدة ولطيفة للعناصر التفاعلية (عدا الحقول — لها تركيزها). */
+:where(a, button, [role='tab'], [role='button'], [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(30, 58, 110, 0.28);
+  border-radius: 10px;
+}
+
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+/* ---- Skeleton shimmer (بدل pulse) ---- */
+@keyframes lp-shimmer {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+.lp-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e9eef5;
+}
+.lp-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  animation: lp-shimmer 1.6s infinite;
+}
+
+/* ---- Reveal (ظهور تدريجي fade + slide-up) ---- */
+@keyframes lp-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.lp-reveal {
+  animation: lp-reveal var(--dur-slow) var(--ease-out-soft) both;
+}
+
+/* ---- Card: انتقال ناعم + رفعة خفيفة عند المرور ---- */
+.lp-card {
+  transition:
+    box-shadow var(--dur) var(--ease-premium),
+    transform var(--dur) var(--ease-premium),
+    border-color var(--dur) var(--ease-premium);
+  will-change: transform;
+}
+.lp-card-hover:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+/* ---- ضغط الأزرار (press-scale) ---- */
+.lp-press {
+  transition:
+    transform var(--dur-fast) var(--ease-premium),
+    box-shadow var(--dur) var(--ease-premium),
+    background-color var(--dur) var(--ease-premium),
+    color var(--dur) var(--ease-premium);
+}
+.lp-press:active {
+  transform: scale(0.975);
+}
+
+/* ---- الحقول ---- */
+.lp-input {
+  transition:
+    border-color var(--dur) var(--ease-premium),
+    box-shadow var(--dur) var(--ease-premium),
+    background-color var(--dur) var(--ease-premium);
+}
+
+/* ---- صفوف الجداول ---- */
+.lp-row {
+  transition: background-color var(--dur-fast) var(--ease-premium);
+}
+
+/* احترام تفضيل تقليل الحركة. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

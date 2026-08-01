@@ -99,6 +99,47 @@ class TaskTest extends TestCase
             ->assertStatus(403);
     }
 
+    /**
+     * SEC-2: إغلاق IDOR على تعديل المهمة — محامٍ (tasks.create + view_own) مرتبط بموظف
+     * لا يستطيع تعديل مهمة مُسنَدة لغيره، ولا تتغيّر بياناتها.
+     */
+    public function test_non_assignee_cannot_update_task(): void
+    {
+        [, , $taskA] = $this->lawyerWithTask();
+        $attacker = $this->userWithPermissions(['tasks.view_own', 'tasks.create']);
+        Employee::factory()->create(['user_id' => $attacker->id]);
+
+        $this->actingAsToken($attacker)
+            ->putJson("/api/tasks/{$taskA->id}", ['title' => 'عنوان مُخترَق'])
+            ->assertStatus(403)
+            ->assertJsonPath('errors.code', 'FORBIDDEN');
+
+        $this->assertDatabaseMissing('case_tasks', ['id' => $taskA->id, 'title' => 'عنوان مُخترَق']);
+    }
+
+    /** SEC-2 (عدم انحدار): المُسنَد إليه (tasks.create) يعدّل مهمته. */
+    public function test_assignee_can_update_own_task(): void
+    {
+        [$userA, , $taskA] = $this->lawyerWithTask(['tasks.create']);
+
+        $this->actingAsToken($userA)
+            ->putJson("/api/tasks/{$taskA->id}", ['title' => 'عنوان محدّث'])
+            ->assertOk()
+            ->assertJsonPath('data.title', 'عنوان محدّث');
+    }
+
+    /** SEC-2 (عدم انحدار): من يملك tasks.view_all يعدّل أي مهمة (الإدارة). */
+    public function test_manager_with_view_all_can_update_any_task(): void
+    {
+        [, , $taskA] = $this->lawyerWithTask();
+        $manager = $this->userWithPermissions(['tasks.view_all', 'tasks.create']);
+
+        $this->actingAsToken($manager)
+            ->putJson("/api/tasks/{$taskA->id}", ['title' => 'تعديل إداري'])
+            ->assertOk()
+            ->assertJsonPath('data.title', 'تعديل إداري');
+    }
+
     public function test_can_reassign_task(): void
     {
         $assigner = $this->userWithPermissions(['tasks.assign']);

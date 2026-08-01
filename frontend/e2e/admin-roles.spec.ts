@@ -35,6 +35,15 @@ function asAdmin(page: Page) {
     overrides: {
       'GET roles': (route) => envelope(route, ROLES), // كشف الدور + قائمة الأدوار
       'GET permissions': (route) => envelope(route, PERMISSIONS),
+      'GET admin/summary': (route) =>
+        envelope(route, {
+          users: { total: 1, active: 1, suspended: 0, locked: 0, without_roles: 0 },
+          employees: { total: 0, active: 0, on_leave: 0, suspended: 0, terminated: 0 },
+          rbac: { roles: 2, permissions: 3 },
+          legal: { cases_total: 0, cases_open: 0, cases_closed: 0, hearings_upcoming: 0 },
+          hr: { leave_pending: 0 },
+          activity: [],
+        }),
       'POST roles': (route) => envelope(route, { id: 9, name: 'clerk', display_name: 'كاتب', is_system: false, permissions: [] }, 201),
       'PUT roles/2/permissions': (route) => envelope(route, { ...ROLES[1], permissions: PERMISSIONS }),
     },

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Core\Http\Controllers\Admin\AdminSummaryController;
 use Modules\Core\Http\Controllers\Admin\UserController;
 use Modules\Core\Http\Controllers\Auth\AuthController;
 use Modules\Core\Http\Controllers\Auth\PasswordController;
@@ -56,5 +57,8 @@ Route::middleware('auth.token')->group(function () {
         Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         Route::post('users/{user}/employee', [UserController::class, 'linkEmployee'])->name('users.employee.link');
         Route::delete('users/{user}/employee', [UserController::class, 'unlinkEmployee'])->name('users.employee.unlink');
+
+        // لوحة نظام وحدة التحكّم (ADMIN-4) — تجميع إحصاءات للقراءة فقط.
+        Route::get('admin/summary', AdminSummaryController::class)->name('admin.summary');
     });
 });

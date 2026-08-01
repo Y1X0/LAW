@@ -1,0 +1,79 @@
+# نشر LawFirm ERP على Render — Blueprint (Infrastructure as Code).
+# ثلاث خدمات: API (Docker: nginx+php-fpm) · واجهة (Static) · Postgres.
+# لا ميزات ولا منطق — تشغيل فقط. راجع docs/DEPLOY-RENDER.md.
+#
+# ملاحظات قرار (بنيت على بنية المشروع الحالية):
+#  - الخدمة تستخدم Dockerfile القائم + إعداد nginx القائم (nginx+php-fpm في صورة واحدة).
+#  - المحرّكات database/sync لتجنّب اشتراط Redis/عامل منفصل في v1.0 (يمكن الترقية لاحقاً).
+#  - القيم sync:false تُضبط يدوياً في لوحة Render (أسرار/عناوين تُعرف بعد الإنشاء).
+
+databases:
+  - name: law-postgres
+    databaseName: lawfirm
+    user: lawfirm
+    plan: free # ارفعها إلى starter للإنتاج الفعلي
+
+services:
+  # ---------- الخلفية (Laravel API) ----------
+  - type: web
+    name: law-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: sh docker/render/start.sh # يخدم HTTP على $PORT (nginx+fpm)
+    healthCheckPath: /up
+    # الهجرات + بذر الأدوار (RbacSeeder، Idempotent) قبل تبديل الإصدار — مرّة لا لكل نسخة.
+    preDeployCommand: "php artisan migrate --force && php artisan db:seed --class=Database\\Seeders\\DatabaseSeeder --force"
+    envVars:
+      - key: APP_KEY # أنشئه: php artisan key:generate --show ثم الصقه
+        sync: false
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL # عنوان هذه الخدمة بعد الإنشاء (https://law-api-xxx.onrender.com)
+        sync: false
+      - key: LOG_CHANNEL
+        value: stderr # سجلّات إلى تيار Render (القرص مؤقّت)
+      - key: LOG_LEVEL
+        value: warning
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase: { name: law-postgres, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: law-postgres, property: port }
+      - key: DB_DATABASE
+        fromDatabase: { name: law-postgres, property: database }
+      - key: DB_USERNAME
+        fromDatabase: { name: law-postgres, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: law-postgres, property: password }
+      - key: CACHE_STORE
+        value: database
+      - key: SESSION_DRIVER
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync # تشغيل المهام ضمن الطلب (لا حاجة لعامل منفصل في v1.0)
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: FRONTEND_URL # عنوان الواجهة — يحصر CORS (اختياري لكن مُوصى به)
+        sync: false
+      - key: MAIL_MAILER
+        value: log # بدّلها إلى smtp + بيانات SMTP لتفعيل بريد إعادة كلمة المرور
+
+  # ---------- الواجهة (React/Vite SPA — استضافة ثابتة) ----------
+  - type: web
+    name: law-web
+    runtime: static
+    buildCommand: "cd frontend && npm ci && npm run build"
+    staticPublishPath: ./frontend/dist
+    # تحويل مسارات SPA (تحديث /admin/users لا يعطي 404).
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL # وقت البناء: https://<law-api-domain>/api
+        sync: false

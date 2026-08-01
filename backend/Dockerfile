@@ -1,9 +1,12 @@
 # LawFirm ERP — Backend (Laravel 11) image
 FROM php:8.3-fpm-alpine
 
-# System deps + PHP extensions (PostgreSQL + Redis + common Laravel needs)
+# System deps + PHP extensions (PostgreSQL + Redis + common Laravel needs).
+# nginx + gettext (envsubst): للتشغيل الإنتاجي (Render) عبر start.sh — لا يؤثّر على
+# استخدام docker-compose الذي يبقى على CMD php-fpm أدناه مع nginx منفصل.
 RUN apk add --no-cache \
         bash git curl libpng-dev libzip-dev postgresql-dev icu-dev oniguruma-dev \
+        nginx gettext \
     && docker-php-ext-install pdo pdo_pgsql pgsql bcmath zip intl pcntl \
     && pecl install redis \
     && docker-php-ext-enable redis
@@ -20,7 +23,10 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-scripts --no-inter
 # App source
 COPY . .
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload -o \
-    && chown -R www-data:www-data storage bootstrap/cache
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod +x docker/render/start.sh
 
+# الافتراضي (docker-compose/التطوير): php-fpm فقط خلف nginx منفصل.
+# الإنتاج (Render): يتجاوز الأمر إلى docker/render/start.sh (nginx+fpm على $PORT).
 EXPOSE 9000
 CMD ["php-fpm"]

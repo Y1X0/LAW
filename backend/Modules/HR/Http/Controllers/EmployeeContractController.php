@@ -16,9 +16,23 @@ class EmployeeContractController
 {
     use RecordsAudit;
 
-    public function index(Employee $employee): JsonResponse
+    public function index(Request $request, Employee $employee): JsonResponse
     {
-        return $this->ok($employee->contracts()->orderByDesc('start_date')->get());
+        // إخفاء الراتب الأساسي عمّن لا يملك employees.salary.view (اتساقاً مع قناع
+        // الموظف نفسه في EmployeeController::present — يمنع تسريب الراتب عبر العقود).
+        $canViewSalary = $request->user()?->hasPermission('employees.salary.view') ?? false;
+
+        $contracts = $employee->contracts()->orderByDesc('start_date')->get()
+            ->map(function (EmployeeContract $contract) use ($canViewSalary) {
+                $row = $contract->toArray();
+                if (! $canViewSalary) {
+                    unset($row['basic_salary']);
+                }
+
+                return $row;
+            });
+
+        return $this->ok($contracts);
     }
 
     public function store(Request $request, Employee $employee): JsonResponse

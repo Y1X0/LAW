@@ -22,11 +22,13 @@ class EmployeeController
         $query = Employee::query()->with(['branch:id,name', 'department:id,name']);
 
         if ($search = $request->query('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('full_name_ar', 'like', "%{$search}%")
-                    ->orWhere('full_name_en', 'like', "%{$search}%")
-                    ->orWhere('employee_no', 'like', "%{$search}%")
-                    ->orWhere('national_id', 'like', "%{$search}%");
+            // LOWER(...) LIKE: بحث غير حسّاس لحالة الأحرف عبر Postgres وsqlite معاً.
+            $needle = '%'.mb_strtolower($search).'%';
+            $query->where(function ($q) use ($needle) {
+                $q->whereRaw('LOWER(full_name_ar) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(full_name_en) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(employee_no) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(national_id) LIKE ?', [$needle]);
             });
         }
 

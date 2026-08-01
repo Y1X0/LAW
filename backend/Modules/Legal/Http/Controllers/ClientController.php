@@ -24,11 +24,13 @@ class ClientController
         $query = Client::query();
 
         if ($search = $request->query('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('national_id', 'like', "%{$search}%");
+            // LOWER(...) LIKE: بحث غير حسّاس لحالة الأحرف عبر Postgres وsqlite معاً.
+            $needle = '%'.mb_strtolower($search).'%';
+            $query->where(function ($q) use ($needle) {
+                $q->whereRaw('LOWER(name) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(phone) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(national_id) LIKE ?', [$needle]);
             });
         }
 

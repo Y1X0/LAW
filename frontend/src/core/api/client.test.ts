@@ -63,6 +63,33 @@ describe('apiRequest', () => {
     expect(tokenStorage.accessToken()).toBe('new') // خُزّن التوكن الجديد
   })
 
+  it('التجديد single-flight: طلبات 401 متزامنة تُنفّذ نداء تجديد واحداً فقط', async () => {
+    tokenStorage.set({ access_token: 'old', refresh_token: 'r' })
+    let refreshCalls = 0
+    const fetchMock = vi.fn().mockImplementation((url: string, init: RequestInit) => {
+      const auth = (init.headers as Record<string, string>).Authorization
+      if (url.endsWith('/auth/refresh')) {
+        refreshCalls++
+        // التوكن القديم يُدوَّر ويُبطَل: نداء تجديد ثانٍ بالقديم كان سيفشل (سباق).
+        return Promise.resolve(jsonResponse({ data: { tokens: { access_token: 'new', refresh_token: 'r2' } }, meta: null, errors: null }))
+      }
+      if (auth === 'Bearer old') return Promise.resolve(jsonResponse({ errors: { code: 'UNAUTH' } }, 401))
+      return Promise.resolve(jsonResponse({ data: { ok: true }, meta: null, errors: null }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    // ثلاثة نداءات متوازية تصطدم كلها بـ 401 في آنٍ واحد.
+    const results = await Promise.all([
+      api.get<{ ok: boolean }>('me/dashboard'),
+      api.get<{ ok: boolean }>('me/attendance'),
+      api.get<{ ok: boolean }>('me/leave/balance'),
+    ])
+
+    expect(results).toEqual([{ ok: true }, { ok: true }, { ok: true }])
+    expect(refreshCalls).toBe(1) // نداء تجديد واحد فقط — لا تسجيل خروج زائف
+    expect(tokenStorage.accessToken()).toBe('new')
+  })
+
   it('يسجّل خروجاً عند فشل التجديد على 401', async () => {
     tokenStorage.set({ access_token: 'old', refresh_token: 'r' })
     const onUnauthorized = vi.fn()

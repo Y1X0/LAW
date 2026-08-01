@@ -13,7 +13,9 @@ use Modules\Attendance\Http\Controllers\WorkShiftController;
 */
 
 // Push/Webhook البصمة (#16) — خارج مصادقة المستخدم؛ يُصادَق بتوكن الجهاز داخل المتحكم.
+// throttle لكل جهاز: تصلّب ضد الإغراق/الاستنزاف غير المصادَق عليه.
 Route::post('biometric/devices/{device}/webhook', [BiometricWebhookController::class, 'receive'])
+    ->middleware('throttle:biometric-webhook')
     ->name('biometric.webhook');
 
 Route::middleware('auth.token')->group(function () {

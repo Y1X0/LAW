@@ -45,8 +45,9 @@ export function ManageUserRolesModal({ user, onClose }: { user: AdminUser; onClo
             <Skeleton key={i} className="h-8 w-full" />
           ))}
         </div>
-      ) : allRoles.isError ? (
-        <ErrorState error={allRoles.error} />
+      ) : allRoles.isError || userRoles.isError ? (
+        // فشل جلب أدوار المستخدم يجب ألّا يُظهر كل الأدوار كغير مُسندة (إسناد مزدوج).
+        <ErrorState error={allRoles.error ?? userRoles.error} />
       ) : (
         <>
           <ul className="max-h-[60vh] divide-y divide-slate-100 overflow-y-auto">

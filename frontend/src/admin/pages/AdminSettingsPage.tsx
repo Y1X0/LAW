@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Card, Field } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
@@ -21,9 +21,14 @@ export function AdminSettingsPage() {
     queryFn: fetchSettings,
   })
 
-  // يملأ النموذج بقيم المجموعة العامّة عند وصولها.
+  // يملأ النموذج مرّة واحدة عند أوّل وصول للبيانات فقط — كي لا تمسح إعادة الجلب
+  // الخلفية (عند تبديل النافذة) ما يكتبه المستخدم قبل الحفظ.
+  const hydrated = useRef(false)
   useEffect(() => {
-    if (data) setValues(generalValues(data))
+    if (data && !hydrated.current) {
+      setValues(generalValues(data))
+      hydrated.current = true
+    }
   }, [data])
 
   const save = useMutation({

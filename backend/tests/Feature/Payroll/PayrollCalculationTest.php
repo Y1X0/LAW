@@ -3,6 +3,7 @@
 namespace Tests\Feature\Payroll;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Modules\HR\Models\Employee;
 use Modules\Payroll\Models\EmployeeSalaryComponent;
 use Modules\Payroll\Models\EmployeeSalaryProfile;
@@ -12,6 +13,7 @@ use Modules\Payroll\Models\PayrollLeaveSummary;
 use Modules\Payroll\Models\PayrollPeriod;
 use Modules\Payroll\Models\PayrollRun;
 use Modules\Payroll\Models\SalaryComponent;
+use Modules\Payroll\Services\PayrollCalculationService;
 use Tests\Concerns\AuthenticatesApi;
 use Tests\TestCase;
 
@@ -143,5 +145,41 @@ class PayrollCalculationTest extends TestCase
 
         $this->actingAsToken($actor)->getJson("/api/payroll-runs/{$run->id}/items")
             ->assertOk()->assertJsonPath('data.0.payroll_run_id', $run->id);
+    }
+
+    /**
+     * PERF-1: المسار المُحمَّل مُسبقاً (Eager، عبر calculateRun) يعطي نتيجة مطابقة
+     * تمامًا للمسار الفردي (calculateEmployee بلا سياق مُسبق) — نفس الأرقام والتفصيل.
+     */
+    public function test_eager_loaded_calculation_matches_per_employee_path(): void
+    {
+        $employee = $this->employeeWithBasic(3000);
+        $this->assign($employee, 'allowance', 'fixed', 500, 'housing');
+        $this->assign($employee, 'allowance', 'percentage', 10, 'transport');
+        $this->assign($employee, 'deduction', 'fixed', 200, 'loan');
+
+        $run = $this->draftRun();
+        PayrollAttendanceSummary::create([
+            'payroll_run_id' => $run->id, 'employee_id' => $employee->id,
+            'absent_days' => 1, 'late_minutes' => 60, 'overtime_minutes' => 120,
+        ]);
+        PayrollLeaveSummary::create([
+            'payroll_run_id' => $run->id, 'employee_id' => $employee->id, 'unpaid_leave_days' => 2,
+        ]);
+
+        /** @var PayrollCalculationService $service */
+        $service = app(PayrollCalculationService::class);
+        $request = Request::create('/');
+
+        // المسار الفردي (بلا $pre): يجلب البيانات لكل استعلام.
+        $perEmployee = $service->calculateEmployee($run, $employee, $request)
+            ->only(['basic_salary', 'allowances_total', 'deductions_total', 'gross_amount', 'net_amount', 'breakdown']);
+
+        // المسار المُحمَّل مُسبقاً (Eager) عبر calculateRun يُحدّث نفس الصف.
+        $service->calculateRun($run, $request);
+        $eager = PayrollItem::where('payroll_run_id', $run->id)->where('employee_id', $employee->id)->first()
+            ->only(['basic_salary', 'allowances_total', 'deductions_total', 'gross_amount', 'net_amount', 'breakdown']);
+
+        $this->assertEquals($perEmployee, $eager, 'يجب أن يطابق مسار Eager المسار الفردي تمامًا.');
     }
 }

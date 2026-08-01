@@ -27,6 +27,12 @@ class AuthService
     public const LOCK_MINUTES = 15;
 
     /**
+     * SEC-4: تجزئة وهمية صالحة (bcrypt) للتحقّق بزمن ثابت تقريباً حين لا يوجد مستخدم —
+     * يمنع تمييز البريد الموجود عن غير الموجود عبر فرق التوقيت.
+     */
+    private const DUMMY_HASH = '$2y$12$D7XlJWG07rTWZ./8kQqxbOB5wJOQ787JLgNBVVpRx/5/s/brOzHIC';
+
+    /**
      * تسجيل الدخول: يتحقق من البيانات والحالة والقفل، ثم يصدر زوج توكنات.
      *
      * @return array{user: User, tokens: array{access_token: string, refresh_token: string, access_expires_at: string, refresh_expires_at: string}}
@@ -35,11 +41,24 @@ class AuthService
     {
         $user = User::where('email', $email)->first();
 
-        if (! $user) {
-            $this->audit('login_failed', null, $request, ['email' => $email]);
+        // SEC-4: تحقّق من كلمة المرور دائماً (حتى لمستخدم غير موجود، عبر تجزئة وهمية)
+        // بزمن ثابت تقريباً — يمنع تعداد الحسابات بفارق التوقيت.
+        $passwordValid = $user
+            ? Hash::check($password, $user->password)
+            : $this->dummyCheck($password);
+
+        // SEC-4: لا تُكشَف حالة الحساب (وجود/قفل/تعطيل) إلا لمن أثبت كلمة المرور الصحيحة.
+        // بكلمة مرور خاطئة، كل الحالات تعيد INVALID_CREDENTIALS موحّدة (لا تمييز).
+        if (! $passwordValid) {
+            $isLocked = $user && $user->locked_until && $user->locked_until->isFuture();
+            if ($user && $user->status === 'active' && ! $isLocked) {
+                $this->registerFailedAttempt($user);
+            }
+            $this->audit('login_failed', $user, $request, ['email' => $email]);
             throw AuthException::invalidCredentials();
         }
 
+        // كلمة المرور صحيحة: الآن فقط نُبلّغ المستخدم الشرعي بحالة حسابه.
         if ($user->locked_until && $user->locked_until->isFuture()) {
             $this->audit('login_locked', $user, $request);
             throw AuthException::accountLocked();
@@ -48,12 +67,6 @@ class AuthService
         if ($user->status !== 'active') {
             $this->audit('login_inactive', $user, $request);
             throw AuthException::accountInactive();
-        }
-
-        if (! Hash::check($password, $user->password)) {
-            $this->registerFailedAttempt($user);
-            $this->audit('login_failed', $user, $request, ['email' => $email]);
-            throw AuthException::invalidCredentials();
         }
 
         // نجاح: تصفير العدّاد وتحديث آخر دخول
@@ -144,6 +157,14 @@ class AuthService
         }
 
         return $token;
+    }
+
+    /** SEC-4: يشغّل تجزئة bcrypt على تجزئة وهمية لمعادلة التوقيت، ويعيد false دائماً. */
+    private function dummyCheck(string $password): bool
+    {
+        Hash::check($password, self::DUMMY_HASH);
+
+        return false;
     }
 
     private function registerFailedAttempt(User $user): void

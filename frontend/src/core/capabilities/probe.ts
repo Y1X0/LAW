@@ -15,3 +15,20 @@ export async function probeIsLawyer(): Promise<boolean> {
     return false
   }
 }
+
+/**
+ * كشف قدرة «إدارة الموارد البشرية» دون تغيير الباك-إند: نداء خفيف لقائمة الموظفين.
+ * الخادم يحرسها بصلاحية `employees.view` — فالنجاح (200) يعني أن المستخدم يملكها فعلاً،
+ * لا مجرّد وجود المسار. القدرة صلاحية-أوّلاً (HR/مدير/محاسب قد يملكونها لاحقاً باختلاف).
+ * - 200 (مصفوفة ولو فارغة) ⇒ يملك الوصول الإداري.
+ * - 403 / 401 / خطأ شبكة / data=null ⇒ لا يملكه (تدرّج آمن).
+ * إشارة توجيه فقط — الباك-إند يبقى الحكم النهائي على كل عملية.
+ */
+export async function probeCanManageHr(): Promise<boolean> {
+  try {
+    const data = await api.get<unknown>('employees?per_page=1')
+    return data != null
+  } catch {
+    return false
+  }
+}

@@ -1,8 +1,9 @@
 import { Navigate } from 'react-router-dom'
 import { useCapabilities } from '@/core/capabilities/useCapabilities'
 
-/** جذر «/»: يوجّه حسب الدور — محامٍ → رئيسية المحامي · موظف → لوحته. */
+/** جذر «/»: يوجّه حسب القدرة — محامٍ → رئيسيته · إدارة HR → لوحة HR · وإلا موظف → لوحته. */
 export function IndexRedirect() {
-  const { isLawyer } = useCapabilities()
-  return <Navigate to={isLawyer ? '/home' : '/dashboard'} replace />
+  const { isLawyer, canManageHr } = useCapabilities()
+  const to = isLawyer ? '/home' : canManageHr ? '/hr' : '/dashboard'
+  return <Navigate to={to} replace />
 }

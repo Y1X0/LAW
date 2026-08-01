@@ -7,6 +7,8 @@ export interface CapabilitiesValue {
   status: CapabilitiesStatus
   /** هل المستخدم محامٍ (له وصول لملخّصه القانوني)؟ */
   isLawyer: boolean
+  /** هل يملك المستخدم وصولاً إدارياً للموارد البشرية (صلاحية employees.view)؟ */
+  canManageHr: boolean
 }
 
 export const CapabilitiesContext = createContext<CapabilitiesValue | null>(null)

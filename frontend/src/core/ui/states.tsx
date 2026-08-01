@@ -31,20 +31,32 @@ export function LoadingState({ label = 'جارٍ التحميل…' }: { label?:
   )
 }
 
-/** حالة فارغة (لا بيانات). */
+/** حالة فارغة (لا بيانات) — أنيقة بأيقونة هادئة. */
 export function EmptyState({ message = 'لا توجد بيانات لعرضها.' }: { message?: string }) {
-  return <div className="py-10 text-center text-sm text-slate-500">{message}</div>
+  return (
+    <div className="lp-reveal flex flex-col items-center justify-center gap-3 py-12 text-center">
+      <span
+        aria-hidden="true"
+        className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"
+      >
+        <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.6">
+          <path d="M4 7h5l2 2h9v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+      <p className="max-w-xs text-sm text-slate-500">{message}</p>
+    </div>
+  )
 }
 
-/** كتلة هيكلية (Skeleton) أثناء التحميل. */
+/** كتلة هيكلية (Skeleton) بتأثير shimmer محترم أثناء التحميل. */
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-slate-200 ${className}`} />
+  return <div className={`lp-skeleton rounded-lg ${className}`} />
 }
 
 /** حالة «لا صلاحية / حساب غير مرتبط» — الباك-إند هو الحكم النهائي. */
 export function PermissionDenied({ notLinked = false }: { notLinked?: boolean }) {
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center">
+    <div className="lp-reveal rounded-2xl border border-amber-200/70 bg-amber-50 p-8 text-center shadow-card">
       <p className="text-sm font-medium text-amber-800">
         {notLinked
           ? 'حسابك غير مرتبط بسجلّ موظف. تواصل مع الموارد البشرية.'
@@ -61,7 +73,7 @@ export function ErrorState({ error, children }: { error: unknown; children?: Rea
   }
   const message = error instanceof Error ? error.message : 'حدث خطأ غير متوقّع.'
   return (
-    <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+    <div className="lp-reveal rounded-2xl border border-red-200/70 bg-red-50 p-8 text-center shadow-card">
       <p className="text-sm font-medium text-red-700">{message}</p>
       {children}
     </div>

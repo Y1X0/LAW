@@ -13,14 +13,14 @@ export interface NavItem {
 }
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${
+  `lp-press group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
     isActive
-      ? 'bg-brand-50 font-semibold text-brand-700'
-      : 'text-slate-600 hover:bg-slate-100 hover:text-brand-700'
+      ? 'lp-nav-active bg-white/10 font-semibold text-white'
+      : 'text-slate-300/90 hover:bg-white/5 hover:text-white'
   }`
 
 /**
- * الهيكل العام (RTL) المشترك: شريط جانبي بالهوية + تنقّل جوّال + رأس + منطقة محتوى.
+ * الهيكل العام (RTL) المشترك: شريط جانبي كحلي بالهوية + تنقّل جوّال + رأس + منطقة محتوى.
  * تمرّر كل بوابة (موظف/محامٍ) عناصر تنقّلها وعنوانها — دون تكرار الكروم.
  */
 export function Shell({ nav, subtitle }: { nav: NavItem[]; subtitle: string }) {
@@ -28,30 +28,46 @@ export function Shell({ nav, subtitle }: { nav: NavItem[]; subtitle: string }) {
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900">
-      {/* شريط جانبي (سطح المكتب) */}
-      <aside className="hidden w-64 shrink-0 border-l border-slate-200 bg-white p-4 md:block">
-        <div className="mb-6 px-1">
-          <Brand subtitle={subtitle} />
+      {/* شريط جانبي كحلي فاخر (سطح المكتب) */}
+      <aside className="lp-sidebar hidden w-64 shrink-0 flex-col p-4 md:flex">
+        <div className="mb-7 px-1 pt-1">
+          <Brand subtitle={subtitle} onDark />
         </div>
-        <nav className="space-y-1">
+        <nav className="space-y-1.5">
           {nav.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end ?? true} className={linkClass}>
-              <Icon name={item.icon} />
-              <span>{item.label}</span>
+              {({ isActive }) => (
+                <>
+                  <Icon
+                    name={item.icon}
+                    className={`h-5 w-5 transition ${isActive ? 'text-gold-400' : 'text-slate-400 group-hover:text-white'}`}
+                  />
+                  <span>{item.label}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
+        <div className="mt-auto border-t border-white/10 pt-3">
+          <button
+            onClick={() => void logout()}
+            className="lp-press flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-300/90 transition hover:bg-white/5 hover:text-white"
+          >
+            <Icon name="profile" className="h-5 w-5 text-slate-400" />
+            <span>تسجيل الخروج</span>
+          </button>
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 md:px-6">
+        <header className="flex items-center justify-between gap-3 border-b border-slate-200/70 bg-white px-4 py-3.5 shadow-header md:px-6">
           <div className="flex items-center gap-2 md:hidden">
             <Brand subtitle={subtitle} />
           </div>
           <span className="hidden text-sm text-slate-600 md:inline">
             {user ? `مرحباً، ${user.name}` : ''}
           </span>
-          <Button variant="ghost" onClick={() => void logout()}>
+          <Button variant="ghost" className="md:hidden" onClick={() => void logout()}>
             تسجيل الخروج
           </Button>
         </header>

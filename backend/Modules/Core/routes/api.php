@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Core\Http\Controllers\Admin\UserController;
 use Modules\Core\Http\Controllers\Auth\AuthController;
 use Modules\Core\Http\Controllers\Auth\PasswordController;
 use Modules\Core\Http\Controllers\HealthController;
@@ -44,5 +45,16 @@ Route::middleware('auth.token')->group(function () {
         Route::get('users/{user}/roles', [UserRoleController::class, 'index'])->name('users.roles.index');
         Route::post('users/{user}/roles', [UserRoleController::class, 'store'])->name('users.roles.store');
         Route::delete('users/{user}/roles/{role}', [UserRoleController::class, 'destroy'])->name('users.roles.destroy');
+
+        // إدارة المستخدمين لوحدة التحكّم (ADMIN-2) — إضافة فقط، بلا مساس بما سبق.
+        Route::get('users', [UserController::class, 'index'])->name('users.index');
+        Route::post('users', [UserController::class, 'store'])->name('users.store');
+        Route::get('users/{user}', [UserController::class, 'show'])->name('users.show');
+        Route::patch('users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::post('users/{user}/disable', [UserController::class, 'disable'])->name('users.disable');
+        Route::post('users/{user}/enable', [UserController::class, 'enable'])->name('users.enable');
+        Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::post('users/{user}/employee', [UserController::class, 'linkEmployee'])->name('users.employee.link');
+        Route::delete('users/{user}/employee', [UserController::class, 'unlinkEmployee'])->name('users.employee.unlink');
     });
 });

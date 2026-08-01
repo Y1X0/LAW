@@ -4,6 +4,7 @@ import { ApiError } from '@/core/api/types'
 import { Button, Card, TextareaField } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { ErrorState, Skeleton } from '@/core/ui/states'
+import { useToast } from '@/core/ui/useToast'
 import { formatDate, formatDateTime } from '@/core/lib/format'
 import { fetchMyWorklog, submitWorklog, todayISO } from '@/lawyer/api/worklog'
 
@@ -13,6 +14,7 @@ import { fetchMyWorklog, submitWorklog, todayISO } from '@/lawyer/api/worklog'
  */
 export function WorklogPage() {
   const qc = useQueryClient()
+  const { show } = useToast()
   const query = useQuery({ queryKey: ['me', 'worklog'], queryFn: fetchMyWorklog })
 
   const today = todayISO()
@@ -38,6 +40,7 @@ export function WorklogPage() {
     mutationFn: submitWorklog,
     onSuccess: () => {
       setSaved(true)
+      show('تم حفظ الإنجاز')
       void qc.invalidateQueries({ queryKey: ['me', 'worklog'] })
     },
   })

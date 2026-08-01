@@ -2,15 +2,16 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useProfile, useUpdateProfile, type Profile } from '@/employee/api/profile'
 import { ApiError } from '@/core/api/types'
 import { Button, Field, TextareaField } from '@/core/ui/primitives'
-import { InfoRow, SectionCard } from '@/core/ui/section'
+import { InfoRow, PageHeader, SectionCard } from '@/core/ui/section'
 import { ErrorState, LoadingState } from '@/core/ui/states'
+import { useToast } from '@/core/ui/useToast'
 
 export function ProfilePage() {
   const { data, isPending, isError, error } = useProfile()
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">ملفي</h1>
+    <div className="space-y-5">
+      <PageHeader title="ملفي" subtitle="بياناتك الشخصية" />
       {isPending ? (
         <LoadingState />
       ) : isError ? (
@@ -43,6 +44,7 @@ function ReadOnlyCard({ profile }: { profile: Profile }) {
 /** الحقول المسموح بتعديلها ذاتياً فقط. */
 function EditCard({ profile }: { profile: Profile }) {
   const update = useUpdateProfile()
+  const { show } = useToast()
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [photoPath, setPhotoPath] = useState('')
@@ -59,13 +61,16 @@ function EditCard({ profile }: { profile: Profile }) {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
-    update.mutate({
-      phone,
-      address,
-      photo_path: photoPath,
-      emergency_contact_name: ecName,
-      emergency_contact_phone: ecPhone,
-    })
+    update.mutate(
+      {
+        phone,
+        address,
+        photo_path: photoPath,
+        emergency_contact_name: ecName,
+        emergency_contact_phone: ecPhone,
+      },
+      { onSuccess: () => show('تم حفظ التغييرات') },
+    )
   }
 
   const fieldErrors = update.error instanceof ApiError ? update.error.fields : undefined

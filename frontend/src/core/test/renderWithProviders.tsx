@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, type RenderResult } from '@testing-library/react'
 import type { ReactElement, ReactNode } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { ToastProvider } from '@/core/ui/ToastProvider'
 
 const future = { v7_startTransition: true, v7_relativeSplatPath: true } as const
 
@@ -19,15 +20,17 @@ export function renderWithProviders(ui: ReactElement, options: Options = {}): Re
   })
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[options.route ?? '/']} future={future}>
-        {options.path ? (
-          <Routes>
-            <Route path={options.path} element={children} />
-          </Routes>
-        ) : (
-          children
-        )}
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter initialEntries={[options.route ?? '/']} future={future}>
+          {options.path ? (
+            <Routes>
+              <Route path={options.path} element={children} />
+            </Routes>
+          ) : (
+            children
+          )}
+        </MemoryRouter>
+      </ToastProvider>
     </QueryClientProvider>
   )
   return render(ui, { wrapper: Wrapper })

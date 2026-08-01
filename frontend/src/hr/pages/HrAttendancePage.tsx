@@ -3,7 +3,6 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { Badge, Button, Card, Field, SelectField } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
-import { Toast } from '@/core/ui/Toast'
 import { useToast } from '@/core/ui/useToast'
 import { formatDate, formatDateTime } from '@/core/lib/format'
 import {
@@ -26,7 +25,7 @@ const PER_PAGE = 15
  */
 export function HrAttendancePage() {
   const qc = useQueryClient()
-  const { toast, show } = useToast()
+  const { show } = useToast()
   const [date, setDate] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
@@ -169,8 +168,6 @@ export function HrAttendancePage() {
           </div>
         </>
       )}
-
-      <Toast toast={toast} />
     </div>
   )
 }

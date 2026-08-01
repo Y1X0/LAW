@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/core/auth/useAuth'
 import { Button } from '@/core/ui/primitives'
 import { Brand } from './Brand'
@@ -25,6 +25,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
  */
 export function Shell({ nav, subtitle }: { nav: NavItem[]; subtitle: string }) {
   const { user, logout } = useAuth()
+  const location = useLocation()
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900">
@@ -94,7 +95,10 @@ export function Shell({ nav, subtitle }: { nav: NavItem[]; subtitle: string }) {
         </nav>
 
         <main className="flex-1 p-4 md:p-6">
-          <Outlet />
+          {/* انتقال صفحة خفيف: يُعاد تشغيله بمفتاح المسار (transform/opacity فقط). */}
+          <div key={location.pathname} className="lp-page">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

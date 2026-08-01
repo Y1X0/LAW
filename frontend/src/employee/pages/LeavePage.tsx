@@ -2,16 +2,17 @@ import { useState, type FormEvent } from 'react'
 import { useLeaveBalance, useLeaveRequests, useSubmitLeave, type LeaveBalance } from '@/employee/api/leave'
 import { ApiError } from '@/core/api/types'
 import { Button, Field, SelectField, TextareaField } from '@/core/ui/primitives'
-import { InfoRow, SectionCard, Stat } from '@/core/ui/section'
+import { InfoRow, PageHeader, SectionCard, Stat } from '@/core/ui/section'
 import { EmptyState, ErrorState, LoadingState } from '@/core/ui/states'
+import { useToast } from '@/core/ui/useToast'
 import { leaveStatusLabel } from '@/core/lib/format'
 
 export function LeavePage() {
   const balance = useLeaveBalance()
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">إجازاتي</h1>
+    <div className="space-y-5">
+      <PageHeader title="إجازاتي" subtitle="رصيدك وطلباتك" />
       {balance.isPending ? (
         <LoadingState />
       ) : balance.isError ? (
@@ -76,6 +77,7 @@ function RequestsCard() {
 
 function SubmitCard({ balance }: { balance: LeaveBalance }) {
   const submit = useSubmitLeave()
+  const { show } = useToast()
   const [typeId, setTypeId] = useState('')
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
@@ -90,6 +92,7 @@ function SubmitCard({ balance }: { balance: LeaveBalance }) {
           setStart('')
           setEnd('')
           setReason('')
+          show('تم تقديم الطلب')
         },
       },
     )

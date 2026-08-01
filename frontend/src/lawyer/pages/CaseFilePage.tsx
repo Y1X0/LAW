@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
-import { Badge } from '@/core/ui/primitives'
+import { Badge, Card } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
+import { Tabs } from '@/core/ui/Tabs'
 import { ErrorState, LoadingState } from '@/core/ui/states'
+import { formatDate } from '@/core/lib/format'
 import { caseStatusLabel } from '@/lawyer/api/cases'
 import { fetchCaseDetail } from '@/lawyer/api/caseFile'
 import { OverviewTab } from './caseFile/OverviewTab'
@@ -71,39 +73,35 @@ export function CaseFilePage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        title={c.title}
-        subtitle={`رقم الملف: ${c.internal_number}`}
-        action={
-          <div className="flex items-center gap-3">
-            <Badge tone={statusTone(c.status)}>{caseStatusLabel(c.status)}</Badge>
+      {/* رأس القضية — دخول هادئ (lp-reveal عند التركيب، فوق الطيّة دائماً)، لمسة ذهبية */}
+      <div className="lp-reveal">
+        <Card className="relative overflow-hidden">
+          <span className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-l from-transparent via-gold-400 to-transparent" />
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-[22px] font-extrabold tracking-tight text-brand-700">{c.title}</h1>
+                <Badge tone={statusTone(c.status)}>{caseStatusLabel(c.status)}</Badge>
+              </div>
+              <p className="text-sm text-slate-500">{`رقم الملف: ${c.internal_number}`}</p>
+            </div>
             {backLink}
           </div>
-        }
-      />
-
-      {/* تنقّل التبويبات */}
-      <div className="overflow-x-auto border-b border-slate-200">
-        <div role="tablist" className="flex gap-1">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              role="tab"
-              aria-selected={tab === t.key}
-              onClick={() => setTab(t.key)}
-              className={`shrink-0 border-b-2 px-4 py-2 text-sm transition ${
-                tab === t.key
-                  ? 'border-brand-600 font-semibold text-brand-700'
-                  : 'border-transparent text-slate-500 hover:text-brand-700'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+          <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2">
+            <HeaderMeta label="العميل" value={c.client?.name ?? '—'} />
+            <HeaderMeta
+              label="تاريخ الفتح"
+              value={<span className="tabular-nums">{formatDate(c.opened_date ?? null)}</span>}
+            />
+          </div>
+        </Card>
       </div>
 
-      <div>
+      {/* تنقّل التبويبات — مؤشّر ذهبي منزلق */}
+      <Tabs tabs={TABS} active={tab} onChange={setTab} />
+
+      {/* محتوى التبويب — انتقال تلاشٍ + انزلاق (يُعاد التركيب بمفتاح التبويب) */}
+      <div key={tab} role="tabpanel" className="lp-tab-panel">
         {tab === 'overview' && <OverviewTab c={c} />}
         {tab === 'parties' && <PartiesTab caseId={id} />}
         {tab === 'hearings' && <HearingsTab caseId={id} />}
@@ -112,6 +110,16 @@ export function CaseFilePage() {
         {tab === 'archive' && <ArchiveTab caseId={id} />}
         {tab === 'tasks' && <TasksTab caseId={id} />}
       </div>
+    </div>
+  )
+}
+
+/** خانة بيانات صغيرة في رأس القضية. */
+function HeaderMeta({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="text-sm">
+      <span className="text-slate-500">{label}: </span>
+      <span className="font-medium text-slate-800">{value}</span>
     </div>
   )
 }

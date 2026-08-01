@@ -177,6 +177,60 @@ body {
   box-shadow: inset -3px 0 0 0 #d4af37;
 }
 
+/* ============================================================
+   تبويبات ملف القضية Premium — مؤشّر ذهبي منزلق، انتقال محتوى،
+   وخطّ زمني حيّ. كل الحركة على transform/opacity، وتُعطَّل أدناه.
+   ============================================================ */
+/* مؤشّر ذهبي ينزلق أسفل التبويب النشِط (يُوضَع عبر translateX + width). */
+.lp-tab-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: #d4af37; /* ذهبي */
+  transition:
+    transform var(--dur) var(--ease-out-soft),
+    width var(--dur) var(--ease-out-soft);
+  will-change: transform, width;
+}
+/* انتقال محتوى التبويب: تلاشٍ + انزلاق خفيف من الحافة القائدة (يمين RTL). */
+@keyframes lp-tab-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.lp-tab-panel {
+  animation: lp-tab-in var(--dur) var(--ease-out-soft) both;
+}
+/* نقطة الحدث الذهبية على الخطّ الزمني — تظهر بتكبير بسيط. */
+@keyframes lp-dot-in {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.lp-timeline-dot {
+  position: absolute;
+  top: 5px;
+  right: -6px; /* توسيط على حافة الخطّ (border 2px) مع pr-6 */
+  height: 10px;
+  width: 10px;
+  border-radius: 9999px;
+  background: #d4af37;
+  box-shadow: 0 0 0 3px #fff, 0 0 0 4px rgba(212, 175, 55, 0.25);
+  animation: lp-dot-in var(--dur) var(--ease-out-soft) both;
+}
+
 /* احترام تفضيل تقليل الحركة. */
 @media (prefers-reduced-motion: reduce) {
   html {

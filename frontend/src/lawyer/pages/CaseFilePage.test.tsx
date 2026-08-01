@@ -60,7 +60,8 @@ describe('CaseFilePage', () => {
     renderCase()
 
     expect(await screen.findByRole('heading', { name: 'قضية تجارية' })).toBeInTheDocument()
-    expect(screen.getByText('شركة الأمل')).toBeInTheDocument()
+    // العميل يظهر في رأس القضية وفي تبويب النظرة العامة معاً (UP-6)
+    expect(screen.getAllByText('شركة الأمل').length).toBeGreaterThan(0)
     expect(screen.getAllByText('أحمد المصري').length).toBeGreaterThan(0)
     // تبويبات موجودة
     expect(screen.getByRole('tab', { name: 'الأطراف' })).toBeInTheDocument()

@@ -20,11 +20,12 @@ use Modules\Core\Http\Controllers\Rbac\UserRoleController;
 Route::get('/health', HealthController::class)->name('core.health');
 
 // المصادقة (Issue #11) — لا RBAC هنا (يأتي في #12).
+// تصلّب أمني (Stabilization): محدِّدات معدّل على النقاط العامّة غير المصادَق عليها.
 Route::prefix('auth')->group(function () {
-    Route::post('login', [AuthController::class, 'login'])->name('auth.login');
-    Route::post('refresh', [AuthController::class, 'refresh'])->name('auth.refresh');
-    Route::post('forgot-password', [PasswordController::class, 'forgot'])->name('auth.forgot');
-    Route::post('reset-password', [PasswordController::class, 'reset'])->name('auth.reset');
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:auth-login')->name('auth.login');
+    Route::post('refresh', [AuthController::class, 'refresh'])->middleware('throttle:auth-login')->name('auth.refresh');
+    Route::post('forgot-password', [PasswordController::class, 'forgot'])->middleware('throttle:auth-password')->name('auth.forgot');
+    Route::post('reset-password', [PasswordController::class, 'reset'])->middleware('throttle:auth-password')->name('auth.reset');
 
     Route::middleware('auth.token')->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');

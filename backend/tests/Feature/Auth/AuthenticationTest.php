@@ -77,6 +77,43 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('errors.code', 'ACCOUNT_INACTIVE');
     }
 
+    /**
+     * SEC-4: بكلمة مرور خاطئة، حساب مُعطَّل لا يكشف حالته — يعيد INVALID_CREDENTIALS
+     * الموحّدة مثل أي فشل، فلا يستطيع مهاجم تعداد الحسابات المُعطَّلة.
+     */
+    public function test_inactive_user_with_wrong_password_does_not_reveal_status(): void
+    {
+        $this->user(['status' => 'suspended']);
+
+        $this->postJson('/api/auth/login', ['email' => 'lawyer@firm.test', 'password' => 'wrong'])
+            ->assertStatus(401)
+            ->assertJsonPath('errors.code', 'INVALID_CREDENTIALS');
+    }
+
+    /** SEC-4: حساب مقفول بكلمة مرور خاطئة يعيد INVALID_CREDENTIALS الموحّدة (لا يكشف القفل). */
+    public function test_locked_user_with_wrong_password_does_not_reveal_status(): void
+    {
+        $this->user(['locked_until' => now()->addMinutes(15)]);
+
+        $this->postJson('/api/auth/login', ['email' => 'lawyer@firm.test', 'password' => 'wrong'])
+            ->assertStatus(401)
+            ->assertJsonPath('errors.code', 'INVALID_CREDENTIALS');
+    }
+
+    /** SEC-4: بريد غير موجود وبريد موجود بكلمة خاطئة يعيدان نفس الرمز (لا تمييز). */
+    public function test_unknown_email_returns_same_code_as_wrong_password(): void
+    {
+        $this->user();
+
+        $unknown = $this->postJson('/api/auth/login', ['email' => 'ghost@firm.test', 'password' => 'whatever'])
+            ->assertStatus(401)->json('errors.code');
+        $wrong = $this->postJson('/api/auth/login', ['email' => 'lawyer@firm.test', 'password' => 'wrong'])
+            ->assertStatus(401)->json('errors.code');
+
+        $this->assertSame($wrong, $unknown);
+        $this->assertSame('INVALID_CREDENTIALS', $unknown);
+    }
+
     public function test_authenticated_user_can_access_me(): void
     {
         $this->user();

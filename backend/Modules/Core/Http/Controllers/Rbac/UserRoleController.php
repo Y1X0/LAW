@@ -5,6 +5,7 @@ namespace Modules\Core\Http\Controllers\Rbac;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\Core\Concerns\GuardsLastAdmin;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\Core\Models\Role;
 
@@ -13,7 +14,7 @@ use Modules\Core\Models\Role;
  */
 class UserRoleController
 {
-    use RecordsAudit;
+    use GuardsLastAdmin, RecordsAudit;
 
     /** GET /api/users/{user}/roles */
     public function index(User $user): JsonResponse
@@ -48,6 +49,14 @@ class UserRoleController
     /** DELETE /api/users/{user}/roles/{role} — إزالة دور. */
     public function destroy(Request $request, User $user, Role $role): JsonResponse
     {
+        // حماية إضافية: لا تُزال قدرة users.manage عن آخر مدير فعّال.
+        if (! $this->activeAdminRemainsAfterPivotRemoval($user->id, $role->id)) {
+            return response()->json([
+                'data' => null, 'meta' => null,
+                'errors' => ['code' => 'LAST_ADMIN_PROTECTED', 'message' => 'لا يمكن إزالة صلاحية إدارة المستخدمين عن آخر مدير فعّال.'],
+            ], 422);
+        }
+
         $user->removeRole($role);
         $this->recordAudit($request, 'user_role_removed', User::class, $user->id, ['role' => $role->name]);
 

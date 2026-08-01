@@ -31,12 +31,22 @@ function stub({ items = [USER], listStatus = 200 }: { items?: unknown[]; listSta
     const url = String(input)
     const method = init?.method ?? 'GET'
 
+    if (/users\/\d+\/roles\/\d+/.test(url) && method === 'DELETE') return json({ data: null })
+    if (/users\/\d+\/roles/.test(url) && method === 'POST') return json({ data: null }, 201)
+    if (/users\/\d+\/roles/.test(url)) return json({ data: [{ id: 1, name: 'admin', display_name: 'مدير' }] })
     if (url.includes('users/5/disable')) return json({ data: { ...USER, status: 'suspended' } })
     if (url.includes('users/5/enable')) return json({ data: { ...USER, status: 'active' } })
     if (url.includes('users/5/reset-password')) return json({ data: { message: 'ok' } })
     if (url.includes('users/5/employee') && method === 'POST')
       return json({ data: { ...USER, employee: { id: 9, employee_no: 'EMP-2001', full_name_ar: 'موظف للربط' } } })
     if (url.includes('/employees')) return usersBody([EMP])
+    if (url.includes('roles'))
+      return json({
+        data: [
+          { id: 1, name: 'admin', display_name: 'مدير' },
+          { id: 2, name: 'auditor', display_name: 'مدقّق' },
+        ],
+      })
     if (url.includes('users') && method === 'POST')
       return json({ data: { ...USER, id: 99, name: 'مستخدم جديد', email: 'new@law.test' } }, 201)
     if (url.includes('users')) {
@@ -138,6 +148,29 @@ describe('AdminUsersPage', () => {
     await user.click(screen.getByRole('button', { name: 'تعطيل' }))
     await waitFor(() =>
       expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('users/5/disable'))).toBe(true),
+    )
+  })
+
+  it('يدير أدوار المستخدم: يسند دوراً غير مسند (POST /users/{id}/roles)', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    const fetchMock = stub()
+    const user = userEvent.setup()
+
+    renderWithProviders(<AdminUsersPage />)
+    await screen.findByText('سارة عبدالله')
+
+    await user.click(screen.getByRole('button', { name: 'الأدوار' }))
+    const dialog = await screen.findByRole('dialog')
+    // «admin» مُسند مسبقاً (زر إزالة)، و«auditor» غير مُسند (زر إسناد).
+    await within(dialog).findByText('مدقّق')
+    await user.click(within(dialog).getByRole('button', { name: 'إسناد' }))
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          (c) => (c[1]?.method ?? 'GET') === 'POST' && /users\/5\/roles$/.test(String(c[0])),
+        ),
+      ).toBe(true),
     )
   })
 

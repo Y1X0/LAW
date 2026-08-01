@@ -10,6 +10,7 @@ export type IconName =
   | 'attendance'
   | 'profile'
   | 'users'
+  | 'shield'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-8 9 8M5 9v11h5v-6h4v6h5V9',
@@ -22,6 +23,7 @@ const PATHS: Record<IconName, string> = {
   attendance: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 21a7 7 0 0 1 14 0',
   profile: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 21a7 7 0 0 1 14 0',
   users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M17 11a4 4 0 0 0 0-8M23 21a7 7 0 0 0-5-6.7',
+  shield: 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3zM9 12l2 2 4-4',
 }
 
 export function Icon({ name, className = 'h-5 w-5' }: { name: IconName; className?: string }) {

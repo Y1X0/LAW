@@ -17,6 +17,7 @@ import { ApiError } from '@/core/api/types'
 import { CreateUserModal } from './components/CreateUserModal'
 import { ResetPasswordModal } from './components/ResetPasswordModal'
 import { LinkEmployeeModal } from './components/LinkEmployeeModal'
+import { ManageUserRolesModal } from './components/ManageUserRolesModal'
 
 const PER_PAGE = 15
 
@@ -35,6 +36,7 @@ export function AdminUsersPage() {
   const [creating, setCreating] = useState(false)
   const [resetting, setResetting] = useState<AdminUser | null>(null)
   const [linking, setLinking] = useState<AdminUser | null>(null)
+  const [managingRoles, setManagingRoles] = useState<AdminUser | null>(null)
 
   const { data, isPending, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['admin', 'users', { search, status, page }],
@@ -140,6 +142,7 @@ export function AdminUsersPage() {
                     onToggle={() => toggle.mutate(user)}
                     onReset={() => setResetting(user)}
                     onLink={() => setLinking(user)}
+                    onRoles={() => setManagingRoles(user)}
                   />
                 ))}
               </tbody>
@@ -169,6 +172,7 @@ export function AdminUsersPage() {
       {creating && <CreateUserModal onClose={() => setCreating(false)} />}
       {resetting && <ResetPasswordModal user={resetting} onClose={() => setResetting(null)} />}
       {linking && <LinkEmployeeModal user={linking} onClose={() => setLinking(null)} />}
+      {managingRoles && <ManageUserRolesModal user={managingRoles} onClose={() => setManagingRoles(null)} />}
     </div>
   )
 }
@@ -179,12 +183,14 @@ function UserRow({
   onToggle,
   onReset,
   onLink,
+  onRoles,
 }: {
   user: AdminUser
   toggling: boolean
   onToggle: () => void
   onReset: () => void
   onLink: () => void
+  onRoles: () => void
 }) {
   const isActive = user.status === 'active'
   return (
@@ -206,6 +212,9 @@ function UserRow({
         <div className="flex items-center gap-1.5">
           <Button variant="ghost" onClick={onToggle} disabled={toggling}>
             {toggling ? 'جارٍ…' : isActive ? 'تعطيل' : 'تفعيل'}
+          </Button>
+          <Button variant="ghost" onClick={onRoles}>
+            الأدوار
           </Button>
           <Button variant="ghost" onClick={onReset}>
             كلمة المرور

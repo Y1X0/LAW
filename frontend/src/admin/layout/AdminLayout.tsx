@@ -7,6 +7,7 @@ import { Shell, type NavItem } from '@/core/layout/Shell'
 const NAV: NavItem[] = [
   { to: '/admin', label: 'الرئيسية', icon: 'dashboard' },
   { to: '/admin/users', label: 'المستخدمون', icon: 'users' },
+  { to: '/admin/roles', label: 'الأدوار والصلاحيات', icon: 'shield' },
 ]
 
 export function AdminLayout() {

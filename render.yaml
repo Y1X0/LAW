@@ -23,8 +23,9 @@ services:
     dockerContext: ./backend
     dockerCommand: sh docker/render/start.sh # يخدم HTTP على $PORT (nginx+fpm)
     healthCheckPath: /up
-    # الهجرات + بذر الأدوار (RbacSeeder، Idempotent) قبل تبديل الإصدار — مرّة لا لكل نسخة.
-    preDeployCommand: "php artisan migrate --force && php artisan db:seed --class=Database\\Seeders\\DatabaseSeeder --force"
+    # الهجرات + بذر الأدوار تُنفَّذ عند إقلاع الحاوية داخل start.sh (idempotent)، لأن
+    # الخطة المجانية في Render لا تدعم preDeployCommand. عند الترقية لخطة مدفوعة يمكن
+    # نقلها إلى preDeployCommand لتشغيلها مرّة قبل تبديل الإصدار بدل كل إقلاع.
     envVars:
       - key: APP_KEY # أنشئه: php artisan key:generate --show ثم الصقه
         sync: false

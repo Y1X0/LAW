@@ -18,7 +18,7 @@
 | `law-web` | Static Site | React/Vite (`frontend/dist`) + تحويل SPA |
 | `law-postgres` | PostgreSQL | قاعدة الإنتاج |
 
-Health check: `/up`. الهجرات + بذر الأدوار: `preDeployCommand` (مرّة، لا لكل نسخة).
+Health check: `/up`. الهجرات + بذر الأدوار تُنفَّذ عند إقلاع الحاوية داخل `start.sh` (idempotent) — لأن الخطة المجانية لا تدعم `preDeployCommand`.
 
 ## قائمة متغيّرات البيئة
 
@@ -49,7 +49,7 @@ Health check: `/up`. الهجرات + بذر الأدوار: `preDeployCommand` 
 3. اضبط الأسرار (`sync:false`):
    - `law-api`: `APP_KEY` (ولّده محليًا: `cd backend && php artisan key:generate --show`)، `APP_URL` (عنوان law-api)، اختياريًا `FRONTEND_URL` و`MAIL_*`.
    - `law-web`: `VITE_API_URL = https://<law-api>/api` ثم **أعد البناء** (تُحقن وقت البناء).
-4. أوّل نشر يشغّل `preDeployCommand` (migrate + بذر الأدوار) ثم يقلع الخادم.
+4. أوّل نشر (وكل إقلاع) يشغّل `start.sh`: `migrate --force` + بذر الأدوار (idempotent) ثم يقلع الخادم.
 5. **إنشاء أوّل مالك منصّة** (قاعدة الإنتاج فيها أدوار بلا مستخدمين — أنشئ حساب Super Admin مرّة من Shell خدمة `law-api`):
    ```sh
    php artisan tinker --execute="\$u=App\Models\User::firstOrCreate(['email'=>'owner@your-firm.com'],['name'=>'مالك المكتب','password'=>bcrypt('ضع-كلمة-قوية'),'status'=>'active','email_verified_at'=>now()]); \$u->assignRole('admin'); echo 'admin ready';"
@@ -58,7 +58,7 @@ Health check: `/up`. الهجرات + بذر الأدوار: `preDeployCommand` 
 7. لعرض تجريبي فقط: شغّل بذرة الديمو مرّة (Shell الخدمة): `php artisan db:seed --class="Database\Seeders\DemoSeeder" --force` (حسابات `*@demo.law` كلمة المرور `Passw0rd!`). **لا تشغّلها في إنتاج حقيقي.**
 
 ## سلامة الإنتاج (مُتحقَّق)
-- ✅ `migrate --force` فقط (في `preDeployCommand`) — لا هجرة تفاعلية.
+- ✅ `migrate --force` فقط (في `start.sh` عند الإقلاع) — لا هجرة تفاعلية.
 - ✅ لا بذر بيانات ديمو تلقائيًا — `DatabaseSeeder` يبذر الأدوار فقط وينشئ الحساب التجريبي في `local/testing` حصراً؛ `DemoSeeder` يدوي صريح.
 - ✅ `APP_DEBUG=false` / `APP_ENV=production` في render.yaml.
 - ✅ لا أسرار في Git — `.env` مُتجاهَل و مستبعَد من الصورة (`.dockerignore`).

@@ -1,10 +1,15 @@
 #!/bin/sh
 # بدء الإنتاج (Render): يخدم HTTP على $PORT عبر nginx أمام php-fpm في نفس الحاوية.
-# لا يشغّل الهجرات هنا (تُنفَّذ في preDeployCommand لتجنّب تكرارها على كل نسخة).
 set -e
 
 : "${PORT:=8080}"
 export PORT
+
+# الهجرات + بذر الأدوار عند الإقلاع: الخطة المجانية في Render لا تدعم preDeployCommand،
+# لذا تُنفَّذ هنا. كلاهما idempotent (migrate يطبّق المعلّق فقط، وRbacSeeder firstOrCreate)،
+# وDatabaseSeeder ينشئ الحساب التجريبي في local/testing فقط — آمن للإنتاج.
+php artisan migrate --force
+php artisan db:seed --class='Database\Seeders\DatabaseSeeder' --force
 
 # استبدال المنفذ فقط في قالب nginx (بقيّة متغيّرات nginx تبقى حرفية).
 envsubst '${PORT}' < /var/www/html/docker/render/nginx.conf.template > /etc/nginx/nginx.conf

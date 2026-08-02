@@ -2,8 +2,10 @@
 
 namespace Modules\HR\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Core\Models\Department;
 use Modules\HR\Models\Employee;
 
 class StoreEmployeeRequest extends FormRequest
@@ -11,6 +13,19 @@ class StoreEmployeeRequest extends FormRequest
     public function authorize(): bool
     {
         return true; // الصلاحيات تُفحص عبر middleware permission:employees.create
+    }
+
+    /** قاعدة عمل: القسم المختار يجب أن يتبع الفرع المحدّد (لا قسم من فرع آخر). */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            $branchId = $this->input('branch_id');
+            $departmentId = $this->input('department_id');
+            if ($branchId && $departmentId
+                && ! Department::where('id', $departmentId)->where('branch_id', $branchId)->exists()) {
+                $v->errors()->add('department_id', 'القسم المختار لا يتبع الفرع المحدّد.');
+            }
+        });
     }
 
     public function rules(): array

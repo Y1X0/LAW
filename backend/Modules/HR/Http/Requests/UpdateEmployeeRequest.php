@@ -2,8 +2,10 @@
 
 namespace Modules\HR\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Core\Models\Department;
 use Modules\HR\Models\Employee;
 
 class UpdateEmployeeRequest extends FormRequest
@@ -11,6 +13,23 @@ class UpdateEmployeeRequest extends FormRequest
     public function authorize(): bool
     {
         return true; // permission:employees.update
+    }
+
+    /** قاعدة عمل: القسم (بعد التعديل) يجب أن يتبع الفرع (بعد التعديل). */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            if (! $this->has('branch_id') && ! $this->has('department_id')) {
+                return; // لم يُمَسّ أيٌّ منهما.
+            }
+            $employee = $this->route('employee');
+            $branchId = $this->input('branch_id', $employee->branch_id);
+            $departmentId = $this->input('department_id', $employee->department_id);
+            if ($branchId && $departmentId
+                && ! Department::where('id', $departmentId)->where('branch_id', $branchId)->exists()) {
+                $v->errors()->add('department_id', 'القسم المختار لا يتبع الفرع المحدّد.');
+            }
+        });
     }
 
     public function rules(): array

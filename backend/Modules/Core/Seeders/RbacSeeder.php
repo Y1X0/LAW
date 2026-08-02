@@ -31,7 +31,7 @@ class RbacSeeder extends Seeder
         'worklog.view_own', 'worklog.submit_own', 'worklog.view_all',
         'documents.view', 'documents.upload', 'documents.view_confidential', 'documents.delete',
         'archive.view', 'archive.create', 'archive.update', 'archive.delete',
-        'users.manage', 'roles.manage', 'settings.manage', 'audit.view', 'backup.manage', 'org.manage',
+        'users.manage', 'roles.manage', 'settings.manage', 'audit.view', 'backup.manage', 'org.manage', 'org.view',
         'reports.hr', 'reports.finance', 'reports.cases', 'reports.marketing',
     ];
 
@@ -84,6 +84,7 @@ class RbacSeeder extends Seeder
     public const HR_PERMISSIONS = [
         'employees.view', 'employees.view_all', 'employees.create', 'employees.update',
         'employees.delete', 'employees.salary.view',
+        'org.view', // قراءة الفروع/الأقسام لتغذية نماذج الموظفين (لا كتابة تنظيمية).
         'attendance.view', 'attendance.manual', 'attendance.approve',
         'leaves.request', 'leaves.approve', 'leaves.view_all',
         'payroll.view',

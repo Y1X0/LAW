@@ -34,17 +34,6 @@ class DemoSeeder extends Seeder
 {
     public const PASSWORD = 'Passw0rd!';
 
-    /** صلاحيات دور الموارد البشرية (بيانات فقط — يُفعّل استخدام بوابة HR). */
-    public const HR_PERMISSIONS = [
-        'employees.view', 'employees.view_all', 'employees.create', 'employees.update',
-        'employees.delete', 'employees.salary.view',
-        'attendance.view', 'attendance.manual', 'attendance.approve',
-        'leaves.request', 'leaves.approve', 'leaves.view_all',
-        'payroll.view',
-        'dashboard.view_own', 'profile.update_own', 'leave.view_own', 'leave.request_own',
-        'attendance.view_own', 'payslip.view_own',
-    ];
-
     public function run(): void
     {
         // 1) الأدوار والصلاحيات الأساسية (Idempotent).
@@ -53,7 +42,7 @@ class DemoSeeder extends Seeder
         // 2) منح دور hr صلاحياته (بيانات role_permission فقط) كي تعمل بوابته.
         Role::where('name', 'hr')->first()
             ?->permissions()->syncWithoutDetaching(
-                Permission::whereIn('name', self::HR_PERMISSIONS)->pluck('id')
+                Permission::whereIn('name', RbacSeeder::HR_PERMISSIONS)->pluck('id')
             );
 
         // 3) قضية المحامي التجريبية الكاملة (Idempotent) — lawyer@demo.law.

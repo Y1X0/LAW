@@ -65,6 +65,10 @@ class AttendanceService
 
         abort_if($record === null || $record->check_in === null, 422, 'لا يوجد تسجيل دخول لهذا اليوم.');
 
+        // وقت الخروج لا يسبق الدخول — يماثل تحقّق storeManual (after_or_equal:check_in).
+        // بدونه ينتج worked_minutes سالب (diffInMinutes في Carbon 3 موقّع) ويُفسِد تقارير الحضور.
+        abort_if($time->lt($record->check_in), 422, 'وقت الخروج لا يمكن أن يسبق وقت الدخول.');
+
         $shift = $record->shift_id ? WorkShift::find($record->shift_id) : $this->resolveShift($employee, $workDate);
         $record->check_out = $time;
         $this->recalcWorked($record);

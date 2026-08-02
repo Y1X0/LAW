@@ -65,7 +65,10 @@ class EmployeeController
     /** GET /api/employees/{employee} */
     public function show(Request $request, Employee $employee): JsonResponse
     {
-        $employee->load(['branch:id,name', 'department:id,name', 'manager:id,full_name_ar']);
+        $employee->load([
+            'branch:id,name', 'department:id,name', 'manager:id,full_name_ar',
+            'user:id,name,email,status', 'user.roles:id,name,display_name',
+        ]);
 
         return $this->ok($this->present($employee, $request));
     }
@@ -97,6 +100,23 @@ class EmployeeController
             foreach (Employee::SENSITIVE_FIELDS as $field) {
                 unset($data[$field]);
             }
+        }
+
+        // حالة الحساب المرتبط (لرؤية HR): هل للموظف حساب دخول؟ بأي دور وحالة؟
+        // إدارة الحساب نفسها تبقى في وحدة التحكّم (users.manage) — هذه رؤية فقط.
+        $data['has_account'] = $employee->user_id !== null;
+        if ($employee->relationLoaded('user')) {
+            unset($data['user']);
+            $user = $employee->user;
+            $data['account'] = $user ? [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'status' => $user->status,
+                'roles' => $user->relationLoaded('roles')
+                    ? $user->roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name, 'display_name' => $r->display_name])->all()
+                    : [],
+            ] : null;
         }
 
         return $data;

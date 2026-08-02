@@ -182,4 +182,29 @@ class PayrollCalculationTest extends TestCase
 
         $this->assertEquals($perEmployee, $eager, 'يجب أن يطابق مسار Eager المسار الفردي تمامًا.');
     }
+
+    /**
+     * تحصين determinism: لو (نادراً) وُجد أكثر من ملف راتب نشط لموظف، يجب أن يختار
+     * المساران نفس الملف (أدنى معرّف) فلا تختلف قيمة الراتب حسب المسار.
+     */
+    public function test_both_paths_pick_same_profile_when_multiple_active(): void
+    {
+        $employee = Employee::factory()->create();
+        // ملفان نشطان: الأدنى معرّفاً = 3000 (يجب أن يُختار في المسارين).
+        EmployeeSalaryProfile::create(['employee_id' => $employee->id, 'basic_salary' => 3000, 'currency' => 'SAR', 'effective_from' => '2026-01-01', 'is_active' => true]);
+        EmployeeSalaryProfile::create(['employee_id' => $employee->id, 'basic_salary' => 9999, 'currency' => 'SAR', 'effective_from' => '2026-02-01', 'is_active' => true]);
+
+        /** @var PayrollCalculationService $service */
+        $service = app(PayrollCalculationService::class);
+        $request = Request::create('/');
+
+        $run = $this->draftRun();
+        $perEmployee = (float) $service->calculateEmployee($run, $employee, $request)->basic_salary;
+
+        $service->calculateRun($run, $request);
+        $eager = (float) PayrollItem::where('payroll_run_id', $run->id)->where('employee_id', $employee->id)->first()->basic_salary;
+
+        $this->assertSame(3000.0, $perEmployee, 'المسار الفردي يختار أدنى معرّف.');
+        $this->assertSame($perEmployee, $eager, 'المساران يختاران نفس الملف.');
+    }
 }

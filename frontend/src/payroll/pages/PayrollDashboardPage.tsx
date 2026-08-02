@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
@@ -53,7 +54,10 @@ export function PayrollDashboardPage() {
             <StatCard label="المسيرات المحسوبة" value={String(totals.data.runs)} icon="data" />
           </div>
 
-          <SectionCard title="أحدث الفترات">
+          <SectionCard
+            title="أحدث الفترات"
+            action={<Link to="/payroll/periods" className="text-xs font-medium text-brand-600 hover:underline">إدارة الفترات ←</Link>}
+          >
             {periods.data.length === 0 ? (
               <EmptyState message="لا توجد فترات رواتب بعد." />
             ) : (

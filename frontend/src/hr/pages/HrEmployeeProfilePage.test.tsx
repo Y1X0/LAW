@@ -110,4 +110,26 @@ describe('HrEmployeeProfilePage', () => {
     renderProfile()
     expect(await screen.findByText(/حدث خطأ/)).toBeInTheDocument()
   })
+
+  it('يعرض حالة الحساب المرتبط (بريد + دور) داخل بوابة HR', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    const withAccount = {
+      ...EMP,
+      has_account: true,
+      account: { id: 5, email: 'user@firm.test', status: 'active', roles: [{ id: 2, name: 'hr', display_name: 'الموارد البشرية' }] },
+    }
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/contracts')) return ok([])
+      if (url.includes('/documents')) return ok([])
+      if (url.includes('/leave-balances')) return ok([])
+      if (url.includes('leave-requests')) return ok([])
+      if (url.includes('attendance')) return ok([])
+      if (url.includes('payroll-reports')) return ok(PAYROLL)
+      return ok(withAccount)
+    }))
+    renderProfile()
+    expect(await screen.findByText('user@firm.test')).toBeInTheDocument()
+    expect(screen.getByText('الموارد البشرية')).toBeInTheDocument()
+  })
 })

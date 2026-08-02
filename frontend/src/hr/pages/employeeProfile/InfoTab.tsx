@@ -1,3 +1,4 @@
+import { Badge } from '@/core/ui/primitives'
 import { InfoRow, SectionCard } from '@/core/ui/section'
 import { formatDate } from '@/core/lib/format'
 import type { EmployeeDetail } from '@/hr/api/employeeProfile'
@@ -5,6 +6,10 @@ import type { EmployeeDetail } from '@/hr/api/employeeProfile'
 /** تبويب المعلومات — من حمولة GET /employees/{id} المحمّلة مسبقاً في الرأس. */
 export function InfoTab({ emp }: { emp: EmployeeDetail }) {
   const gender = emp.gender === 'male' ? 'ذكر' : emp.gender === 'female' ? 'أنثى' : '—'
+  const acct = emp.account
+  const rolesLabel = acct && acct.roles.length > 0
+    ? acct.roles.map((r) => r.display_name || r.name).join('، ')
+    : '—'
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <SectionCard title="بيانات الموظف">
@@ -31,6 +36,24 @@ export function InfoTab({ emp }: { emp: EmployeeDetail }) {
         <SectionCard title="جهة الطوارئ">
           <InfoRow label="الاسم" value={emp.emergency_contact_name ?? '—'} />
           <InfoRow label="الهاتف" value={<span className="tabular-nums">{emp.emergency_contact_phone ?? '—'}</span>} />
+        </SectionCard>
+
+        <SectionCard title="حساب الدخول">
+          {emp.has_account && acct ? (
+            <>
+              <InfoRow
+                label="الحالة"
+                value={<Badge tone={acct.status === 'active' ? 'green' : 'amber'}>{acct.status === 'active' ? 'مُفعّل' : 'معطّل'}</Badge>}
+              />
+              <InfoRow label="البريد" value={acct.email ?? '—'} />
+              <InfoRow label="الأدوار" value={rolesLabel} />
+            </>
+          ) : (
+            <InfoRow
+              label="الحساب"
+              value={<span className="text-slate-500">لا حساب مرتبط — يُنشأ ويُدار من وحدة التحكّم.</span>}
+            />
+          )}
         </SectionCard>
       </div>
     </div>

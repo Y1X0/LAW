@@ -26,9 +26,22 @@ export const employeeDetailSchema = z.object({
   contract_type: z.string().nullable().optional(),
   emergency_contact_name: z.string().nullable().optional(),
   emergency_contact_phone: z.string().nullable().optional(),
+  termination_date: z.string().nullable().optional(),
+  termination_reason: z.string().nullable().optional(),
   branch: refSchema,
   department: refSchema,
   manager: z.object({ id: z.number(), full_name_ar: z.string() }).nullable().optional(),
+  // حالة الحساب المرتبط (رؤية فقط لـHR؛ الإدارة في وحدة التحكّم).
+  has_account: z.boolean().optional().default(false),
+  account: z
+    .object({
+      id: z.number(),
+      email: z.string().nullable().optional(),
+      status: z.string().nullable().optional(),
+      roles: z.array(z.object({ id: z.number(), name: z.string(), display_name: z.string().nullable().optional() })).default([]),
+    })
+    .nullable()
+    .optional(),
 })
 export type EmployeeDetail = z.infer<typeof employeeDetailSchema>
 

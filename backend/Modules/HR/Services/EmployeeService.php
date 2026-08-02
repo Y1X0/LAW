@@ -21,6 +21,10 @@ class EmployeeService
 
     public function create(array $data, Request $request): Employee
     {
+        // توليد رقم وظيفي تلقائي إن تُرك فارغاً (قابل للتعديل من الواجهة قبل الحفظ).
+        if (empty($data['employee_no'])) {
+            $data['employee_no'] = $this->nextEmployeeNo();
+        }
         $data['created_by'] = $request->user()?->id;
         $employee = Employee::create($data);
 
@@ -68,5 +72,22 @@ class EmployeeService
         $employee->delete();
 
         $this->recordAudit($request, 'employee_archived', Employee::class, $id);
+    }
+
+    /**
+     * الرقم الوظيفي التالي بنمط EMP-#### (يشمل المؤرشفين لتفادي إعادة استخدام رقم).
+     * يعتمد أعلى لاحقة رقمية موجودة بالنمط ثم +1، وإلا يبدأ من 1001.
+     */
+    public function nextEmployeeNo(string $prefix = 'EMP-'): string
+    {
+        $max = Employee::withTrashed()
+            ->where('employee_no', 'like', $prefix.'%')
+            ->get('employee_no')
+            ->map(fn ($e) => (int) preg_replace('/\D/', '', substr($e->employee_no, strlen($prefix))))
+            ->max();
+
+        $next = max(($max ?? 1000) + 1, 1001);
+
+        return $prefix.$next;
     }
 }

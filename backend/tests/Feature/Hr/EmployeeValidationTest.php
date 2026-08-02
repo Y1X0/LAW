@@ -42,10 +42,11 @@ class EmployeeValidationTest extends TestCase
 
     public function test_required_fields_are_enforced(): void
     {
+        // employee_no لم يعد مطلوباً (يُولَّد تلقائياً EMP-#### إن تُرك فارغاً).
         $this->actingAsToken($this->admin)->postJson('/api/employees', [])
             ->assertStatus(422)
             ->assertJsonPath('errors.code', 'VALIDATION_ERROR')
-            ->assertJsonStructure(['errors' => ['fields' => ['branch_id', 'department_id', 'employee_no', 'full_name_ar', 'national_id']]]);
+            ->assertJsonStructure(['errors' => ['fields' => ['branch_id', 'department_id', 'full_name_ar', 'national_id']]]);
     }
 
     public function test_national_id_must_be_unique(): void

@@ -33,7 +33,8 @@ class StoreEmployeeRequest extends FormRequest
         return [
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
             'department_id' => ['required', 'integer', 'exists:departments,id'],
-            'employee_no' => ['required', 'string', 'max:30', 'unique:employees,employee_no'],
+            // اختياري: يُولَّد تلقائياً (EMP-####) إن تُرك فارغاً.
+            'employee_no' => ['nullable', 'string', 'max:30', 'unique:employees,employee_no'],
             'full_name_ar' => ['required', 'string', 'max:150'],
             'full_name_en' => ['nullable', 'string', 'max:150'],
             'national_id' => ['required', 'string', 'max:20', 'unique:employees,national_id'],
@@ -49,6 +50,8 @@ class StoreEmployeeRequest extends FormRequest
             'contract_type' => ['nullable', Rule::in(['permanent', 'temporary', 'part_time'])],
             'contract_start' => ['nullable', 'date'],
             'contract_end' => ['nullable', 'date', 'after_or_equal:contract_start'],
+            'termination_date' => ['nullable', 'date'],
+            'termination_reason' => ['nullable', 'string', 'max:255'],
             'basic_salary' => ['nullable', 'numeric', 'min:0'],
             'bank_name' => ['nullable', 'string', 'max:120'],
             'bank_account' => ['nullable', 'string', 'max:50'],

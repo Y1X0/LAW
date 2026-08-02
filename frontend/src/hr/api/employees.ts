@@ -104,7 +104,7 @@ export type EmployeeDetail = z.infer<typeof employeeDetailSchema>
 export interface EmployeeInput {
   branch_id: number
   department_id: number
-  employee_no: string
+  employee_no?: string | null
   full_name_ar: string
   full_name_en?: string | null
   national_id: string
@@ -114,6 +114,8 @@ export interface EmployeeInput {
   manager_id?: number | null
   hire_date?: string | null
   status?: string
+  termination_date?: string | null
+  termination_reason?: string | null
 }
 
 export async function fetchEmployee(id: number): Promise<EmployeeDetail> {

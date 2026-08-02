@@ -37,6 +37,8 @@ export function EmployeeFormModal({ employee, onClose }: { employee: EmployeeDet
     hire_date: employee?.hire_date ? String(employee.hire_date).slice(0, 10) : '',
     status: employee?.status ?? 'active',
     manager_id: employee?.manager_id ? String(employee.manager_id) : '',
+    termination_date: employee?.termination_date ? String(employee.termination_date).slice(0, 10) : '',
+    termination_reason: (employee?.termination_reason as string) ?? '',
   })
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
@@ -63,7 +65,7 @@ export function EmployeeFormModal({ employee, onClose }: { employee: EmployeeDet
       const input: EmployeeInput = {
         branch_id: Number(branchId),
         department_id: Number(departmentId),
-        employee_no: form.employee_no.trim(),
+        employee_no: form.employee_no.trim() || undefined,
         full_name_ar: form.full_name_ar.trim(),
         full_name_en: form.full_name_en.trim() || null,
         national_id: form.national_id.trim(),
@@ -73,6 +75,8 @@ export function EmployeeFormModal({ employee, onClose }: { employee: EmployeeDet
         hire_date: form.hire_date || null,
         status: form.status,
         manager_id: form.manager_id ? Number(form.manager_id) : null,
+        termination_date: form.status === 'terminated' ? form.termination_date || null : null,
+        termination_reason: form.status === 'terminated' ? form.termination_reason.trim() || null : null,
       }
       return isEdit ? updateEmployee(employee.id, input) : createEmployee(input)
     },
@@ -115,7 +119,12 @@ export function EmployeeFormModal({ employee, onClose }: { employee: EmployeeDet
             {(departments.data ?? []).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </SelectField>
 
-          <Field label="الرقم الوظيفي *" value={form.employee_no} onChange={set('employee_no')} required />
+          <Field
+            label="الرقم الوظيفي"
+            value={form.employee_no}
+            onChange={set('employee_no')}
+            placeholder="يُولّد تلقائياً إن تُرك فارغاً"
+          />
           <Field label="الرقم الوطني *" value={form.national_id} onChange={set('national_id')} required />
           <Field label="الاسم بالعربية *" value={form.full_name_ar} onChange={set('full_name_ar')} required />
           <Field label="الاسم بالإنجليزية" value={form.full_name_en} onChange={set('full_name_en')} />
@@ -130,6 +139,13 @@ export function EmployeeFormModal({ employee, onClose }: { employee: EmployeeDet
             <option value="">— بدون —</option>
             {managerOptions.map((m) => <option key={m.id} value={m.id}>{m.full_name_ar}</option>)}
           </SelectField>
+
+          {form.status === 'terminated' && (
+            <>
+              <Field label="تاريخ إنهاء الخدمة" type="date" value={form.termination_date} onChange={set('termination_date')} />
+              <Field label="سبب إنهاء الخدمة" value={form.termination_reason} onChange={set('termination_reason')} />
+            </>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 pt-1">

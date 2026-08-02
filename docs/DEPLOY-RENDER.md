@@ -63,6 +63,7 @@ Health check: `/up`. الهجرات + بذر الأدوار: `preDeployCommand` 
 - ✅ `APP_DEBUG=false` / `APP_ENV=production` في render.yaml.
 - ✅ لا أسرار في Git — `.env` مُتجاهَل و مستبعَد من الصورة (`.dockerignore`).
 - ✅ سجلّات مناسبة — `LOG_CHANNEL=stderr`.
+- ✅ رؤوس أمان في nginx (OPS-2): `X-Frame-Options` · `X-Content-Type-Options` · `Referrer-Policy` · `HSTS`. (CSP مؤجّل حتى اختبار الواجهة.) تُتحقَّق فعليًا بأول بناء/نشر على Render.
 
 ## قرارات تحتاج موافقتك
 1. **الخطط (plan):** `render.yaml` يستخدم `free` — للإنتاج الفعلي ارفع الخدمة والقاعدة إلى `starter`+ (الـfree تنام وتفقد بيانات القاعدة بعد 90 يومًا).

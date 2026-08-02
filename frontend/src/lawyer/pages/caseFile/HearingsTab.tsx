@@ -24,13 +24,13 @@ export function HearingsTab({ caseId }: { caseId: string }) {
         <DataTable head={['التاريخ والوقت', 'النوع', 'الحالة', 'المكان', 'النتيجة/الملاحظات']}>
           {hearings.map((h) => (
             <tr key={h.id} className="border-b border-slate-100 last:border-0">
-              <td className="px-4 py-3 tabular-nums text-slate-700">{formatDateTime(h.scheduled_at)}</td>
-              <td className="px-4 py-3 text-slate-600">{h.type ?? '—'}</td>
-              <td className="px-4 py-3">
+              <td data-label="التاريخ والوقت" className="px-4 py-3 tabular-nums text-slate-700">{formatDateTime(h.scheduled_at)}</td>
+              <td data-label="النوع" className="px-4 py-3 text-slate-600">{h.type ?? '—'}</td>
+              <td data-label="الحالة" className="px-4 py-3">
                 <Badge tone={tone(h.status)}>{hearingStatusLabel(h.status)}</Badge>
               </td>
-              <td className="px-4 py-3 text-slate-600">{h.location ?? '—'}</td>
-              <td className="px-4 py-3 text-slate-600">{h.outcome ?? h.postponed_reason ?? h.notes ?? '—'}</td>
+              <td data-label="المكان" className="px-4 py-3 text-slate-600">{h.location ?? '—'}</td>
+              <td data-label="النتيجة/الملاحظات" className="px-4 py-3 text-slate-600">{h.outcome ?? h.postponed_reason ?? h.notes ?? '—'}</td>
             </tr>
           ))}
         </DataTable>

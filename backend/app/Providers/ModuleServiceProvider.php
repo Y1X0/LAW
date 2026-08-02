@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Core\Http\Middleware\AuthenticateToken;
 use Modules\Core\Http\Middleware\EnsurePermission;
-use Modules\Core\Http\Middleware\EnsureRole;
 use Modules\HR\Http\Middleware\EnsureLinkedEmployee;
 
 /**
@@ -39,7 +38,6 @@ class ModuleServiceProvider extends ServiceProvider
         $router = $this->app['router'];
         $router->aliasMiddleware('auth.token', AuthenticateToken::class);   // مصادقة (#11)
         $router->aliasMiddleware('permission', EnsurePermission::class);    // RBAC (#12)
-        $router->aliasMiddleware('role', EnsureRole::class);               // RBAC (#12)
         $router->aliasMiddleware('employee.linked', EnsureLinkedEmployee::class); // خدمة ذاتية (#47)
 
         // تكامل RBAC مع Gate: أي صلاحية يملكها المستخدم تُمنح تلقائياً (docs/05 §4).

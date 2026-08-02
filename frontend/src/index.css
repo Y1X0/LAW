@@ -177,6 +177,58 @@ body {
   box-shadow: inset -3px 0 0 0 #d4af37;
 }
 
+/* على الجوال (< sm): يتحوّل كل .lp-table إلى بطاقات مكدّسة — لا سحب أفقي.
+   كل خلية تعرض اسم عمودها عبر data-label؛ خلايا بلا سمة (نماذج ممتدة) تبقى
+   كتلة كاملة العرض. لا يؤثّر على أدوار ARIA الضمنية (row/cell) فالاختبارات سليمة. */
+@media (max-width: 639.98px) {
+  .lp-table thead {
+    display: none;
+  }
+  .lp-table,
+  .lp-table tbody,
+  .lp-table tbody tr,
+  .lp-table tbody td {
+    display: block;
+    width: auto;
+  }
+  .lp-table tbody tr {
+    border: 1px solid #e2e8f0; /* slate-200 */
+    border-radius: 0.75rem;
+    padding: 0.25rem 0.875rem;
+    margin-bottom: 0.625rem;
+    background: #fff;
+  }
+  .lp-table tbody tr:nth-child(even),
+  .lp-table tbody tr:hover,
+  .lp-table tbody tr:focus-within {
+    background: #fff; /* لا تناوب/تحويم داخل البطاقات المكدّسة */
+  }
+  .lp-table tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid #f1f5f9; /* slate-100 */
+    text-align: start;
+    white-space: normal;
+  }
+  .lp-table tbody tr td:last-child {
+    border-bottom: 0;
+  }
+  .lp-table tbody td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #64748b; /* slate-500 */
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+  /* خلية ممتدة (نموذج/بلا تسمية): كتلة كاملة العرض دون محاذاة طرفية. */
+  .lp-table tbody td:not([data-label]) {
+    display: block;
+  }
+}
+
 /* ============================================================
    تبويبات ملف القضية Premium — مؤشّر ذهبي منزلق، انتقال محتوى،
    وخطّ زمني حيّ. كل الحركة على transform/opacity، وتُعطَّل أدناه.

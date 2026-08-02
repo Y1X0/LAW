@@ -67,7 +67,7 @@ export function AdminAuditPage() {
         <>
           <Card className="lp-table-wrap p-0">
             <table
-              className={`lp-table min-w-[760px] text-right text-sm transition-opacity ${isFetching ? 'opacity-60' : ''}`}
+              className={`lp-table sm:min-w-[760px] text-right text-sm transition-opacity ${isFetching ? 'opacity-60' : ''}`}
               aria-busy={isFetching}
             >
               <thead>
@@ -82,13 +82,13 @@ export function AdminAuditPage() {
               <tbody>
                 {data.items.map((e) => (
                   <tr key={e.id} className="border-b border-slate-100 last:border-0">
-                    <td className="px-4 py-3 font-medium text-slate-800">{activityLabel(e.action)}</td>
-                    <td className="px-4 py-3 text-slate-600">{e.user?.name ?? '—'}</td>
-                    <td className="px-4 py-3 text-slate-500">
+                    <td data-label="الإجراء" className="px-4 py-3 font-medium text-slate-800">{activityLabel(e.action)}</td>
+                    <td data-label="المستخدم" className="px-4 py-3 text-slate-600">{e.user?.name ?? '—'}</td>
+                    <td data-label="الكيان" className="px-4 py-3 text-slate-500">
                       {e.auditable_type ? `${e.auditable_type}#${e.auditable_id ?? '—'}` : '—'}
                     </td>
-                    <td className="px-4 py-3 tabular-nums text-xs text-slate-400">{e.ip_address ?? '—'}</td>
-                    <td className="px-4 py-3 tabular-nums text-xs text-slate-400">
+                    <td data-label="IP" className="px-4 py-3 tabular-nums text-xs text-slate-400">{e.ip_address ?? '—'}</td>
+                    <td data-label="التاريخ" className="px-4 py-3 tabular-nums text-xs text-slate-400">
                       {e.created_at ? new Date(e.created_at).toLocaleString('ar') : '—'}
                     </td>
                   </tr>

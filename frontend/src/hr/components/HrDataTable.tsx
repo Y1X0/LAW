@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 export function HrDataTable({ head, children }: { head: string[]; children: ReactNode }) {
   return (
     <div className="lp-table-wrap rounded-xl border border-slate-200 bg-white shadow-card">
-      <table className="lp-table min-w-[560px] text-right text-sm">
+      <table className="lp-table sm:min-w-[560px] text-right text-sm">
         <thead>
           <tr className="text-xs">
             {head.map((h) => (

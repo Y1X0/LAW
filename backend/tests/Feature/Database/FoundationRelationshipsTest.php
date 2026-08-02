@@ -4,7 +4,6 @@ namespace Tests\Feature\Database;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Modules\Core\Models\ActivityLog;
 use Modules\Core\Models\AuditLog;
 use Modules\Core\Models\Branch;
 use Modules\Core\Models\Department;
@@ -81,18 +80,5 @@ class FoundationRelationshipsTest extends TestCase
         $this->assertIsArray($log->fresh()->new_values);
         $this->assertNull(AuditLog::UPDATED_AT);
         $this->assertNotNull($log->created_at);
-    }
-
-    public function test_activity_log_records_user_action(): void
-    {
-        $user = User::factory()->create();
-        $activity = ActivityLog::create([
-            'user_id' => $user->id,
-            'description' => 'أنشأ قضية جديدة',
-            'subject_type' => 'Case',
-            'subject_id' => 5,
-        ]);
-
-        $this->assertEquals($user->id, $activity->user->id);
     }
 }

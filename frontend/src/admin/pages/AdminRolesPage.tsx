@@ -60,7 +60,7 @@ export function AdminRolesPage() {
         </Card>
       ) : (
         <Card className="lp-table-wrap p-0">
-          <table className="lp-table min-w-[760px] text-right text-sm">
+          <table className="lp-table sm:min-w-[760px] text-right text-sm">
             <thead>
               <tr className="text-xs">
                 <th className="px-4 py-3 text-right">الدور</th>
@@ -72,7 +72,7 @@ export function AdminRolesPage() {
             <tbody>
               {data.map((role) => (
                 <tr key={role.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-4 py-3">
+                  <td data-label="الدور" className="px-4 py-3">
                     <span className="font-medium text-slate-800">{role.display_name || role.name}</span>
                     {role.is_system && (
                       <span className="ms-2 align-middle">
@@ -80,9 +80,9 @@ export function AdminRolesPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-xs text-slate-400">{role.name}</td>
-                  <td className="px-4 py-3 tabular-nums text-slate-600">{role.permissions.length}</td>
-                  <td className="px-4 py-3">
+                  <td data-label="المعرّف" className="px-4 py-3 tabular-nums text-xs text-slate-400">{role.name}</td>
+                  <td data-label="الصلاحيات" className="px-4 py-3 tabular-nums text-slate-600">{role.permissions.length}</td>
+                  <td data-label="إجراءات" className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Button variant="ghost" onClick={() => setEditingPerms(role)}>
                         الصلاحيات

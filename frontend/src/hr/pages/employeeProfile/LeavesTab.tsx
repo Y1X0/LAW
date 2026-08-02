@@ -41,11 +41,11 @@ export function LeavesTab({ employeeId }: { employeeId: string }) {
             <HrDataTable head={['النوع', 'من', 'إلى', 'الأيام', 'الحالة']}>
               {requests.map((r) => (
                 <tr key={r.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-4 py-3 text-slate-700">{r.leaveType?.name ?? '—'}</td>
-                  <td className="px-4 py-3 tabular-nums text-slate-600">{formatDate(r.start_date ?? null)}</td>
-                  <td className="px-4 py-3 tabular-nums text-slate-600">{formatDate(r.end_date ?? null)}</td>
-                  <td className="px-4 py-3 tabular-nums text-slate-600">{r.days ?? '—'}</td>
-                  <td className="px-4 py-3">
+                  <td data-label="النوع" className="px-4 py-3 text-slate-700">{r.leaveType?.name ?? '—'}</td>
+                  <td data-label="من" className="px-4 py-3 tabular-nums text-slate-600">{formatDate(r.start_date ?? null)}</td>
+                  <td data-label="إلى" className="px-4 py-3 tabular-nums text-slate-600">{formatDate(r.end_date ?? null)}</td>
+                  <td data-label="الأيام" className="px-4 py-3 tabular-nums text-slate-600">{r.days ?? '—'}</td>
+                  <td data-label="الحالة" className="px-4 py-3">
                     <Badge tone={leaveStatusTone(r.status)}>{leaveStatusLabel(r.status)}</Badge>
                   </td>
                 </tr>

@@ -6,6 +6,7 @@ import { Shell, type NavItem } from '@/core/layout/Shell'
  */
 const NAV: NavItem[] = [
   { to: '/admin', label: 'الرئيسية', icon: 'dashboard' },
+  { to: '/hr/employees', label: 'الموظفون', icon: 'profile', end: false },
   { to: '/admin/onboarding', label: 'تهيئة موظف جديد', icon: 'users' },
   { to: '/admin/users', label: 'المستخدمون', icon: 'users' },
   { to: '/admin/roles', label: 'الأدوار والصلاحيات', icon: 'shield' },

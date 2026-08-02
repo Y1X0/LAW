@@ -34,13 +34,13 @@ export function SalaryTab({ employeeId }: { employeeId: string }) {
           <HrDataTable head={['السنة/الشهر', 'الإجمالي', 'الاستقطاعات', 'الصافي', 'الحالة']}>
             {report.history.map((h) => (
               <tr key={h.payroll_item_id} className="border-b border-slate-100 last:border-0">
-                <td className="px-4 py-3 tabular-nums text-slate-700">
+                <td data-label="السنة/الشهر" className="px-4 py-3 tabular-nums text-slate-700">
                   {h.year}/{String(h.month).padStart(2, '0')}
                 </td>
-                <td className="px-4 py-3 tabular-nums text-slate-600">{money(h.gross)}</td>
-                <td className="px-4 py-3 tabular-nums text-slate-600">{money(h.deductions)}</td>
-                <td className="px-4 py-3 tabular-nums font-medium text-brand-700">{money(h.net)}</td>
-                <td className="px-4 py-3">{h.status ? <Badge tone="slate">{h.status}</Badge> : '—'}</td>
+                <td data-label="الإجمالي" className="px-4 py-3 tabular-nums text-slate-600">{money(h.gross)}</td>
+                <td data-label="الاستقطاعات" className="px-4 py-3 tabular-nums text-slate-600">{money(h.deductions)}</td>
+                <td data-label="الصافي" className="px-4 py-3 tabular-nums font-medium text-brand-700">{money(h.net)}</td>
+                <td data-label="الحالة" className="px-4 py-3">{h.status ? <Badge tone="slate">{h.status}</Badge> : '—'}</td>
               </tr>
             ))}
           </HrDataTable>

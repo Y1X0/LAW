@@ -17,11 +17,11 @@ export function DocumentsTab({ caseId }: { caseId: string }) {
           <DataTable head={['العنوان', 'النوع', 'الوصف']}>
             {docs.map((d) => (
               <tr key={d.id} className="border-b border-slate-100 last:border-0">
-                <td className="px-4 py-3 font-medium text-slate-800">{d.title}</td>
-                <td className="px-4 py-3">
+                <td data-label="العنوان" className="px-4 py-3 font-medium text-slate-800">{d.title}</td>
+                <td data-label="النوع" className="px-4 py-3">
                   {d.document_type ? <Badge tone="slate">{d.document_type}</Badge> : '—'}
                 </td>
-                <td className="px-4 py-3 text-slate-600">{d.description ?? '—'}</td>
+                <td data-label="الوصف" className="px-4 py-3 text-slate-600">{d.description ?? '—'}</td>
               </tr>
             ))}
           </DataTable>

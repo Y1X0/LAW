@@ -16,20 +16,20 @@ class RbacSeeder extends Seeder
 {
     /** كتالوج الصلاحيات الذرّية (docs/05 §2). */
     public const PERMISSIONS = [
-        'employees.view', 'employees.view_all', 'employees.create', 'employees.update', 'employees.delete', 'employees.salary.view',
-        'attendance.view', 'attendance.manual', 'attendance.approve', 'attendance.report', 'attendance.devices',
+        'employees.view', 'employees.create', 'employees.update', 'employees.delete', 'employees.salary.view',
+        'attendance.view', 'attendance.manual', 'attendance.approve', 'attendance.devices',
         'leaves.request', 'leaves.approve', 'leaves.view_all',
         'payroll.view', 'payroll.create', 'payroll.approve', 'payroll.pay', 'payslip.view_own',
         'dashboard.view_own', 'attendance.view_own', 'leave.view_own', 'leave.request_own', 'profile.update_own',
-        'cases.view_own', 'cases.view_all', 'cases.create', 'cases.update', 'cases.assign', 'cases.close', 'cases.delete',
-        'hearings.view', 'hearings.manage',
-        'clients.view', 'clients.create', 'clients.update', 'clients.delete',
+        'cases.view_own', 'cases.view_all', 'cases.create', 'cases.update', 'cases.assign', 'cases.close',
+        'hearings.manage',
+        'clients.view', 'clients.create', 'clients.update',
         'contracts.view', 'contracts.manage',
         'invoices.view', 'invoices.create', 'invoices.approve', 'payments.create', 'expenses.create', 'journal.post', 'finance.reports',
         'leads.view', 'leads.manage', 'campaigns.manage', 'leads.convert',
         'tasks.view_own', 'tasks.view_all', 'tasks.create', 'tasks.assign', 'tasks.complete',
         'worklog.view_own', 'worklog.submit_own', 'worklog.view_all',
-        'documents.view', 'documents.upload', 'documents.view_confidential', 'documents.delete',
+        'documents.upload', 'documents.delete',
         'archive.view', 'archive.create', 'archive.update', 'archive.delete',
         'users.manage', 'roles.manage', 'settings.manage', 'audit.view', 'backup.manage', 'org.manage', 'org.view',
         'reports.hr', 'reports.finance', 'reports.cases', 'reports.marketing',
@@ -54,8 +54,6 @@ class RbacSeeder extends Seeder
      */
     public const LAWYER_PERMISSIONS = [
         'cases.view_own',
-        'hearings.view',
-        'documents.view',
         'archive.view',
         'tasks.view_own',
         'tasks.complete',
@@ -82,7 +80,7 @@ class RbacSeeder extends Seeder
      * المصدر الوحيد لهذه القائمة (يعيد استخدامها DemoSeeder) — لتفادي التباعد.
      */
     public const HR_PERMISSIONS = [
-        'employees.view', 'employees.view_all', 'employees.create', 'employees.update',
+        'employees.view', 'employees.create', 'employees.update',
         'employees.delete', 'employees.salary.view',
         'org.view', // قراءة الفروع/الأقسام لتغذية نماذج الموظفين (لا كتابة تنظيمية).
         'attendance.view', 'attendance.manual', 'attendance.approve',
@@ -100,6 +98,11 @@ class RbacSeeder extends Seeder
                 ['module' => Str::before($name, '.')]
             );
         }
+
+        // تقليم أي صلاحية خارج الكتالوج (صلاحيات يتيمة سابقة لا يفرضها أي مسار). حذفها
+        // يزيل صفوف الربط المرتبطة (FK) تلقائياً، ويبقي «المدير يملك كل شيء» صحيحاً في
+        // الإنتاج لا في الاختبار فقط. Idempotent — لا أثر إن لم يوجد ما يُقلَّم.
+        Permission::whereNotIn('name', self::PERMISSIONS)->delete();
 
         foreach (self::SYSTEM_ROLES as $name => $displayName) {
             Role::firstOrCreate(['name' => $name], ['display_name' => $displayName, 'is_system' => true]);

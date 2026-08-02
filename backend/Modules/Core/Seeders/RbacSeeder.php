@@ -76,6 +76,21 @@ class RbacSeeder extends Seeder
         'profile.update_own',
     ];
 
+    /**
+     * صلاحيات دور «الموارد البشرية» — بوابة HR: إدارة الموظفين والحضور والإجازات وعرض
+     * الرواتب، إضافة إلى الخدمة الذاتية. لا صلاحيات إدارة نظام (لا users/roles/settings).
+     * المصدر الوحيد لهذه القائمة (يعيد استخدامها DemoSeeder) — لتفادي التباعد.
+     */
+    public const HR_PERMISSIONS = [
+        'employees.view', 'employees.view_all', 'employees.create', 'employees.update',
+        'employees.delete', 'employees.salary.view',
+        'attendance.view', 'attendance.manual', 'attendance.approve',
+        'leaves.request', 'leaves.approve', 'leaves.view_all',
+        'payroll.view',
+        'dashboard.view_own', 'profile.update_own', 'leave.view_own', 'leave.request_own',
+        'attendance.view_own', 'payslip.view_own',
+    ];
+
     public function run(): void
     {
         foreach (self::PERMISSIONS as $name) {
@@ -100,5 +115,10 @@ class RbacSeeder extends Seeder
         // دور «موظف» يملك صلاحيات الخدمة الذاتية.
         Role::where('name', 'employee')->first()
             ?->permissions()->sync(Permission::whereIn('name', self::EMPLOYEE_PERMISSIONS)->pluck('id'));
+
+        // دور «الموارد البشرية» يملك صلاحيات بوابة HR (إدارة الموظفين/الحضور/الإجازات).
+        // بدون هذا يبقى الدور فارغاً في الإنتاج فتُمنع كل صفحات HR.
+        Role::where('name', 'hr')->first()
+            ?->permissions()->sync(Permission::whereIn('name', self::HR_PERMISSIONS)->pluck('id'));
     }
 }

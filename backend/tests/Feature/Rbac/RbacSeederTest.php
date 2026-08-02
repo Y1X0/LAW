@@ -66,4 +66,31 @@ class RbacSeederTest extends TestCase
         $this->assertNotContains('cases.view_own', $names);
         $this->assertNotContains('users.manage', $names);
     }
+
+    public function test_seeder_grants_hr_role_its_portal_permissions(): void
+    {
+        $this->seed(RbacSeeder::class);
+
+        $hr = Role::where('name', 'hr')->first();
+        $this->assertNotNull($hr);
+
+        $names = $hr->permissions()->pluck('name')->all();
+        $this->assertSame(count(RbacSeeder::HR_PERMISSIONS), count($names));
+        foreach (RbacSeeder::HR_PERMISSIONS as $permission) {
+            $this->assertContains($permission, $names);
+        }
+        // بوابة HR فقط — لا صلاحيات إدارة نظام مسرّبة.
+        $this->assertNotContains('users.manage', $names);
+        $this->assertNotContains('roles.manage', $names);
+        $this->assertNotContains('settings.manage', $names);
+    }
+
+    public function test_hr_role_permissions_are_idempotent(): void
+    {
+        $this->seed(RbacSeeder::class);
+        $this->seed(RbacSeeder::class);
+
+        $hr = Role::where('name', 'hr')->first();
+        $this->assertSame(count(RbacSeeder::HR_PERMISSIONS), $hr->permissions()->count());
+    }
 }

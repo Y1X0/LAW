@@ -11,6 +11,8 @@ export function setUnauthorizedHandler(handler: (() => void) | null): void {
 interface RequestOptions {
   method?: string
   body?: unknown
+  /** جسم خام (مثل FormData) يُرسَل كما هو دون JSON ودون ضبط Content-Type (للرفع). */
+  rawBody?: BodyInit
   /** لا تحاول تجديد التوكن (يُستخدم داخلياً لنداء التجديد نفسه). */
   skipRefresh?: boolean
   headers?: Record<string, string>
@@ -75,9 +77,11 @@ function tryRefresh(): Promise<boolean> {
 }
 
 async function raw(path: string, options: RequestOptions): Promise<Response> {
+  const isJson = options.body !== undefined
   const headers: Record<string, string> = {
     Accept: 'application/json',
-    ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+    // FormData يضبط Content-Type (مع الحدّ) تلقائياً — لا نضبطه للـ rawBody.
+    ...(isJson ? { 'Content-Type': 'application/json' } : {}),
     ...options.headers,
   }
   const token = tokenStorage.accessToken()
@@ -86,7 +90,7 @@ async function raw(path: string, options: RequestOptions): Promise<Response> {
   return fetch(buildUrl(path), {
     method: options.method ?? 'GET',
     headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body: isJson ? JSON.stringify(options.body) : options.rawBody,
   })
 }
 
@@ -133,6 +137,26 @@ export async function apiText(path: string): Promise<string> {
   return res.text()
 }
 
+/** نداء يعيد Blob بمصادقة (لتنزيل الملفات مثل Excel) — يرمي ApiError عند الفشل. */
+export async function apiBlob(path: string): Promise<Blob> {
+  const res = await requestWithRefresh(path, {
+    method: 'GET',
+    headers: { Accept: 'application/octet-stream' },
+  })
+  if (!res.ok) {
+    throw toError(res.status, await parse<unknown>(res))
+  }
+  return res.blob()
+}
+
+/** رفع ملف (FormData) بمصادقة — يعيد `data` من الغلاف، ويرمي ApiError عند الفشل. */
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const res = await requestWithRefresh(path, { method: 'POST', rawBody: form })
+  const env = await parse<T>(res)
+  if (!res.ok) throw toError(res.status, env)
+  return env.data as T
+}
+
 export const api = {
   get: <T>(path: string) => apiRequest<T>(path, { method: 'GET' }),
   /** GET يعيد الغلاف كاملاً (data + meta) — للقوائم المرقّمة. */
@@ -140,4 +164,6 @@ export const api = {
   post: <T>(path: string, body?: unknown) => apiRequest<T>(path, { method: 'POST', body }),
   patch: <T>(path: string, body?: unknown) => apiRequest<T>(path, { method: 'PATCH', body }),
   text: (path: string) => apiText(path),
+  blob: (path: string) => apiBlob(path),
+  upload: <T>(path: string, form: FormData) => apiUpload<T>(path, form),
 }

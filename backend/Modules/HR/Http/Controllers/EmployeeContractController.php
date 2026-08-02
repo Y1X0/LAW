@@ -47,6 +47,11 @@ class EmployeeContractController
             'notes' => ['nullable', 'string'],
         ]);
 
+        // من لا يملك employees.salary.view لا يضبط الراتب على العقد (اتساقاً مع SEC-9).
+        if (! $this->canViewSalary($request)) {
+            unset($data['basic_salary']);
+        }
+
         $data['employee_id'] = $employee->id;
         $data['created_by'] = $request->user()?->id;
         $contract = EmployeeContract::create($data);
@@ -55,7 +60,7 @@ class EmployeeContractController
             'contract_id' => $contract->id, 'type' => $contract->contract_type,
         ]);
 
-        return $this->ok($contract, 201);
+        return $this->ok($this->maskSalary($contract, $request), 201);
     }
 
     public function update(Request $request, Employee $employee, EmployeeContract $contract): JsonResponse
@@ -73,7 +78,26 @@ class EmployeeContractController
             'contract_id' => $contract->id,
         ]);
 
-        return $this->ok($contract);
+        return $this->ok($this->maskSalary($contract, $request));
+    }
+
+    private function canViewSalary(Request $request): bool
+    {
+        return $request->user()?->hasPermission('employees.salary.view') ?? false;
+    }
+
+    /**
+     * يُخفي basic_salary من تمثيل العقد لمن لا يملك employees.salary.view — نفس قناع
+     * القائمة (index) و EmployeeController::present، فلا يُسرَّب الراتب عبر ردّ store/update.
+     */
+    private function maskSalary(EmployeeContract $contract, Request $request): array
+    {
+        $row = $contract->toArray();
+        if (! $this->canViewSalary($request)) {
+            unset($row['basic_salary']);
+        }
+
+        return $row;
     }
 
     private function ok($data, int $status = 200): JsonResponse

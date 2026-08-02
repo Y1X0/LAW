@@ -102,4 +102,54 @@ class EmployeeContractTest extends TestCase
         $this->assertArrayHasKey('basic_salary', $row);
         $this->assertEquals(15000, $row['basic_salary']);
     }
+
+    /**
+     * Sec F1: ردّ store لا يسرّب basic_salary لمن لا يملك salary.view (كان يعيد النموذج خامّاً)،
+     * وSec F3: لا يُضبط الراتب على العقد بلا الصلاحية (اتساقاً مع SEC-9).
+     */
+    public function test_contract_store_neither_reveals_nor_sets_salary_without_permission(): void
+    {
+        $hr = $this->userWithPermissions(['employees.update']); // بلا salary.view
+        $employee = Employee::factory()->create();
+
+        $res = $this->actingAsToken($hr)->postJson("/api/employees/{$employee->id}/contracts", [
+            'contract_type' => 'permanent', 'start_date' => '2026-01-01', 'basic_salary' => 15000,
+        ])->assertCreated();
+
+        $this->assertArrayNotHasKey('basic_salary', $res->json('data'));           // لا تسريب في الردّ
+        $this->assertDatabaseMissing('employee_contracts', [                        // لم يُضبط الراتب
+            'id' => $res->json('data.id'), 'basic_salary' => 15000,
+        ]);
+    }
+
+    /** Sec F1: ردّ update لا يسرّب basic_salary القائم لمن لا يملك salary.view. */
+    public function test_contract_update_response_hides_salary_without_permission(): void
+    {
+        $editor = $this->userWithPermissions(['employees.update']); // بلا salary.view
+        $employee = Employee::factory()->create();
+        $contract = EmployeeContract::create([
+            'employee_id' => $employee->id, 'contract_type' => 'permanent',
+            'start_date' => '2026-01-01', 'basic_salary' => 15000, 'status' => 'active',
+        ]);
+
+        $res = $this->actingAsToken($editor)->putJson("/api/employees/{$employee->id}/contracts/{$contract->id}", [
+            'status' => 'terminated',
+        ])->assertOk();
+
+        $this->assertArrayNotHasKey('basic_salary', $res->json('data'));
+    }
+
+    /** Sec F3: مع salary.view يُضبط الراتب على العقد ويظهر في الردّ. */
+    public function test_contract_store_persists_and_shows_salary_with_permission(): void
+    {
+        $payroll = $this->userWithPermissions(['employees.update', 'employees.salary.view']);
+        $employee = Employee::factory()->create();
+
+        $res = $this->actingAsToken($payroll)->postJson("/api/employees/{$employee->id}/contracts", [
+            'contract_type' => 'permanent', 'start_date' => '2026-01-01', 'basic_salary' => 15000,
+        ])->assertCreated();
+
+        $this->assertEquals(15000, $res->json('data.basic_salary'));
+        $this->assertDatabaseHas('employee_contracts', ['id' => $res->json('data.id'), 'basic_salary' => 15000]);
+    }
 }

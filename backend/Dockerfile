@@ -7,9 +7,11 @@ FROM php:8.3-fpm-alpine
 RUN apk add --no-cache \
         bash git curl libpng-dev libzip-dev postgresql-dev icu-dev oniguruma-dev \
         nginx gettext \
+    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
     && docker-php-ext-install pdo pdo_pgsql pgsql bcmath zip intl pcntl \
     && pecl install redis \
-    && docker-php-ext-enable redis
+    && docker-php-ext-enable redis \
+    && apk del .build-deps
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

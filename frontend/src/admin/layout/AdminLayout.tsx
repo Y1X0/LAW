@@ -11,6 +11,7 @@ const NAV: NavItem[] = [
   { to: '/admin/users', label: 'المستخدمون', icon: 'users' },
   { to: '/admin/roles', label: 'الأدوار والصلاحيات', icon: 'shield' },
   { to: '/admin/org', label: 'الهيكل التنظيمي', icon: 'profile' },
+  { to: '/payroll', label: 'الرواتب', icon: 'salary', end: false },
   { to: '/admin/audit', label: 'سجلّ التدقيق', icon: 'audit' },
   { to: '/admin/data', label: 'إدارة البيانات (Excel)', icon: 'data' },
   { to: '/admin/settings', label: 'الإعدادات', icon: 'settings' },

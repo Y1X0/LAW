@@ -55,3 +55,18 @@ export async function probeIsAdmin(): Promise<boolean> {
     throw error
   }
 }
+
+/**
+ * كشف قدرة «إدارة الرواتب»: نداء خفيف لقائمة فترات الرواتب (يحرسها payroll.view).
+ * - 200 (ولو مصفوفة فارغة) ⇒ يملك الوصول. · 401/403 ⇒ لا يملكه.
+ * - خطأ شبكة/5xx ⇒ يُعاد رميه (إعادة محاولة).
+ */
+export async function probeCanManagePayroll(): Promise<boolean> {
+  try {
+    const data = await api.get<unknown>('payroll-periods?per_page=1')
+    return data != null
+  } catch (error) {
+    if (isDefinitiveNo(error)) return false
+    throw error
+  }
+}

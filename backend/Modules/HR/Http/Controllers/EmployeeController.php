@@ -56,7 +56,7 @@ class EmployeeController
     /** POST /api/employees */
     public function store(StoreEmployeeRequest $request): JsonResponse
     {
-        $employee = $this->service->create($request->validated(), $request);
+        $employee = $this->service->create($this->guardSensitiveWrite($request, $request->validated()), $request);
 
         return $this->ok($this->present($employee, $request), 201);
     }
@@ -72,7 +72,7 @@ class EmployeeController
     /** PUT /api/employees/{employee} */
     public function update(UpdateEmployeeRequest $request, Employee $employee): JsonResponse
     {
-        $employee = $this->service->update($employee, $request->validated(), $request);
+        $employee = $this->service->update($employee, $this->guardSensitiveWrite($request, $request->validated()), $request);
 
         return $this->ok($this->present($employee, $request));
     }
@@ -92,6 +92,22 @@ class EmployeeController
     {
         $data = $employee->toArray();
 
+        if (! $request->user()?->hasPermission('employees.salary.view')) {
+            foreach (Employee::SENSITIVE_FIELDS as $field) {
+                unset($data[$field]);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * SEC-9: يُسقط الحقول المالية/البنكية من مُدخل الكتابة إلا لمن يملك
+     * employees.salary.view — تماثلاً مع إخفائها في القراءة (present)، فمن لا يراها
+     * لا يضبطها. إسقاط صامت (لا 422) اتساقاً مع نمط الإخفاء.
+     */
+    private function guardSensitiveWrite(Request $request, array $data): array
+    {
         if (! $request->user()?->hasPermission('employees.salary.view')) {
             foreach (Employee::SENSITIVE_FIELDS as $field) {
                 unset($data[$field]);

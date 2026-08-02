@@ -17,12 +17,35 @@ class DatabaseSeeder extends Seeder
         // الأدوار والصلاحيات النظامية — مطلوبة كي يعمل RBAC (Gate::before) أصلاً.
         $this->call(RbacSeeder::class);
 
+        // أوّل مالك منصّة عند النشر: يُنشأ مرّة إذا ضُبط INITIAL_ADMIN_EMAIL و
+        // INITIAL_ADMIN_PASSWORD (متغيّرا بيئة في لوحة Render) — يغني عن Shell/tinker.
+        // idempotent (firstOrCreate)، وكلمة المرور تُجزّأ عبر cast 'hashed' (بلا bcrypt يدوي).
+        $this->seedInitialAdmin();
+
         // حساب تجريبي في بيئات التطوير/الاختبار فقط — لا يُنشأ في الإنتاج.
         if (app()->environment('local', 'testing')) {
             User::factory()->create([
                 'name' => 'Test User',
                 'email' => 'test@example.com',
             ]);
+        }
+    }
+
+    private function seedInitialAdmin(): void
+    {
+        $email = env('INITIAL_ADMIN_EMAIL');
+        $password = env('INITIAL_ADMIN_PASSWORD');
+        if (! is_string($email) || $email === '' || ! is_string($password) || $password === '') {
+            return;
+        }
+
+        $admin = User::firstOrCreate(
+            ['email' => $email],
+            ['name' => 'مالك المنصّة', 'password' => $password, 'status' => 'active'],
+        );
+
+        if (! $admin->hasRole('admin')) {
+            $admin->assignRole('admin');
         }
     }
 }

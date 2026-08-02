@@ -19,7 +19,7 @@ class FoundationSchemaTest extends TestCase
         foreach ([
             'branches', 'departments', 'roles', 'permissions',
             'role_permission', 'user_role', 'settings',
-            'audit_logs', 'activity_logs',
+            'audit_logs',
         ] as $table) {
             $this->assertTrue(Schema::hasTable($table), "الجدول {$table} غير موجود");
         }

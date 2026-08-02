@@ -82,7 +82,7 @@ export function TasksPage() {
         <>
           <Card className="lp-table-wrap p-0">
             <table
-              className={`lp-table min-w-[720px] text-right text-sm transition-opacity ${
+              className={`lp-table sm:min-w-[720px] text-right text-sm transition-opacity ${
                 query.isFetching ? 'opacity-60' : ''
               }`}
               aria-busy={query.isFetching}
@@ -146,8 +146,8 @@ function TaskRow({
 }) {
   return (
     <tr className="border-b border-slate-100 last:border-0">
-      <td className="px-4 py-3 font-medium text-slate-800">{t.title}</td>
-      <td className="px-4 py-3">
+      <td data-label="المهمة" className="px-4 py-3 font-medium text-slate-800">{t.title}</td>
+      <td data-label="القضية" className="px-4 py-3">
         {t.case ? (
           <Link to={`/cases/${t.case.id}`} className="text-brand-700 hover:underline">
             <span className="tabular-nums">{t.case.internal_number}</span>
@@ -156,11 +156,11 @@ function TaskRow({
           '—'
         )}
       </td>
-      <td className="px-4 py-3">
+      <td data-label="الأولوية" className="px-4 py-3">
         <Badge tone={priorityTone(t.priority)}>{taskPriorityLabel(t.priority)}</Badge>
       </td>
-      <td className="px-4 py-3 tabular-nums text-slate-600">{formatDate(t.due_date ?? null)}</td>
-      <td className="px-4 py-3">
+      <td data-label="الاستحقاق" className="px-4 py-3 tabular-nums text-slate-600">{formatDate(t.due_date ?? null)}</td>
+      <td data-label="الإجراء" className="px-4 py-3">
         {tab === 'open' ? (
           <Button onClick={onComplete} disabled={completing}>
             {completing ? 'جارٍ الإكمال…' : 'إكمال'}

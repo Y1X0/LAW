@@ -24,6 +24,23 @@ class RbacSeederTest extends TestCase
         $this->assertSame(Permission::count(), $admin->permissions()->count());
     }
 
+    public function test_seeder_prunes_permissions_outside_the_catalog(): void
+    {
+        // صلاحية يتيمة سابقة موجودة في القاعدة (كإنتاج قديم) مُسندة لدور — يجب أن
+        // يُزيلها البذر ويزيل ربطها (FK cascade) كي يبقى الكتالوج مطابقاً للواقع.
+        $stale = Permission::create(['name' => 'legacy.orphan', 'module' => 'legacy']);
+        Role::create(['name' => 'admin', 'display_name' => 'المدير العام', 'is_system' => true])
+            ->permissions()->attach($stale->id);
+
+        $this->seed(RbacSeeder::class);
+
+        $this->assertDatabaseMissing('permissions', ['name' => 'legacy.orphan']);
+        $this->assertSame(count(RbacSeeder::PERMISSIONS), Permission::count());
+        // «المدير يملك كل شيء» يبقى صحيحاً بعد التقليم (لا صلاحية معلّقة خارج الكتالوج).
+        $admin = Role::where('name', 'admin')->first();
+        $this->assertSame(Permission::count(), $admin->permissions()->count());
+    }
+
     public function test_seeder_is_idempotent(): void
     {
         $this->seed(RbacSeeder::class);

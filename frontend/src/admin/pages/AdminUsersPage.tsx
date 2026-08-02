@@ -119,7 +119,7 @@ export function AdminUsersPage() {
         <>
           <Card className="lp-table-wrap p-0">
             <table
-              className={`lp-table min-w-[820px] text-right text-sm transition-opacity ${
+              className={`lp-table sm:min-w-[820px] text-right text-sm transition-opacity ${
                 isFetching ? 'opacity-60' : ''
               }`}
               aria-busy={isFetching}
@@ -195,20 +195,20 @@ function UserRow({
   const isActive = user.status === 'active'
   return (
     <tr className="border-b border-slate-100 last:border-0">
-      <td className="px-4 py-3">
+      <td data-label="المستخدم" className="px-4 py-3">
         <div className="font-medium text-slate-800">{user.name}</div>
         <div className="text-xs text-slate-400">{user.email}</div>
       </td>
-      <td className="px-4 py-3 text-slate-700">
+      <td data-label="الأدوار" className="px-4 py-3 text-slate-700">
         {user.roles.length > 0 ? user.roles.map((r) => r.display_name || r.name).join('، ') : '—'}
       </td>
-      <td className="px-4 py-3 text-slate-600">
+      <td data-label="الموظف المرتبط" className="px-4 py-3 text-slate-600">
         {user.employee ? user.employee.full_name_ar : '—'}
       </td>
-      <td className="px-4 py-3">
+      <td data-label="الحالة" className="px-4 py-3">
         <Badge tone={userStatusTone(user.status)}>{userStatusLabel(user.status)}</Badge>
       </td>
-      <td className="px-4 py-3">
+      <td data-label="إجراءات" className="px-4 py-3">
         <div className="flex items-center gap-1.5">
           <Button variant="ghost" onClick={onToggle} disabled={toggling}>
             {toggling ? 'جارٍ…' : isActive ? 'تعطيل' : 'تفعيل'}

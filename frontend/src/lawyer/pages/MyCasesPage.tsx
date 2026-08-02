@@ -103,7 +103,7 @@ export function MyCasesPage() {
         <>
           <Card className="lp-table-wrap p-0">
             <table
-              className={`lp-table min-w-[720px] text-right text-sm transition-opacity ${
+              className={`lp-table sm:min-w-[720px] text-right text-sm transition-opacity ${
                 isFetching ? 'opacity-60' : ''
               }`}
               aria-busy={isFetching}
@@ -143,17 +143,17 @@ export function MyCasesPage() {
 function CaseRow({ c }: { c: CaseListItem }) {
   return (
     <tr className="border-b border-slate-100 last:border-0">
-      <td className="px-4 py-3">
+      <td data-label="رقم القضية" className="px-4 py-3">
         <Link to={`/cases/${c.id}`} className="font-medium text-brand-700 hover:underline tabular-nums">
           {c.internal_number}
         </Link>
       </td>
-      <td className="px-4 py-3 text-slate-800">{c.title}</td>
-      <td className="px-4 py-3 text-slate-600">{c.client?.name ?? '—'}</td>
-      <td className="px-4 py-3">
+      <td data-label="العنوان" className="px-4 py-3 text-slate-800">{c.title}</td>
+      <td data-label="العميل" className="px-4 py-3 text-slate-600">{c.client?.name ?? '—'}</td>
+      <td data-label="الحالة" className="px-4 py-3">
         <Badge tone={statusTone(c.status)}>{caseStatusLabel(c.status)}</Badge>
       </td>
-      <td className="px-4 py-3">
+      <td data-label="التقدّم" className="px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
             <div className="h-full rounded-full bg-brand-500" style={{ width: `${c.progress}%` }} />
@@ -161,7 +161,7 @@ function CaseRow({ c }: { c: CaseListItem }) {
           <span className="tabular-nums text-xs text-slate-500">{c.progress}%</span>
         </div>
       </td>
-      <td className="px-4 py-3 tabular-nums text-slate-600">{formatDate(c.opened_date ?? null)}</td>
+      <td data-label="تاريخ الفتح" className="px-4 py-3 tabular-nums text-slate-600">{formatDate(c.opened_date ?? null)}</td>
     </tr>
   )
 }

@@ -17,10 +17,10 @@ export function DocumentsTab({ employeeId }: { employeeId: string }) {
         <HrDataTable head={['النوع', 'العنوان', 'تاريخ الانتهاء', 'أضيفت في']}>
           {docs.map((d) => (
             <tr key={d.id} className="border-b border-slate-100 last:border-0">
-              <td className="px-4 py-3 text-slate-600">{docTypeLabel(d.doc_type)}</td>
-              <td className="px-4 py-3 font-medium text-slate-800">{d.title}</td>
-              <td className="px-4 py-3 tabular-nums text-slate-600">{formatDate(d.expiry_date ?? null)}</td>
-              <td className="px-4 py-3 tabular-nums text-slate-600">{formatDate(d.created_at ?? null)}</td>
+              <td data-label="النوع" className="px-4 py-3 text-slate-600">{docTypeLabel(d.doc_type)}</td>
+              <td data-label="العنوان" className="px-4 py-3 font-medium text-slate-800">{d.title}</td>
+              <td data-label="تاريخ الانتهاء" className="px-4 py-3 tabular-nums text-slate-600">{formatDate(d.expiry_date ?? null)}</td>
+              <td data-label="أضيفت في" className="px-4 py-3 tabular-nums text-slate-600">{formatDate(d.created_at ?? null)}</td>
             </tr>
           ))}
         </HrDataTable>

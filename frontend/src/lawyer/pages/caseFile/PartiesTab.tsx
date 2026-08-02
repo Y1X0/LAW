@@ -15,12 +15,12 @@ export function PartiesTab({ caseId }: { caseId: string }) {
         <DataTable head={['الاسم', 'الصفة', 'الهاتف', 'ملاحظات']}>
           {parties.map((p) => (
             <tr key={p.id} className="border-b border-slate-100 last:border-0">
-              <td className="px-4 py-3 font-medium text-slate-800">{p.name}</td>
-              <td className="px-4 py-3">
+              <td data-label="الاسم" className="px-4 py-3 font-medium text-slate-800">{p.name}</td>
+              <td data-label="الصفة" className="px-4 py-3">
                 <Badge tone="navy">{partyTypeLabel(p.type)}</Badge>
               </td>
-              <td className="px-4 py-3 tabular-nums text-slate-600">{p.phone ?? '—'}</td>
-              <td className="px-4 py-3 text-slate-600">{p.notes ?? '—'}</td>
+              <td data-label="الهاتف" className="px-4 py-3 tabular-nums text-slate-600">{p.phone ?? '—'}</td>
+              <td data-label="ملاحظات" className="px-4 py-3 text-slate-600">{p.notes ?? '—'}</td>
             </tr>
           ))}
         </DataTable>

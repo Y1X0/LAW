@@ -122,7 +122,7 @@ export function HrAttendancePage() {
         <>
           <Card className="lp-table-wrap p-0">
             <table
-              className={`lp-table min-w-[820px] text-right text-sm transition-opacity ${isFetching ? 'opacity-60' : ''}`}
+              className={`lp-table sm:min-w-[820px] text-right text-sm transition-opacity ${isFetching ? 'opacity-60' : ''}`}
               aria-busy={isFetching}
             >
               <thead>
@@ -175,18 +175,18 @@ export function HrAttendancePage() {
 function AttendanceRow({ rec, approving, onApprove }: { rec: AttendanceRecord; approving: boolean; onApprove: () => void }) {
   return (
     <tr className="border-b border-slate-100 last:border-0">
-      <td className="px-4 py-3">
+      <td data-label="الموظف" className="px-4 py-3">
         <div className="font-medium text-slate-800">{rec.employee?.full_name_ar ?? '—'}</div>
         <div className="tabular-nums text-xs text-slate-400">{rec.employee?.employee_no ?? ''}</div>
       </td>
-      <td className="px-4 py-3 tabular-nums text-slate-700">{formatDate(rec.work_date)}</td>
-      <td className="px-4 py-3 tabular-nums text-slate-600">{formatDateTime(rec.check_in ?? null)}</td>
-      <td className="px-4 py-3 tabular-nums text-slate-600">{formatDateTime(rec.check_out ?? null)}</td>
-      <td className="px-4 py-3 tabular-nums text-slate-600">{rec.late_minutes ?? 0}</td>
-      <td className="px-4 py-3">
+      <td data-label="التاريخ" className="px-4 py-3 tabular-nums text-slate-700">{formatDate(rec.work_date)}</td>
+      <td data-label="الحضور" className="px-4 py-3 tabular-nums text-slate-600">{formatDateTime(rec.check_in ?? null)}</td>
+      <td data-label="الانصراف" className="px-4 py-3 tabular-nums text-slate-600">{formatDateTime(rec.check_out ?? null)}</td>
+      <td data-label="تأخير (د)" className="px-4 py-3 tabular-nums text-slate-600">{rec.late_minutes ?? 0}</td>
+      <td data-label="الحالة" className="px-4 py-3">
         <Badge tone={attendanceStatusTone(rec.status)}>{attendanceStatusLabel(rec.status)}</Badge>
       </td>
-      <td className="px-4 py-3">
+      <td data-label="الاعتماد" className="px-4 py-3">
         {rec.approved_at ? (
           <Badge tone="green">معتمد</Badge>
         ) : (

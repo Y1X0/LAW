@@ -18,11 +18,11 @@ export function AttendanceTab({ employeeId }: { employeeId: string }) {
         <HrDataTable head={['التاريخ', 'الحضور', 'الانصراف', 'تأخير (د)', 'الحالة']}>
           {records.map((r) => (
             <tr key={r.id} className="border-b border-slate-100 last:border-0">
-              <td className="px-4 py-3 tabular-nums text-slate-700">{formatDate(r.work_date)}</td>
-              <td className="px-4 py-3 tabular-nums text-slate-600">{formatDateTime(r.check_in ?? null)}</td>
-              <td className="px-4 py-3 tabular-nums text-slate-600">{formatDateTime(r.check_out ?? null)}</td>
-              <td className="px-4 py-3 tabular-nums text-slate-600">{r.late_minutes ?? 0}</td>
-              <td className="px-4 py-3">
+              <td data-label="التاريخ" className="px-4 py-3 tabular-nums text-slate-700">{formatDate(r.work_date)}</td>
+              <td data-label="الحضور" className="px-4 py-3 tabular-nums text-slate-600">{formatDateTime(r.check_in ?? null)}</td>
+              <td data-label="الانصراف" className="px-4 py-3 tabular-nums text-slate-600">{formatDateTime(r.check_out ?? null)}</td>
+              <td data-label="تأخير (د)" className="px-4 py-3 tabular-nums text-slate-600">{r.late_minutes ?? 0}</td>
+              <td data-label="الحالة" className="px-4 py-3">
                 <Badge tone={attendanceStatusTone(r.status)}>{attendanceStatusLabel(r.status)}</Badge>
               </td>
             </tr>

@@ -28,7 +28,7 @@ export function AttendancePage() {
         <EmptyState message="لا توجد سجلّات حضور ضمن النطاق المحدّد." />
       ) : (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="lp-table w-full sm:min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 {['التاريخ', 'الحالة', 'الدخول', 'الخروج', 'التأخير', 'الإضافي'].map((h) => (
@@ -39,12 +39,12 @@ export function AttendancePage() {
             <tbody>
               {data.map((r) => (
                 <tr key={r.date} className="border-b border-slate-100 last:border-0">
-                  <td className="p-3 font-medium text-slate-800">{r.date}</td>
-                  <td className="p-3">{attendanceStatusLabel(r.status)}</td>
-                  <td className="p-3">{formatTime(r.check_in)}</td>
-                  <td className="p-3">{formatTime(r.check_out)}</td>
-                  <td className="p-3">{formatMinutes(r.late_minutes)}</td>
-                  <td className="p-3">{formatMinutes(r.overtime_minutes)}</td>
+                  <td data-label="التاريخ" className="p-3 font-medium text-slate-800">{r.date}</td>
+                  <td data-label="الحالة" className="p-3">{attendanceStatusLabel(r.status)}</td>
+                  <td data-label="الدخول" className="p-3">{formatTime(r.check_in)}</td>
+                  <td data-label="الخروج" className="p-3">{formatTime(r.check_out)}</td>
+                  <td data-label="التأخير" className="p-3">{formatMinutes(r.late_minutes)}</td>
+                  <td data-label="الإضافي" className="p-3">{formatMinutes(r.overtime_minutes)}</td>
                 </tr>
               ))}
             </tbody>

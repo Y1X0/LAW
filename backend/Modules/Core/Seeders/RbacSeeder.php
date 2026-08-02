@@ -104,21 +104,24 @@ class RbacSeeder extends Seeder
             Role::firstOrCreate(['name' => $name], ['display_name' => $displayName, 'is_system' => true]);
         }
 
-        // المدير العام يملك كل الصلاحيات.
-        Role::where('name', 'admin')->first()
-            ?->permissions()->sync(Permission::pluck('id'));
+        // منح الصلاحيات لكل دور نظامي. القاعدة الثابتة: لا دور فارغ — كل دور يصل إلى
+        // بوابة عاملة. المتخصّصة (admin/hr/lawyer) تأخذ مجالها؛ وبقية أدوار الموظّفين
+        // تأخذ الخدمة الذاتية الأساسية (كل موظّف مهما كان قسمه يسجّل حضوره ويطلب إجازته
+        // ويرى كشفه ويحدّث ملفه) — إلى أن تُبنى وحداتها المتخصّصة فتُضاف صلاحياتها.
+        // محامٍ يجمع المجال القانوني + الخدمة الذاتية كي يعمل الدور وحده (بلا اشتراط «موظف»).
+        $grants = [
+            'admin' => self::PERMISSIONS, // كل الصلاحيات
+            'hr' => self::HR_PERMISSIONS,
+            'lawyer' => array_values(array_unique([...self::LAWYER_PERMISSIONS, ...self::EMPLOYEE_PERMISSIONS])),
+            'employee' => self::EMPLOYEE_PERMISSIONS,
+            'secretary' => self::EMPLOYEE_PERMISSIONS,
+            'accountant' => self::EMPLOYEE_PERMISSIONS,
+            'marketing' => self::EMPLOYEE_PERMISSIONS,
+        ];
 
-        // دور «محامٍ» يملك صلاحيات بوابة المحامي (المجال القانوني).
-        Role::where('name', 'lawyer')->first()
-            ?->permissions()->sync(Permission::whereIn('name', self::LAWYER_PERMISSIONS)->pluck('id'));
-
-        // دور «موظف» يملك صلاحيات الخدمة الذاتية.
-        Role::where('name', 'employee')->first()
-            ?->permissions()->sync(Permission::whereIn('name', self::EMPLOYEE_PERMISSIONS)->pluck('id'));
-
-        // دور «الموارد البشرية» يملك صلاحيات بوابة HR (إدارة الموظفين/الحضور/الإجازات).
-        // بدون هذا يبقى الدور فارغاً في الإنتاج فتُمنع كل صفحات HR.
-        Role::where('name', 'hr')->first()
-            ?->permissions()->sync(Permission::whereIn('name', self::HR_PERMISSIONS)->pluck('id'));
+        foreach ($grants as $roleName => $permissionNames) {
+            Role::where('name', $roleName)->first()
+                ?->permissions()->sync(Permission::whereIn('name', $permissionNames)->pluck('id'));
+        }
     }
 }

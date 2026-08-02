@@ -91,6 +91,29 @@ class AttendanceCheckInOutTest extends TestCase
         ])->assertStatus(422);
     }
 
+    /**
+     * تصحيح: خروج قبل الدخول يُرفَض (422) — بدون هذا الحارس ينتج worked_minutes سالب
+     * (diffInMinutes موقّع في Carbon 3) يُفسِد تقارير الحضور.
+     */
+    public function test_check_out_before_check_in_is_rejected(): void
+    {
+        $actor = $this->userWithPermissions(['attendance.manual']);
+        $employee = $this->employeeWithShift();
+
+        $this->actingAsToken($actor)->postJson('/api/attendance/check-in', [
+            'employee_id' => $employee->id, 'time' => '2026-01-06T09:00:00',
+        ])->assertCreated();
+
+        // خروج 08:00 (قبل الدخول 09:00) → 422، ولا يُحفَظ زمن خروج سالب.
+        $this->actingAsToken($actor)->postJson('/api/attendance/check-out', [
+            'employee_id' => $employee->id, 'time' => '2026-01-06T08:00:00',
+        ])->assertStatus(422);
+
+        $this->assertDatabaseHas('attendance_records', [
+            'employee_id' => $employee->id, 'check_out' => null,
+        ]);
+    }
+
     public function test_one_record_per_employee_per_day(): void
     {
         $actor = $this->userWithPermissions(['attendance.manual']);

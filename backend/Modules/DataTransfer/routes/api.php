@@ -2,13 +2,21 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\DataTransfer\Http\Controllers\DataExportController;
+use Modules\DataTransfer\Http\Controllers\DataImportController;
 
 /*
 | مسارات وحدة DataTransfer (استيراد/تصدير Excel) — تُحمّل تلقائياً تحت /api.
-| التصدير (قراءة فقط) محميّ بصلاحية عرض الكيان — لا صلاحية جديدة. الاستيراد لاحقاً (مرحلة 2).
+| التصدير (قراءة فقط) محميّ بصلاحية عرض الكيان. الاستيراد محميّ بصلاحية إنشاء الكيان.
+| لا صلاحية/هجرة جديدة.
 */
 
 Route::middleware('auth.token')->prefix('admin/data')->group(function () {
+    // الاستيراد (المرحلة 2 — الموظفون فقط): معاينة بلا حفظ، ثم حفظ ذرّي.
+    Route::middleware('permission:employees.create')->group(function () {
+        Route::post('import/employees/preview', [DataImportController::class, 'previewEmployees'])->name('data.import.employees.preview');
+        Route::post('import/employees/commit', [DataImportController::class, 'commitEmployees'])->name('data.import.employees.commit');
+    });
+
     Route::middleware('permission:employees.view')
         ->get('export/employees', [DataExportController::class, 'employees'])->name('data.export.employees');
 

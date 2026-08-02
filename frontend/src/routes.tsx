@@ -5,6 +5,7 @@ import { CapabilitiesProvider } from '@/core/capabilities/CapabilitiesProvider'
 import { RequireAdmin } from '@/core/capabilities/RequireAdmin'
 import { RequireHr } from '@/core/capabilities/RequireHr'
 import { RequireLawyer } from '@/core/capabilities/RequireLawyer'
+import { RequirePayroll } from '@/core/capabilities/RequirePayroll'
 import { IndexRedirect } from '@/core/layout/IndexRedirect'
 import { RoleLayout } from '@/core/layout/RoleLayout'
 import { AdminHomePage } from '@/admin/pages/AdminHomePage'
@@ -20,6 +21,7 @@ import { HrEmployeesPage } from '@/hr/pages/HrEmployeesPage'
 import { HrEmployeeProfilePage } from '@/hr/pages/HrEmployeeProfilePage'
 import { HrLeavePage } from '@/hr/pages/HrLeavePage'
 import { HrAttendancePage } from '@/hr/pages/HrAttendancePage'
+import { PayrollDashboardPage } from '@/payroll/pages/PayrollDashboardPage'
 import { AttendancePage } from '@/employee/pages/AttendancePage'
 import { DashboardPage } from '@/employee/pages/DashboardPage'
 import { LeavePage } from '@/employee/pages/LeavePage'
@@ -84,6 +86,14 @@ export const router = createBrowserRouter(
                     { path: 'hr/employees/:id', element: <HrEmployeeProfilePage /> },
                     { path: 'hr/leave', element: <HrLeavePage /> },
                     { path: 'hr/attendance', element: <HrAttendancePage /> },
+                  ],
+                },
+
+                // ---- الرواتب (يملك payroll.view — HR/المالك) — Phase 2: PR-1 اللوحة ----
+                {
+                  element: <RequirePayroll />,
+                  children: [
+                    { path: 'payroll', element: <PayrollDashboardPage /> },
                   ],
                 },
 

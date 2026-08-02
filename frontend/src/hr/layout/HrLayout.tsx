@@ -6,6 +6,7 @@ const NAV: NavItem[] = [
   { to: '/hr/employees', label: 'الموظفون', icon: 'profile', end: false },
   { to: '/hr/leave', label: 'الإجازات', icon: 'leave' },
   { to: '/hr/attendance', label: 'الحضور', icon: 'attendance' },
+  { to: '/payroll', label: 'الرواتب', icon: 'salary', end: false },
 ]
 
 export function HrLayout() {

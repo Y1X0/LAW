@@ -81,17 +81,21 @@ Route::middleware('auth.token')->group(function () {
         Route::put('admin/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
     });
 
-    // الهيكل التنظيمي (M1) — إدارة الفروع والأقسام من الواجهة (بديل البذرة). صلاحية org.manage.
-    Route::middleware('permission:org.manage')->group(function () {
+    // الهيكل التنظيمي (M1). قاعدة معمارية: القراءة org.view (HR وأي وحدة تحتاجها)،
+    // والكتابة org.manage (المالك/الأدمِن فقط). Admin يملك الاثنتين ضمن كل الصلاحيات.
+    Route::middleware('permission:org.view')->group(function () {
         Route::get('branches', [BranchController::class, 'index'])->name('branches.index');
-        Route::post('branches', [BranchController::class, 'store'])->name('branches.store');
         Route::get('branches/{branch}', [BranchController::class, 'show'])->name('branches.show');
+        Route::get('departments', [DepartmentController::class, 'index'])->name('departments.index');
+        Route::get('departments/{department}', [DepartmentController::class, 'show'])->name('departments.show');
+    });
+
+    Route::middleware('permission:org.manage')->group(function () {
+        Route::post('branches', [BranchController::class, 'store'])->name('branches.store');
         Route::put('branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
         Route::delete('branches/{branch}', [BranchController::class, 'destroy'])->name('branches.destroy');
 
-        Route::get('departments', [DepartmentController::class, 'index'])->name('departments.index');
         Route::post('departments', [DepartmentController::class, 'store'])->name('departments.store');
-        Route::get('departments/{department}', [DepartmentController::class, 'show'])->name('departments.show');
         Route::put('departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
         Route::delete('departments/{department}', [DepartmentController::class, 'destroy'])->name('departments.destroy');
     });

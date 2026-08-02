@@ -1,28 +1,12 @@
-import { z } from 'zod'
 import { api, apiRequest } from '@/core/api/client'
+import { type Branch, type Department, branchSchema, departmentSchema, fetchBranches, fetchDepartments } from '@/core/api/org'
 
-/** فرع تنظيمي — من `GET /branches` (يحرسها الخادم بصلاحية org.manage). */
-export const branchSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  code: z.string(),
-  city: z.string().nullable().optional(),
-  phone: z.string().nullable().optional(),
-  address: z.string().nullable().optional(),
-  is_active: z.boolean().optional().default(true),
-  departments_count: z.number().optional().default(0),
-})
-export type Branch = z.infer<typeof branchSchema>
+/**
+ * إدارة الهيكل التنظيمي (org.manage) — الكتابة فقط هنا؛ القراءة مشتركة من core/api/org.
+ */
 
-/** قسم ضمن فرع — من `GET /departments`. */
-export const departmentSchema = z.object({
-  id: z.number(),
-  branch_id: z.number(),
-  name: z.string(),
-  is_active: z.boolean().optional().default(true),
-  branch: z.object({ id: z.number(), name: z.string() }).nullable().optional(),
-})
-export type Department = z.infer<typeof departmentSchema>
+export type { Branch, Department }
+export { fetchBranches, fetchDepartments }
 
 export type BranchInput = {
   name: string
@@ -39,10 +23,6 @@ export type DepartmentInput = {
   is_active?: boolean
 }
 
-export async function fetchBranches(): Promise<Branch[]> {
-  return z.array(branchSchema).parse(await api.get<unknown>('branches'))
-}
-
 export async function createBranch(input: BranchInput): Promise<Branch> {
   return branchSchema.parse(await api.post<unknown>('branches', input))
 }
@@ -53,11 +33,6 @@ export async function updateBranch(id: number, input: Partial<BranchInput>): Pro
 
 export async function deleteBranch(id: number): Promise<void> {
   await apiRequest<unknown>(`branches/${id}`, { method: 'DELETE' })
-}
-
-export async function fetchDepartments(branchId?: number): Promise<Department[]> {
-  const q = branchId ? `?branch_id=${branchId}` : ''
-  return z.array(departmentSchema).parse(await api.get<unknown>(`departments${q}`))
 }
 
 export async function createDepartment(input: DepartmentInput): Promise<Department> {

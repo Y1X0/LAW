@@ -26,7 +26,7 @@ class OrgManagementTest extends TestCase
 
     public function test_admin_can_create_list_update_and_delete_a_branch(): void
     {
-        $actor = $this->userWithPermissions(['org.manage']);
+        $actor = $this->userWithPermissions(['org.view', 'org.manage']);
 
         $this->actingAsToken($actor)->postJson('/api/branches', [
             'name' => 'فرع جدة', 'code' => 'JED', 'city' => 'جدة',
@@ -47,7 +47,7 @@ class OrgManagementTest extends TestCase
 
     public function test_branch_code_must_be_unique(): void
     {
-        $actor = $this->userWithPermissions(['org.manage']);
+        $actor = $this->userWithPermissions(['org.view', 'org.manage']);
         Branch::create(['name' => 'أ', 'code' => 'HQ']);
 
         $this->actingAsToken($actor)->postJson('/api/branches', ['name' => 'ب', 'code' => 'HQ'])
@@ -56,7 +56,7 @@ class OrgManagementTest extends TestCase
 
     public function test_branch_with_employees_cannot_be_deleted(): void
     {
-        $actor = $this->userWithPermissions(['org.manage']);
+        $actor = $this->userWithPermissions(['org.view', 'org.manage']);
         $branch = Branch::create(['name' => 'الرئيسي', 'code' => 'HQ']);
         Employee::factory()->create(['branch_id' => $branch->id]);
 
@@ -67,7 +67,7 @@ class OrgManagementTest extends TestCase
 
     public function test_department_is_created_under_a_branch_and_name_is_unique_within_it(): void
     {
-        $actor = $this->userWithPermissions(['org.manage']);
+        $actor = $this->userWithPermissions(['org.view', 'org.manage']);
         $branch = Branch::create(['name' => 'الرئيسي', 'code' => 'HQ']);
 
         $this->actingAsToken($actor)->postJson('/api/departments', ['branch_id' => $branch->id, 'name' => 'التقاضي'])
@@ -85,7 +85,7 @@ class OrgManagementTest extends TestCase
 
     public function test_departments_can_be_filtered_by_branch(): void
     {
-        $actor = $this->userWithPermissions(['org.manage']);
+        $actor = $this->userWithPermissions(['org.view', 'org.manage']);
         $a = Branch::create(['name' => 'أ', 'code' => 'A']);
         $b = Branch::create(['name' => 'ب', 'code' => 'B']);
         Department::create(['branch_id' => $a->id, 'name' => 'قسم أ']);
@@ -97,7 +97,7 @@ class OrgManagementTest extends TestCase
 
     public function test_department_with_employees_cannot_be_deleted(): void
     {
-        $actor = $this->userWithPermissions(['org.manage']);
+        $actor = $this->userWithPermissions(['org.view', 'org.manage']);
         $branch = Branch::create(['name' => 'الرئيسي', 'code' => 'HQ']);
         $dept = Department::create(['branch_id' => $branch->id, 'name' => 'المالية']);
         Employee::factory()->create(['branch_id' => $branch->id, 'department_id' => $dept->id]);

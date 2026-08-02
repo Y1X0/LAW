@@ -22,10 +22,18 @@ function listBody(items: unknown[], total = items.length) {
   return json({ data: items, meta: { page: 1, per_page: 15, total, total_pages: 1 }, errors: null })
 }
 
-/** يوجّه fetch: DELETE ⇒ نجاح؛ GET employees ⇒ القائمة (أو خطأ). */
+const BRANCHES = [{ id: 1, name: 'المكتب الرئيسي', code: 'HQ', is_active: true, departments_count: 1 }]
+const DEPTS = [{ id: 1, branch_id: 1, name: 'التقاضي', is_active: true }]
+
+/** يوجّه fetch: DELETE ⇒ نجاح؛ GET branches/departments ⇒ الهيكل؛ GET employees ⇒ القائمة. */
 function stub({ items = [EMP], listStatus = 200 }: { items?: unknown[]; listStatus?: number } = {}) {
-  const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-    if ((init?.method ?? 'GET') === 'DELETE') return json({ data: null })
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    const method = init?.method ?? 'GET'
+    if (method === 'DELETE') return json({ data: null })
+    if (method === 'POST' && url.includes('employees')) return json({ data: { ...EMP, id: 99 } }, 201)
+    if (url.includes('/branches')) return json({ data: BRANCHES })
+    if (url.includes('/departments')) return json({ data: DEPTS })
     if (listStatus !== 200) return json({ data: null, meta: null, errors: { code: 'SERVER_ERROR' } }, listStatus)
     return listBody(items)
   })
@@ -89,7 +97,7 @@ describe('HrEmployeesPage', () => {
     tokenStorage.set({ access_token: 't', refresh_token: 'r' })
     stub({ items: [] })
     renderWithProviders(<HrEmployeesPage />)
-    expect(await screen.findByText('لا يوجد موظفون بعد.')).toBeInTheDocument()
+    expect(await screen.findByText(/لا يوجد موظفون بعد/)).toBeInTheDocument()
   })
 
   it('يعرض حالة الخطأ عند فشل الجلب', async () => {
@@ -114,6 +122,46 @@ describe('HrEmployeesPage', () => {
       expect(
         fetchMock.mock.calls.some((c) => (c[1]?.method ?? 'GET') === 'DELETE' && String(c[0]).includes('employees/7')),
       ).toBe(true),
+    )
+  })
+
+  it('ينشئ موظفاً جديداً من نموذج الواجهة عبر POST', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    const fetchMock = stub()
+    const user = userEvent.setup()
+
+    renderWithProviders(<HrEmployeesPage />)
+    await screen.findByText('EMP-1001')
+
+    await user.click(screen.getByRole('button', { name: 'إضافة موظف' }))
+    // الفرع أولاً ثم القسم (Cascade)
+    await user.selectOptions(await screen.findByLabelText('الفرع *'), '1')
+    await user.selectOptions(await screen.findByLabelText('القسم *'), '1')
+    await user.type(screen.getByLabelText('الرقم الوظيفي *'), 'EMP-2002')
+    await user.type(screen.getByLabelText('الرقم الوطني *'), '3003')
+    await user.type(screen.getByLabelText('الاسم بالعربية *'), 'موظف جديد')
+    await user.click(screen.getByRole('button', { name: 'حفظ' }))
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          (c) => (c[1]?.method ?? 'GET') === 'POST' && String(c[0]).includes('employees'),
+        ),
+      ).toBe(true),
+    )
+  })
+
+  it('يرسل فلتر الفرع إلى الـ API', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    const fetchMock = stub()
+    const user = userEvent.setup()
+
+    renderWithProviders(<HrEmployeesPage />)
+    await screen.findByText('EMP-1001')
+
+    await user.selectOptions(await screen.findByLabelText('الفرع'), '1')
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('branch_id=1'))).toBe(true),
     )
   })
 })

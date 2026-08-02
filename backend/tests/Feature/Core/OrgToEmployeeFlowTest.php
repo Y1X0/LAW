@@ -37,7 +37,7 @@ class OrgToEmployeeFlowTest extends TestCase
     public function test_full_chain_ui_org_then_employee_import_with_no_manual_edits(): void
     {
         // مالك بصلاحيات إعداد الشركة كاملةً من الواجهة.
-        $owner = $this->userWithPermissions(['org.manage', 'employees.create']);
+        $owner = $this->userWithPermissions(['org.view', 'org.manage', 'employees.create']);
 
         // 1) إنشاء عدّة فروع من الواجهة (API).
         $this->actingAsToken($owner)->postJson('/api/branches', ['name' => 'المكتب الرئيسي', 'code' => 'HQ'])->assertStatus(201);

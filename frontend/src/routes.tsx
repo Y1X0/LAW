@@ -10,6 +10,7 @@ import { RoleLayout } from '@/core/layout/RoleLayout'
 import { AdminHomePage } from '@/admin/pages/AdminHomePage'
 import { AdminUsersPage } from '@/admin/pages/AdminUsersPage'
 import { AdminRolesPage } from '@/admin/pages/AdminRolesPage'
+import { AdminOrgPage } from '@/admin/pages/AdminOrgPage'
 import { AdminAuditPage } from '@/admin/pages/AdminAuditPage'
 import { AdminDataPage } from '@/admin/pages/AdminDataPage'
 import { AdminSettingsPage } from '@/admin/pages/AdminSettingsPage'
@@ -57,6 +58,7 @@ export const router = createBrowserRouter(
                     { path: 'admin', element: <AdminHomePage /> },
                     { path: 'admin/users', element: <AdminUsersPage /> },
                     { path: 'admin/roles', element: <AdminRolesPage /> },
+                    { path: 'admin/org', element: <AdminOrgPage /> },
                     { path: 'admin/audit', element: <AdminAuditPage /> },
                     { path: 'admin/data', element: <AdminDataPage /> },
                     { path: 'admin/settings', element: <AdminSettingsPage /> },

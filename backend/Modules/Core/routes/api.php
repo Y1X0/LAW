@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Core\Http\Controllers\Admin\AdminSummaryController;
 use Modules\Core\Http\Controllers\Admin\AuditController;
+use Modules\Core\Http\Controllers\Admin\BranchController;
+use Modules\Core\Http\Controllers\Admin\DepartmentController;
 use Modules\Core\Http\Controllers\Admin\SettingsController;
 use Modules\Core\Http\Controllers\Admin\UserController;
 use Modules\Core\Http\Controllers\Auth\AuthController;
@@ -77,5 +79,20 @@ Route::middleware('auth.token')->group(function () {
     Route::middleware('permission:settings.manage')->group(function () {
         Route::get('admin/settings', [SettingsController::class, 'index'])->name('admin.settings.index');
         Route::put('admin/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
+    });
+
+    // الهيكل التنظيمي (M1) — إدارة الفروع والأقسام من الواجهة (بديل البذرة). صلاحية org.manage.
+    Route::middleware('permission:org.manage')->group(function () {
+        Route::get('branches', [BranchController::class, 'index'])->name('branches.index');
+        Route::post('branches', [BranchController::class, 'store'])->name('branches.store');
+        Route::get('branches/{branch}', [BranchController::class, 'show'])->name('branches.show');
+        Route::put('branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
+        Route::delete('branches/{branch}', [BranchController::class, 'destroy'])->name('branches.destroy');
+
+        Route::get('departments', [DepartmentController::class, 'index'])->name('departments.index');
+        Route::post('departments', [DepartmentController::class, 'store'])->name('departments.store');
+        Route::get('departments/{department}', [DepartmentController::class, 'show'])->name('departments.show');
+        Route::put('departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
+        Route::delete('departments/{department}', [DepartmentController::class, 'destroy'])->name('departments.destroy');
     });
 });

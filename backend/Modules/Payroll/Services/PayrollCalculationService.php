@@ -83,7 +83,8 @@ class PayrollCalculationService
     {
         $profile = $pre !== null
             ? ($pre['profile'] ?? null)
-            : EmployeeSalaryProfile::where('employee_id', $employee->id)->where('is_active', true)->first();
+            // orderBy('id') يطابق اختيار preloadContext (أدنى معرّف) لو وُجد أكثر من ملف نشط.
+            : EmployeeSalaryProfile::where('employee_id', $employee->id)->where('is_active', true)->orderBy('id')->first();
         if ($profile === null) {
             return null;
         }
@@ -183,8 +184,10 @@ class PayrollCalculationService
             return [];
         }
 
+        // orderBy('id') + unique يختار أدنى معرّف لكل موظف حتماً — يطابق first() في
+        // المسار الفردي حتى لو (نادراً) وُجد أكثر من ملف راتب نشط لموظف واحد.
         $profiles = EmployeeSalaryProfile::where('is_active', true)
-            ->whereIn('employee_id', $ids)->get()->keyBy('employee_id');
+            ->whereIn('employee_id', $ids)->orderBy('id')->get()->unique('employee_id')->keyBy('employee_id');
         $components = EmployeeSalaryComponent::where('is_active', true)
             ->whereIn('employee_id', $ids)
             ->with('component:id,code,type,value_type')

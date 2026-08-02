@@ -28,7 +28,8 @@ class EmployeeController
                 $q->whereRaw('LOWER(full_name_ar) LIKE ?', [$needle])
                     ->orWhereRaw('LOWER(full_name_en) LIKE ?', [$needle])
                     ->orWhereRaw('LOWER(employee_no) LIKE ?', [$needle])
-                    ->orWhereRaw('LOWER(national_id) LIKE ?', [$needle]);
+                    ->orWhereRaw('LOWER(national_id) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(email) LIKE ?', [$needle]);
             });
         }
 

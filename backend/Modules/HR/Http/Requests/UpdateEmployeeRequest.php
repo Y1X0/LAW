@@ -19,17 +19,43 @@ class UpdateEmployeeRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $v) {
-            if (! $this->has('branch_id') && ! $this->has('department_id')) {
-                return; // لم يُمَسّ أيٌّ منهما.
-            }
             $employee = $this->route('employee');
-            $branchId = $this->input('branch_id', $employee->branch_id);
-            $departmentId = $this->input('department_id', $employee->department_id);
-            if ($branchId && $departmentId
-                && ! Department::where('id', $departmentId)->where('branch_id', $branchId)->exists()) {
-                $v->errors()->add('department_id', 'القسم المختار لا يتبع الفرع المحدّد.');
+
+            // القسم يتبع الفرع — يُفحص فقط إن مُسّ أحدهما في الطلب.
+            if ($this->has('branch_id') || $this->has('department_id')) {
+                $branchId = $this->input('branch_id', $employee->branch_id);
+                $departmentId = $this->input('department_id', $employee->department_id);
+                if ($branchId && $departmentId
+                    && ! Department::where('id', $departmentId)->where('branch_id', $branchId)->exists()) {
+                    $v->errors()->add('department_id', 'القسم المختار لا يتبع الفرع المحدّد.');
+                }
+            }
+
+            // منع الحلقات الإدارية: المدير الجديد يجب ألّا يكون هذا الموظف نفسه أو أحد
+            // مرؤوسيه (مباشرين أو غير مباشرين) — وإلّا نشأت حلقة A↔B.
+            if ($this->filled('manager_id') && $this->createsManagerCycle($employee->id, (int) $this->input('manager_id'))) {
+                $v->errors()->add('manager_id', 'اختيار هذا المدير ينشئ حلقة إدارية غير صالحة.');
             }
         });
+    }
+
+    /** هل يقع $managerId ضمن السلسلة الإدارية الصاعدة من نفسه حتى تصل إلى $employeeId؟ */
+    private function createsManagerCycle(int $employeeId, int $managerId): bool
+    {
+        $current = $managerId;
+        $guard = 0;
+        while ($guard++ < 100) {
+            if ($current === $employeeId) {
+                return true;
+            }
+            $next = Employee::where('id', $current)->value('manager_id');
+            if ($next === null) {
+                break;
+            }
+            $current = (int) $next;
+        }
+
+        return false;
     }
 
     public function rules(): array
@@ -55,6 +81,8 @@ class UpdateEmployeeRequest extends FormRequest
             'contract_type' => ['nullable', Rule::in(['permanent', 'temporary', 'part_time'])],
             'contract_start' => ['nullable', 'date'],
             'contract_end' => ['nullable', 'date', 'after_or_equal:contract_start'],
+            'termination_date' => ['nullable', 'date'],
+            'termination_reason' => ['nullable', 'string', 'max:255'],
             'basic_salary' => ['nullable', 'numeric', 'min:0'],
             'bank_name' => ['nullable', 'string', 'max:120'],
             'bank_account' => ['nullable', 'string', 'max:50'],

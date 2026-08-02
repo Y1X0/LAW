@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { tokenStorage } from '@/core/auth/tokenStorage'
@@ -137,7 +137,7 @@ describe('HrEmployeesPage', () => {
     // الفرع أولاً ثم القسم (Cascade)
     await user.selectOptions(await screen.findByLabelText('الفرع *'), '1')
     await user.selectOptions(await screen.findByLabelText('القسم *'), '1')
-    await user.type(screen.getByLabelText('الرقم الوظيفي *'), 'EMP-2002')
+    await user.type(screen.getByLabelText('الرقم الوظيفي'), 'EMP-2002')
     await user.type(screen.getByLabelText('الرقم الوطني *'), '3003')
     await user.type(screen.getByLabelText('الاسم بالعربية *'), 'موظف جديد')
     await user.click(screen.getByRole('button', { name: 'حفظ' }))
@@ -149,6 +149,21 @@ describe('HrEmployeesPage', () => {
         ),
       ).toBe(true),
     )
+  })
+
+  it('يُظهر حقول إنهاء الخدمة فقط عند اختيار الحالة «منتهٍ»', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    stub()
+    const user = userEvent.setup()
+
+    renderWithProviders(<HrEmployeesPage />)
+    await screen.findByText('EMP-1001')
+    await user.click(screen.getByRole('button', { name: 'إضافة موظف' }))
+
+    const dialog = within(await screen.findByRole('dialog'))
+    expect(dialog.queryByLabelText('سبب إنهاء الخدمة')).not.toBeInTheDocument()
+    await user.selectOptions(dialog.getByLabelText('الحالة'), 'terminated')
+    expect(await dialog.findByLabelText('سبب إنهاء الخدمة')).toBeInTheDocument()
   })
 
   it('يرسل فلتر الفرع إلى الـ API', async () => {

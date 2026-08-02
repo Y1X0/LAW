@@ -54,6 +54,73 @@ export function fetchRecentPeriods(limit = 6): Promise<PayrollPeriodRow[]> {
     .then((env) => z.array(payrollPeriodSchema).parse(env.data ?? []))
 }
 
+// ---- أسماء الأشهر (ميلادية) للقوائم والعرض ----
+export const MONTHS = [
+  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+] as const
+
+/** اسم الشهر بالميلادي (1..12)؛ يعود للرقم عند خروجه عن النطاق. */
+export function monthLabel(month: number): string {
+  return MONTHS[month - 1] ?? String(month)
+}
+
+// ---- قائمة الفترات المرقّمة + الإنشاء (PR-2) ----
+export const PERIOD_STATUSES = ['draft', 'processing', 'approved', 'paid'] as const
+
+const paginationMetaSchema = z.object({
+  page: z.number(),
+  per_page: z.number(),
+  total: z.number(),
+  total_pages: z.number(),
+})
+export type PaginationMeta = z.infer<typeof paginationMetaSchema>
+
+export interface PeriodListParams {
+  year?: number
+  month?: number
+  status?: string
+  branchId?: number
+  page?: number
+  perPage?: number
+}
+
+function buildPeriodQuery(params: PeriodListParams): string {
+  const q = new URLSearchParams()
+  if (params.year) q.set('year', String(params.year))
+  if (params.month) q.set('month', String(params.month))
+  if (params.status) q.set('status', params.status)
+  if (params.branchId) q.set('branch_id', String(params.branchId))
+  q.set('page', String(params.page ?? 1))
+  q.set('per_page', String(params.perPage ?? 15))
+  return q.toString()
+}
+
+export interface PeriodListResult {
+  items: PayrollPeriodRow[]
+  meta: PaginationMeta
+}
+
+/** قائمة فترات الرواتب المرقّمة — `GET /payroll-periods` (يحرسها payroll.view). */
+export async function fetchPeriods(params: PeriodListParams = {}): Promise<PeriodListResult> {
+  const env = await api.getPage<unknown>(`payroll-periods?${buildPeriodQuery(params)}`)
+  return {
+    items: z.array(payrollPeriodSchema).parse(env.data ?? []),
+    meta: paginationMetaSchema.parse(env.meta),
+  }
+}
+
+export interface CreatePeriodInput {
+  year: number
+  month: number
+  branch_id?: number | null
+}
+
+/** إنشاء فترة رواتب — `POST /payroll-periods` (يحرسها payroll.create). */
+export async function createPeriod(input: CreatePeriodInput): Promise<PayrollPeriodRow> {
+  return payrollPeriodSchema.parse(await api.post<unknown>('payroll-periods', input))
+}
+
 // ---- تسميات حالة الفترة (draft/processing/approved/paid) ----
 const PERIOD_STATUS_LABEL: Record<string, string> = {
   draft: 'مسوّدة',

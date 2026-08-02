@@ -22,6 +22,7 @@ import { HrEmployeeProfilePage } from '@/hr/pages/HrEmployeeProfilePage'
 import { HrLeavePage } from '@/hr/pages/HrLeavePage'
 import { HrAttendancePage } from '@/hr/pages/HrAttendancePage'
 import { PayrollDashboardPage } from '@/payroll/pages/PayrollDashboardPage'
+import { PayrollPeriodsPage } from '@/payroll/pages/PayrollPeriodsPage'
 import { AttendancePage } from '@/employee/pages/AttendancePage'
 import { DashboardPage } from '@/employee/pages/DashboardPage'
 import { LeavePage } from '@/employee/pages/LeavePage'
@@ -94,6 +95,7 @@ export const router = createBrowserRouter(
                   element: <RequirePayroll />,
                   children: [
                     { path: 'payroll', element: <PayrollDashboardPage /> },
+                    { path: 'payroll/periods', element: <PayrollPeriodsPage /> },
                   ],
                 },
 

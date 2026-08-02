@@ -5,10 +5,12 @@ FROM php:8.3-fpm-alpine
 # nginx + gettext (envsubst): للتشغيل الإنتاجي (Render) عبر start.sh — لا يؤثّر على
 # استخدام docker-compose الذي يبقى على CMD php-fpm أدناه مع nginx منفصل.
 RUN apk add --no-cache \
-        bash git curl libpng-dev libzip-dev postgresql-dev icu-dev oniguruma-dev \
+        bash git curl libpng-dev libjpeg-turbo-dev freetype-dev libzip-dev \
+        postgresql-dev icu-dev oniguruma-dev \
         nginx gettext \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
-    && docker-php-ext-install pdo pdo_pgsql pgsql bcmath zip intl pcntl \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo pdo_pgsql pgsql bcmath zip intl pcntl gd \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apk del .build-deps

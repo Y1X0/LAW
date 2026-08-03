@@ -100,8 +100,9 @@ function ClientCasesSection({ clientId }: { clientId: number }) {
     queryFn: () => fetchCases({ clientId, perPage: 100 }),
   })
 
+  const count = query.data?.meta.total
   return (
-    <SectionCard title="قضايا العميل">
+    <SectionCard title={`قضايا العميل${count != null ? ` (${count})` : ''}`}>
       {query.isPending ? <Skeleton className="h-14 w-full" /> :
        query.isError ? <ErrorState error={query.error}><div className="mt-3"><Button onClick={() => void query.refetch()}>إعادة المحاولة</Button></div></ErrorState> :
        query.data.items.length === 0 ? <EmptyState message="لا توجد قضايا مرتبطة بهذا العميل." /> : (

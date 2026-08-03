@@ -75,7 +75,7 @@ export function LegalCaseDetailPage() {
         <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
           <Info label="الحالة" value={<Badge tone={caseStatusTone(c.status)}>{caseStatusLabel(c.status)}</Badge>} />
           <Info label="التقدّم" value={`${c.progress}%`} />
-          <Info label="العميل" value={c.client?.name ?? '—'} />
+          <Info label="العميل" value={c.client ? <Link to={`/legal/clients/${c.client.id}`} className="text-brand-700 hover:underline">{c.client.name}</Link> : '—'} />
           <Info label="المحامي المسؤول" value={c.responsibleLawyer?.full_name_ar ?? '—'} />
           <Info label="رقم المحكمة" value={c.court_case_number ?? '—'} />
           <Info label="المحكمة" value={c.court_name ?? '—'} />

@@ -43,6 +43,8 @@ describe('LegalClientDetailPage', () => {
     expect(screen.getByText('a@amal.sa')).toBeInTheDocument()
     expect(await screen.findByText('نزاع تجاري')).toBeInTheDocument()
     expect(screen.getByText('C-100')).toBeInTheDocument()
+    // عدّاد القضايا في عنوان القسم (من meta.total).
+    expect(screen.getByText('قضايا العميل (1)')).toBeInTheDocument()
   })
 
   it('يعطّل العميل بتأكيد يوضّح أنه ليس حذفًا، عبر PATCH status=inactive', async () => {

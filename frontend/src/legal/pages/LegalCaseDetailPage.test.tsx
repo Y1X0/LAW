@@ -49,7 +49,8 @@ describe('LegalCaseDetailPage', () => {
     renderWithProviders(<LegalCaseDetailPage />, opts)
 
     expect(await screen.findByText('نزاع عقد إيجار')).toBeInTheDocument()
-    expect(screen.getByText('شركة الأمل')).toBeInTheDocument()
+    // العميل يظهر كرابط سريع لصفحة تفاصيله (تنقّل قضية → عميل).
+    expect(screen.getByRole('link', { name: 'شركة الأمل' })).toHaveAttribute('href', '/legal/clients/5')
     expect(screen.getByText('محكمة الرياض')).toBeInTheDocument()
     // المحامي المسند بدور «رئيسي».
     expect(screen.getByText('رئيسي')).toBeInTheDocument()

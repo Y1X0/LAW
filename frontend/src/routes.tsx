@@ -7,6 +7,7 @@ import { RequireAdmin } from '@/core/capabilities/RequireAdmin'
 import { RequireHr } from '@/core/capabilities/RequireHr'
 import { RequireLawyer } from '@/core/capabilities/RequireLawyer'
 import { RequirePayroll } from '@/core/capabilities/RequirePayroll'
+import { RequireLegal } from '@/core/capabilities/RequireLegal'
 import { IndexRedirect } from '@/core/layout/IndexRedirect'
 import { RoleLayout } from '@/core/layout/RoleLayout'
 import { AdminHomePage } from '@/admin/pages/AdminHomePage'
@@ -31,6 +32,9 @@ const PayrollSalaryPage = lazy(() => import('@/payroll/pages/PayrollSalaryPage')
 const PayrollRunsPage = lazy(() => import('@/payroll/pages/PayrollRunsPage').then((m) => ({ default: m.PayrollRunsPage })))
 const PayrollPayslipsPage = lazy(() => import('@/payroll/pages/PayrollPayslipsPage').then((m) => ({ default: m.PayrollPayslipsPage })))
 const PayrollReportsPage = lazy(() => import('@/payroll/pages/PayrollReportsPage').then((m) => ({ default: m.PayrollReportsPage })))
+// وحدة الإدارة القانونية: تحميل كسول لتقسيمها إلى chunk مستقل.
+import { LegalLayout } from '@/legal/LegalLayout'
+const LegalCasesPage = lazy(() => import('@/legal/pages/LegalCasesPage').then((m) => ({ default: m.LegalCasesPage })))
 import { AttendancePage } from '@/employee/pages/AttendancePage'
 import { DashboardPage } from '@/employee/pages/DashboardPage'
 import { LeavePage } from '@/employee/pages/LeavePage'
@@ -112,6 +116,19 @@ export const router = createBrowserRouter(
                         { path: 'payroll/runs', element: <PayrollRunsPage /> },
                         { path: 'payroll/runs/:runId/payslips', element: <PayrollPayslipsPage /> },
                         { path: 'payroll/reports', element: <PayrollReportsPage /> },
+                      ],
+                    },
+                  ],
+                },
+
+                // ---- الإدارة القانونية (مدير قانوني — يملك clients.view) — Phase 3 ----
+                {
+                  element: <RequireLegal />,
+                  children: [
+                    {
+                      element: <LegalLayout />,
+                      children: [
+                        { path: 'legal', element: <LegalCasesPage /> },
                       ],
                     },
                   ],

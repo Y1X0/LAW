@@ -70,3 +70,19 @@ export async function probeCanManagePayroll(): Promise<boolean> {
     throw error
   }
 }
+
+/**
+ * كشف قدرة «الإدارة القانونية»: نداء خفيف لقائمة العملاء (يحرسها clients.view —
+ * صلاحية إدارية لا يملكها المحامي بعزل view_own). يميّز «مشرف/مدير قانوني» عن المحامي.
+ * - 200 ⇒ يملك الإدارة القانونية. · 401/403 ⇒ لا يملكها.
+ * - خطأ شبكة/5xx ⇒ يُعاد رميه (إعادة محاولة).
+ */
+export async function probeCanManageLegal(): Promise<boolean> {
+  try {
+    const data = await api.get<unknown>('clients?per_page=1')
+    return data != null
+  } catch (error) {
+    if (isDefinitiveNo(error)) return false
+    throw error
+  }
+}

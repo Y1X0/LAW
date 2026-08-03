@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { tokenStorage } from '@/core/auth/tokenStorage'
-import { probeCanManageHr, probeCanManagePayroll, probeIsAdmin, probeIsLawyer } from './probe'
+import { probeCanManageHr, probeCanManageLegal, probeCanManagePayroll, probeIsAdmin, probeIsLawyer } from './probe'
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -93,5 +93,23 @@ describe('probeCanManagePayroll', () => {
   it('يرمي عند خطأ شبكة (ليعيد React Query المحاولة)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
     await expect(probeCanManagePayroll()).rejects.toThrow()
+  })
+})
+
+describe('probeCanManageLegal', () => {
+  it('يُعيد true عند 200 (يملك clients.view الإدارية)', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({ data: [], meta: { total: 0 }, errors: null })))
+    expect(await probeCanManageLegal()).toBe(true)
+  })
+
+  it('يُعيد false عند 403 (محامٍ/غير إداري)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({ data: null, meta: null, errors: { code: 'FORBIDDEN' } }, 403)))
+    expect(await probeCanManageLegal()).toBe(false)
+  })
+
+  it('يرمي عند خطأ شبكة (ليعيد React Query المحاولة)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
+    await expect(probeCanManageLegal()).rejects.toThrow()
   })
 })

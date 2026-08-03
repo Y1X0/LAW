@@ -52,7 +52,7 @@ function DocRow({ caseId, doc }: { caseId: number; doc: CaseDocument }) {
     mutationFn: () => downloadDocument(doc),
     onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر التنزيل', 'error'),
   })
-  const meta = [doc.document_type, formatFileSize(doc.size_bytes)].filter(Boolean).join(' · ')
+  const meta = [doc.document_type, formatFileSize(doc.size_bytes), doc.created_at ? `رُفع ${doc.created_at.slice(0, 10)}` : null].filter(Boolean).join(' · ')
   return (
     <li>
       <Card className="flex flex-col gap-2 p-3.5 sm:flex-row sm:items-center sm:justify-between">

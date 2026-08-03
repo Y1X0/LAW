@@ -11,6 +11,10 @@ import { assignmentRoleLabel, caseStatusLabel, caseStatusTone, closeCase, fetchC
 import { CaseFormModal } from './components/CaseFormModal'
 import { AssignLawyerModal } from './components/AssignLawyerModal'
 import { CaseHearingsSection } from './components/CaseHearingsSection'
+import { CaseDocumentsSection } from './components/CaseDocumentsSection'
+import { CasePartiesSection } from './components/CasePartiesSection'
+import { CaseTimelineSection } from './components/CaseTimelineSection'
+import { CaseArchiveSection } from './components/CaseArchiveSection'
 
 /**
  * تفاصيل القضية للمدير (Phase 3 / PR-2) — من `GET /cases/{id}` الموجود، مع تعديل
@@ -95,6 +99,10 @@ export function LegalCaseDetailPage() {
       </SectionCard>
 
       <CaseHearingsSection caseId={id} />
+      <CaseDocumentsSection caseId={id} />
+      <CasePartiesSection caseId={id} />
+      <CaseTimelineSection caseId={id} />
+      <CaseArchiveSection caseId={id} />
 
       {editing && <CaseFormModal existing={c} onSaved={() => {}} onClose={() => setEditing(false)} />}
       {assigning && <AssignLawyerModal caseId={id} onClose={() => setAssigning(false)} />}

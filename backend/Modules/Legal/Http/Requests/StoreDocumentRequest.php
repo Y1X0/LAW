@@ -5,7 +5,11 @@ namespace Modules\Legal\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * تحقّق إضافة مستند (documents.upload) — بيانات وصفية فقط، بلا رفع ملف فعلي.
+ * تحقّق إضافة مستند (documents.upload).
+ *
+ * P0 أمني (Phase 5): لا يُقبل `storage_disk`/`storage_path`/`disk`/`path` من العميل
+ * إطلاقاً — الخادم وحده يقرّر القرص والمسار واسم الملف عند الرفع (PR-2). قبول أيّ
+ * منها كان يفتح Path-Injection/IDOR. هذه القواعد تقبل البيانات الوصفية فقط.
  */
 class StoreDocumentRequest extends FormRequest
 {
@@ -20,8 +24,6 @@ class StoreDocumentRequest extends FormRequest
             'title' => ['required', 'string', 'max:200'],
             'document_type' => ['nullable', 'string', 'max:60'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'storage_disk' => ['nullable', 'string', 'max:50'],
-            'storage_path' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

@@ -60,6 +60,22 @@ return [
             'report' => false,
         ],
 
+        // تخزين مستندات القضايا (Cloudflare R2 — متوافق S3). خاص (private): لا وصول
+        // عام؛ التنزيل يمرّ عبر Laravel بعد حارس رؤية القضية. `throw` مفعّل ليُظهر
+        // أخطاء التخزين بدل الفشل الصامت. في الاختبارات يُستبدَل بـ Storage::fake.
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => env('R2_DEFAULT_REGION', 'auto'),
+            'bucket' => env('R2_BUCKET'),
+            'endpoint' => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*

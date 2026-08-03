@@ -33,17 +33,37 @@ class DocumentTest extends TestCase
             ->postJson("/api/cases/{$case->id}/documents", [
                 'title' => 'مذكرة دفاع',
                 'document_type' => 'مذكرة',
-                'storage_disk' => 'local',
-                'storage_path' => 'legal/cases/memo-1.pdf',
             ])
             ->assertCreated()
             ->assertJsonPath('data.title', 'مذكرة دفاع')
             ->assertJsonPath('data.document_type', 'مذكرة');
 
         $this->assertDatabaseHas('case_documents', [
-            'case_id' => $case->id, 'title' => 'مذكرة دفاع', 'storage_path' => 'legal/cases/memo-1.pdf', 'uploaded_by' => $uploader->id,
+            'case_id' => $case->id, 'title' => 'مذكرة دفاع', 'uploaded_by' => $uploader->id,
         ]);
         $this->assertDatabaseHas('audit_logs', ['action' => 'case_document_added']);
+    }
+
+    /**
+     * P0 (Phase 5): العميل لا يستطيع تحديد قرص/مسار التخزين — تُهمَل أيّ قيمة يرسلها،
+     * فلا يبقى في السجلّ أثر لمسار محقون. الخادم وحده يقرّر القرص والمسار (PR-2).
+     */
+    public function test_client_cannot_set_storage_path_or_disk(): void
+    {
+        $uploader = $this->userWithPermissions(['documents.upload', 'cases.view_all']);
+        $case = LegalCase::factory()->create();
+
+        $this->actingAsToken($uploader)
+            ->postJson("/api/cases/{$case->id}/documents", [
+                'title' => 'محاولة حقن',
+                'storage_disk' => 'local',
+                'storage_path' => '../../../etc/passwd',
+            ])
+            ->assertCreated();
+
+        $document = CaseDocument::where('case_id', $case->id)->firstOrFail();
+        $this->assertNull($document->storage_path);
+        $this->assertNull($document->storage_disk);
     }
 
     public function test_can_delete_document(): void

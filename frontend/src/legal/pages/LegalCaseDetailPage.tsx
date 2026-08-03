@@ -10,6 +10,7 @@ import { formatCurrency } from '@/core/lib/format'
 import { assignmentRoleLabel, caseStatusLabel, caseStatusTone, closeCase, fetchCase, unassignLawyer } from '@/legal/api/cases'
 import { CaseFormModal } from './components/CaseFormModal'
 import { AssignLawyerModal } from './components/AssignLawyerModal'
+import { CaseHearingsSection } from './components/CaseHearingsSection'
 
 /**
  * تفاصيل القضية للمدير (Phase 3 / PR-2) — من `GET /cases/{id}` الموجود، مع تعديل
@@ -92,6 +93,8 @@ export function LegalCaseDetailPage() {
           </ul>
         )}
       </SectionCard>
+
+      <CaseHearingsSection caseId={id} />
 
       {editing && <CaseFormModal existing={c} onSaved={() => {}} onClose={() => setEditing(false)} />}
       {assigning && <AssignLawyerModal caseId={id} onClose={() => setAssigning(false)} />}

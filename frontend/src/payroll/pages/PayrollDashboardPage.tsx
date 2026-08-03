@@ -33,6 +33,7 @@ export function PayrollDashboardPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Link to="/payroll/periods" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">الفترات</Link>
             <Link to="/payroll/components" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">المكوّنات</Link>
+            <Link to="/payroll/salary" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">رواتب الموظفين</Link>
           </div>
         }
       />

@@ -1,3 +1,4 @@
+import { lazy } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { LoginPage } from '@/core/auth/LoginPage'
 import { ProtectedRoute } from '@/core/auth/ProtectedRoute'
@@ -21,13 +22,15 @@ import { HrEmployeesPage } from '@/hr/pages/HrEmployeesPage'
 import { HrEmployeeProfilePage } from '@/hr/pages/HrEmployeeProfilePage'
 import { HrLeavePage } from '@/hr/pages/HrLeavePage'
 import { HrAttendancePage } from '@/hr/pages/HrAttendancePage'
-import { PayrollDashboardPage } from '@/payroll/pages/PayrollDashboardPage'
-import { PayrollPeriodsPage } from '@/payroll/pages/PayrollPeriodsPage'
-import { PayrollComponentsPage } from '@/payroll/pages/PayrollComponentsPage'
-import { PayrollSalaryPage } from '@/payroll/pages/PayrollSalaryPage'
-import { PayrollRunsPage } from '@/payroll/pages/PayrollRunsPage'
-import { PayrollPayslipsPage } from '@/payroll/pages/PayrollPayslipsPage'
-import { PayrollReportsPage } from '@/payroll/pages/PayrollReportsPage'
+// وحدة الرواتب: تحميل كسول (lazy) لتقسيمها إلى chunks مستقلّة تُحمّل عند الحاجة.
+import { PayrollLayout } from '@/payroll/PayrollLayout'
+const PayrollDashboardPage = lazy(() => import('@/payroll/pages/PayrollDashboardPage').then((m) => ({ default: m.PayrollDashboardPage })))
+const PayrollPeriodsPage = lazy(() => import('@/payroll/pages/PayrollPeriodsPage').then((m) => ({ default: m.PayrollPeriodsPage })))
+const PayrollComponentsPage = lazy(() => import('@/payroll/pages/PayrollComponentsPage').then((m) => ({ default: m.PayrollComponentsPage })))
+const PayrollSalaryPage = lazy(() => import('@/payroll/pages/PayrollSalaryPage').then((m) => ({ default: m.PayrollSalaryPage })))
+const PayrollRunsPage = lazy(() => import('@/payroll/pages/PayrollRunsPage').then((m) => ({ default: m.PayrollRunsPage })))
+const PayrollPayslipsPage = lazy(() => import('@/payroll/pages/PayrollPayslipsPage').then((m) => ({ default: m.PayrollPayslipsPage })))
+const PayrollReportsPage = lazy(() => import('@/payroll/pages/PayrollReportsPage').then((m) => ({ default: m.PayrollReportsPage })))
 import { AttendancePage } from '@/employee/pages/AttendancePage'
 import { DashboardPage } from '@/employee/pages/DashboardPage'
 import { LeavePage } from '@/employee/pages/LeavePage'
@@ -99,13 +102,18 @@ export const router = createBrowserRouter(
                 {
                   element: <RequirePayroll />,
                   children: [
-                    { path: 'payroll', element: <PayrollDashboardPage /> },
-                    { path: 'payroll/periods', element: <PayrollPeriodsPage /> },
-                    { path: 'payroll/components', element: <PayrollComponentsPage /> },
-                    { path: 'payroll/salary', element: <PayrollSalaryPage /> },
-                    { path: 'payroll/runs', element: <PayrollRunsPage /> },
-                    { path: 'payroll/runs/:runId/payslips', element: <PayrollPayslipsPage /> },
-                    { path: 'payroll/reports', element: <PayrollReportsPage /> },
+                    {
+                      element: <PayrollLayout />,
+                      children: [
+                        { path: 'payroll', element: <PayrollDashboardPage /> },
+                        { path: 'payroll/periods', element: <PayrollPeriodsPage /> },
+                        { path: 'payroll/components', element: <PayrollComponentsPage /> },
+                        { path: 'payroll/salary', element: <PayrollSalaryPage /> },
+                        { path: 'payroll/runs', element: <PayrollRunsPage /> },
+                        { path: 'payroll/runs/:runId/payslips', element: <PayrollPayslipsPage /> },
+                        { path: 'payroll/reports', element: <PayrollReportsPage /> },
+                      ],
+                    },
                   ],
                 },
 

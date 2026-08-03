@@ -32,7 +32,7 @@ export function LoadingState({ label = 'جارٍ التحميل…' }: { label?:
 }
 
 /** حالة فارغة (لا بيانات) — أنيقة بأيقونة هادئة. */
-export function EmptyState({ message = 'لا توجد بيانات لعرضها.' }: { message?: string }) {
+export function EmptyState({ message = 'لا توجد بيانات لعرضها.', children }: { message?: string; children?: ReactNode }) {
   return (
     <div className="lp-reveal flex flex-col items-center justify-center gap-3 py-12 text-center">
       <span
@@ -44,6 +44,7 @@ export function EmptyState({ message = 'لا توجد بيانات لعرضها.
         </svg>
       </span>
       <p className="max-w-xs text-sm text-slate-500">{message}</p>
+      {children ? <div className="mt-1">{children}</div> : null}
     </div>
   )
 }

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
 import { Badge, Button, Card, SelectField } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
@@ -36,12 +35,7 @@ export function PayrollComponentsPage() {
       <PageHeader
         title="مكوّنات الراتب"
         subtitle="كتالوج البدلات والاستقطاعات"
-        action={
-          <div className="flex items-center gap-2">
-            <Link to="/payroll" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">اللوحة</Link>
-            <Button onClick={() => setCreating(true)}>إنشاء مكوّن</Button>
-          </div>
-        }
+        action={<Button onClick={() => setCreating(true)}>إنشاء مكوّن</Button>}
       />
 
       <Card className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -66,7 +60,9 @@ export function PayrollComponentsPage() {
           <div className="mt-3"><Button onClick={() => void query.refetch()}>إعادة المحاولة</Button></div>
         </ErrorState>
       ) : query.data.length === 0 ? (
-        <EmptyState message="لا توجد مكوّنات مطابقة. أنشئ مكوّناً جديداً للبدء." />
+        <EmptyState message="لا توجد مكوّنات مطابقة. أنشئ مكوّناً جديداً للبدء.">
+          <Button onClick={() => setCreating(true)}>إنشاء مكوّن</Button>
+        </EmptyState>
       ) : (
         <ul className="space-y-2.5" aria-busy={query.isFetching}>
           {query.data.map((c) => (

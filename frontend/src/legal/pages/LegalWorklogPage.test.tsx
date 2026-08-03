@@ -45,7 +45,7 @@ describe('LegalWorklogPage', () => {
     const user = userEvent.setup()
     renderWithProviders(<LegalWorklogPage />)
     await screen.findByText('مراجعة عقد')
-    await user.type(screen.getByLabelText('الموظف المسؤول *'), 'سارة')
+    await user.type(screen.getByLabelText('تصفية بموظف'), 'سارة')
     await user.click(await screen.findByRole('button', { name: /سارة القحطاني/ }))
     await waitFor(() => {
       expect(fetchMock.mock.calls.some((c) => /worklog\?[^ ]*employee_id=7/.test(String(c[0])))).toBe(true)

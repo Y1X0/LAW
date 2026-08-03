@@ -26,6 +26,7 @@ export function LegalWorklogPage() {
 
       <Card>
         <EmployeePicker
+          label="تصفية بموظف"
           selected={employee}
           onSelect={(e) => { setEmployee(e); setPage(1) }}
           onClear={() => { setEmployee(null); setPage(1) }}

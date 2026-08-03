@@ -26,7 +26,7 @@ export function CaseArchiveSection({ caseId }: { caseId: number }) {
   return (
     <SectionCard title="الأرشيف الورقي" action={<Button onClick={() => setAdding(true)}>إضافة موقع</Button>}>
       {query.isPending ? <Skeleton className="h-14 w-full" /> :
-       query.isError ? <ErrorState error={query.error} /> :
+       query.isError ? <ErrorState error={query.error}><div className="mt-3"><Button onClick={() => void query.refetch()}>إعادة المحاولة</Button></div></ErrorState> :
        query.data.length === 0 ? <EmptyState message="لا توجد مواقع أرشيف مسجّلة." /> : (
         <ul className="space-y-2.5">
           {query.data.map((loc) => <ArchiveRow key={loc.id} caseId={caseId} loc={loc} />)}

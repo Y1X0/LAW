@@ -13,6 +13,8 @@ export interface CapabilitiesValue {
   isAdmin: boolean
   /** هل يملك المستخدم وصولاً لإدارة الرواتب (صلاحية payroll.view)؟ */
   canManagePayroll: boolean
+  /** هل يملك المستخدم وصولاً للإدارة القانونية (صلاحية clients.view — إدارية)؟ */
+  canManageLegal: boolean
 }
 
 export const CapabilitiesContext = createContext<CapabilitiesValue | null>(null)

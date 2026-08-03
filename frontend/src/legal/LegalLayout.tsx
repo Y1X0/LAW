@@ -9,6 +9,7 @@ import { FullPageLoader } from '@/core/ui/states'
  */
 const NAV = [
   { to: '/legal', label: 'القضايا', end: true },
+  { to: '/legal/clients', label: 'العملاء', end: false },
   { to: '/legal/tasks', label: 'المهام', end: false },
   { to: '/legal/worklog', label: 'الإنجاز اليومي', end: false },
 ]

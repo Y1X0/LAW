@@ -37,6 +37,7 @@ import { LegalLayout } from '@/legal/LegalLayout'
 const LegalCasesPage = lazy(() => import('@/legal/pages/LegalCasesPage').then((m) => ({ default: m.LegalCasesPage })))
 const LegalCaseDetailPage = lazy(() => import('@/legal/pages/LegalCaseDetailPage').then((m) => ({ default: m.LegalCaseDetailPage })))
 const LegalClientsPage = lazy(() => import('@/legal/pages/LegalClientsPage').then((m) => ({ default: m.LegalClientsPage })))
+const LegalClientDetailPage = lazy(() => import('@/legal/pages/LegalClientDetailPage').then((m) => ({ default: m.LegalClientDetailPage })))
 const LegalTasksPage = lazy(() => import('@/legal/pages/LegalTasksPage').then((m) => ({ default: m.LegalTasksPage })))
 const LegalWorklogPage = lazy(() => import('@/legal/pages/LegalWorklogPage').then((m) => ({ default: m.LegalWorklogPage })))
 import { AttendancePage } from '@/employee/pages/AttendancePage'
@@ -134,6 +135,7 @@ export const router = createBrowserRouter(
                       children: [
                         { path: 'legal', element: <LegalCasesPage /> },
                         { path: 'legal/clients', element: <LegalClientsPage /> },
+                        { path: 'legal/clients/:id', element: <LegalClientDetailPage /> },
                         { path: 'legal/tasks', element: <LegalTasksPage /> },
                         { path: 'legal/worklog', element: <LegalWorklogPage /> },
                         { path: 'legal/cases/:id', element: <LegalCaseDetailPage /> },

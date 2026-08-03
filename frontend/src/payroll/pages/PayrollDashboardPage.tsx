@@ -34,6 +34,7 @@ export function PayrollDashboardPage() {
             <Link to="/payroll/periods" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">الفترات</Link>
             <Link to="/payroll/components" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">المكوّنات</Link>
             <Link to="/payroll/salary" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">رواتب الموظفين</Link>
+            <Link to="/payroll/runs" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">المسيرات</Link>
           </div>
         }
       />

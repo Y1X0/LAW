@@ -19,7 +19,7 @@ export function CasePartiesSection({ caseId }: { caseId: number }) {
   return (
     <SectionCard title="الأطراف" action={<Button onClick={() => setAdding(true)}>إضافة طرف</Button>}>
       {query.isPending ? <Skeleton className="h-14 w-full" /> :
-       query.isError ? <ErrorState error={query.error} /> :
+       query.isError ? <ErrorState error={query.error}><div className="mt-3"><Button onClick={() => void query.refetch()}>إعادة المحاولة</Button></div></ErrorState> :
        query.data.length === 0 ? <EmptyState message="لا يوجد أطراف مسجّلون." /> : (
         <ul className="space-y-2.5">
           {query.data.map((p) => (

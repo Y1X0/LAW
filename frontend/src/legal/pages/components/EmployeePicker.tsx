@@ -13,11 +13,13 @@ export function EmployeePicker({
   onSelect,
   onClear,
   disabled,
+  label = 'الموظف المسؤول *',
 }: {
   selected: { id: number; name: string } | null
   onSelect: (emp: { id: number; name: string }) => void
   onClear: () => void
   disabled?: boolean
+  label?: string
 }) {
   const [search, setSearch] = useState('')
   const results = useQuery({
@@ -38,7 +40,7 @@ export function EmployeePicker({
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-slate-700">
-        الموظف المسؤول *
+        {label}
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}

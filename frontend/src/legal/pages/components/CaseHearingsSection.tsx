@@ -32,7 +32,7 @@ export function CaseHearingsSection({ caseId }: { caseId: number }) {
   return (
     <SectionCard title="الجلسات" action={<Button onClick={() => setScheduling(true)}>جدولة جلسة</Button>}>
       {query.isPending ? (
-        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-14 w-full" />
       ) : query.isError ? (
         <ErrorState error={query.error}><div className="mt-3"><Button onClick={() => void query.refetch()}>إعادة المحاولة</Button></div></ErrorState>
       ) : query.data.length === 0 ? (

@@ -20,7 +20,7 @@ export function CaseDocumentsSection({ caseId }: { caseId: number }) {
     <SectionCard title="الوثائق" action={<Button onClick={() => setAdding(true)}>إضافة وثيقة</Button>}>
       <p className="mb-3 text-xs text-amber-600">تُسجَّل بيانات الوثيقة الوصفية فقط — رفع الملف الفعلي غير مدعوم في الخادم حالياً.</p>
       {query.isPending ? <Skeleton className="h-14 w-full" /> :
-       query.isError ? <ErrorState error={query.error} /> :
+       query.isError ? <ErrorState error={query.error}><div className="mt-3"><Button onClick={() => void query.refetch()}>إعادة المحاولة</Button></div></ErrorState> :
        query.data.length === 0 ? <EmptyState message="لا توجد وثائق مسجّلة." /> : (
         <ul className="space-y-2.5">
           {query.data.map((d) => <DocRow key={d.id} caseId={caseId} doc={d} />)}

@@ -44,7 +44,35 @@
 
 ---
 
-## Checklist التحقّق الحيّ (رفع → تنزيل → حذف)
+## التحقّق الآلي عبر CI (R2 Integration workflow)
+
+بدل الاعتماد على جولة يدوية فقط، يوجد الآن سير عمل مخصّص يختبر R2 **الحقيقي** آليّاً:
+
+- **الملف:** `.github/workflows/r2-integration.yml` · **الاختبار:** `backend/tests/Integration/R2LiveTest.php`.
+- **يغطّي:** رفع ملف 256KB → تأكيد الوجود والحجم → تنزيل → **مطابقة SHA-256** → حذف → تأكيد الحذف. أي فشل في أي خطوة يُفشل السير.
+- **يُشغَّل:** يدويّاً (`workflow_dispatch`)، وعند دفع تغييرات تمسّ التخزين إلى `main`.
+- **معزول عن CI الرئيسي:** الاختبار ليس ضمن مجموعتَي Unit/Feature، فلا يعمل في `php artisan test` ولا يتطلّب أسراراً هناك.
+- **بدون أسرار:** يتخطّى الاختبار برسالة واضحة (السير يبقى أخضر) — لا يُخزَّن أي مفتاح في المستودع.
+
+### GitHub Secrets المطلوبة (على مالك المستودع)
+
+في **Settings → Secrets and variables → Actions → New repository secret** أضِف:
+
+| Secret | مثال/ملاحظة |
+|--------|-------------|
+| `R2_ACCESS_KEY_ID` | من لوحة Cloudflare R2 API Tokens |
+| `R2_SECRET_ACCESS_KEY` | السرّ المقابل |
+| `R2_BUCKET` | اسم الدلو |
+| `R2_ENDPOINT` | `https://<account_id>.r2.cloudflarestorage.com` |
+| `R2_DEFAULT_REGION` | `auto` |
+
+> هذه أسرار CI منفصلة عن أسرار Render (المذكورة أعلاه)، لكن قيمها نفسها.
+
+بعد ضبط الأسرار، شغّل السير من تبويب **Actions → R2 Integration → Run workflow**. نجاحه = إثبات التكامل الحيّ.
+
+---
+
+## Checklist التحقّق الحيّ اليدوي (اختياري — تأكيد بشري إضافي)
 
 | # | الخطوة | معيار النجاح |
 |---|-------|--------------|
@@ -58,10 +86,13 @@
 
 ## معايير الترقية إلى Production Ready
 
-عند اجتياز الخطوات الخمس أعلاه على R2 الحقيقي:
+عند **نجاح سير عمل `R2 Integration`** (بعد ضبط الأسرار) — أو اجتياز الجولة اليدوية على R2 الحقيقي:
 
 - تُرقّى حالة Document Management إلى **✅ Production Ready (Frontend + Backend)**.
 - تُغلَق **Phase 5 (Document Storage & Upload)** رسميّاً.
+
+> ملاحظة: CI الرئيسي يستخدم `Storage::fake` (لا يُثبت R2 الحقيقي)؛ الإثبات الحيّ صار
+> متاحاً آليّاً عبر سير `R2 Integration` المخصّص بأسرار GitHub.
 
 ---
 

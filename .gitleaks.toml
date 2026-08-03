@@ -6,7 +6,7 @@ useDefault = true
 # في لوحة النشر فقط، بينما الأسماء نفسها تظهر في ملفات الإعداد/الأمثلة/التعليقات.
 # قاعدة generic-api-key الافتراضية تلتقط اسم المتغيّر بسبب إنتروبيته — نسمح بالاسم
 # فقط (لا يطابق أي قيمة سرّ فعلية، إذ لا تبدأ الأسرار بـ R2_).
-[[allowlist]]
+[allowlist]
 description = "R2 storage env-var identifiers are not secrets"
 regexes = [
   '''R2_[A-Z0-9_]+''',

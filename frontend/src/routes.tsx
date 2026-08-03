@@ -36,6 +36,8 @@ const PayrollReportsPage = lazy(() => import('@/payroll/pages/PayrollReportsPage
 import { LegalLayout } from '@/legal/LegalLayout'
 const LegalCasesPage = lazy(() => import('@/legal/pages/LegalCasesPage').then((m) => ({ default: m.LegalCasesPage })))
 const LegalCaseDetailPage = lazy(() => import('@/legal/pages/LegalCaseDetailPage').then((m) => ({ default: m.LegalCaseDetailPage })))
+const LegalTasksPage = lazy(() => import('@/legal/pages/LegalTasksPage').then((m) => ({ default: m.LegalTasksPage })))
+const LegalWorklogPage = lazy(() => import('@/legal/pages/LegalWorklogPage').then((m) => ({ default: m.LegalWorklogPage })))
 import { AttendancePage } from '@/employee/pages/AttendancePage'
 import { DashboardPage } from '@/employee/pages/DashboardPage'
 import { LeavePage } from '@/employee/pages/LeavePage'
@@ -130,6 +132,8 @@ export const router = createBrowserRouter(
                       element: <LegalLayout />,
                       children: [
                         { path: 'legal', element: <LegalCasesPage /> },
+                        { path: 'legal/tasks', element: <LegalTasksPage /> },
+                        { path: 'legal/worklog', element: <LegalWorklogPage /> },
                         { path: 'legal/cases/:id', element: <LegalCaseDetailPage /> },
                       ],
                     },

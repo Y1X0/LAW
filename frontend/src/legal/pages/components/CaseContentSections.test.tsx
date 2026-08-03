@@ -23,13 +23,14 @@ function auth() {
 }
 
 describe('CaseDocumentsSection', () => {
-  const DOCS = [{ id: 5, title: 'لائحة الدعوى', document_type: 'لائحة', description: 'النسخة الأصلية' }]
+  const DOCS = [{ id: 5, title: 'لائحة الدعوى', document_type: 'لائحة', original_name: 'laeha.pdf', size_bytes: 2048 }]
   function stub() {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
       const method = init?.method ?? 'GET'
+      if (/documents\/\d+\/download/.test(url)) return new Response(new Blob(['pdf']), { status: 200 })
       if (/documents\/\d+/.test(url) && method === 'DELETE') return ok({ message: 'ok' })
-      if (/cases\/1\/documents/.test(url) && method === 'POST') return json({ data: { id: 6, title: 'مذكرة' }, meta: null, errors: null }, 201)
+      if (/cases\/1\/documents/.test(url) && method === 'POST') return json({ data: { id: 6, title: 'مذكرة', original_name: 'memo.pdf' }, meta: null, errors: null }, 201)
       if (/cases\/1\/documents/.test(url)) return ok(DOCS)
       return ok([])
     })
@@ -37,22 +38,39 @@ describe('CaseDocumentsSection', () => {
     return fetchMock
   }
 
-  it('يعرض الوثيقة مع تنبيه عدم رفع الملف', async () => {
+  it('يعرض الوثيقة باسمها وحجمها', async () => {
     auth(); stub()
     renderWithProviders(<CaseDocumentsSection caseId={1} />)
     expect(await screen.findByText('لائحة الدعوى')).toBeInTheDocument()
-    expect(screen.getByText(/رفع الملف الفعلي غير مدعوم/)).toBeInTheDocument()
+    expect(screen.getByText(/laeha\.pdf/)).toBeInTheDocument()
+    // لم تعد الواجهة تدّعي أن الرفع غير مدعوم.
+    expect(screen.queryByText(/غير مدعوم/)).toBeNull()
   })
 
-  it('يضيف وثيقة عبر POST', async () => {
+  it('يرفع وثيقة بملف عبر POST (multipart)', async () => {
     auth(); const fetchMock = stub()
     const user = userEvent.setup()
     renderWithProviders(<CaseDocumentsSection caseId={1} />)
     await user.click(await screen.findByRole('button', { name: 'إضافة وثيقة' }))
     await user.type(await screen.findByLabelText('العنوان *'), 'مذكرة')
-    await user.click(screen.getByRole('button', { name: 'إضافة' }))
+    const file = new File(['data'], 'memo.pdf', { type: 'application/pdf' })
+    await user.upload(screen.getByLabelText('الملف *'), file)
+    await user.click(screen.getByRole('button', { name: 'رفع' }))
     await waitFor(() => {
-      expect(fetchMock.mock.calls.some((c) => (c[1]?.method ?? 'GET') === 'POST' && /cases\/1\/documents/.test(String(c[0])))).toBe(true)
+      const call = fetchMock.mock.calls.find((c) => (c[1]?.method ?? 'GET') === 'POST' && /cases\/1\/documents/.test(String(c[0])))
+      expect(call).toBeTruthy()
+      expect(call?.[1]?.body).toBeInstanceOf(FormData)
+    })
+  })
+
+  it('ينزّل وثيقة عبر endpoint محروس', async () => {
+    auth(); const fetchMock = stub()
+    vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:x'), revokeObjectURL: vi.fn() })
+    const user = userEvent.setup()
+    renderWithProviders(<CaseDocumentsSection caseId={1} />)
+    await user.click(await screen.findByRole('button', { name: 'تنزيل' }))
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some((c) => /documents\/5\/download/.test(String(c[0])))).toBe(true)
     })
   })
 
@@ -63,7 +81,7 @@ describe('CaseDocumentsSection', () => {
     await user.click(await screen.findByRole('button', { name: 'حذف' }))
     await user.click(await screen.findByRole('button', { name: 'تأكيد الحذف' }))
     await waitFor(() => {
-      expect(fetchMock.mock.calls.some((c) => (c[1]?.method ?? 'GET') === 'DELETE' && /documents\/5/.test(String(c[0])))).toBe(true)
+      expect(fetchMock.mock.calls.some((c) => (c[1]?.method ?? 'GET') === 'DELETE' && /documents\/5$/.test(String(c[0]).split('?')[0]))).toBe(true)
     })
   })
 })

@@ -4,11 +4,13 @@ namespace Modules\Legal\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Modules\Legal\Concerns\AuthorizesCaseAccess;
 use Modules\Legal\Http\Requests\StoreDocumentRequest;
 use Modules\Legal\Models\CaseDocument;
 use Modules\Legal\Models\LegalCase;
 use Modules\Legal\Services\DocumentService;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * مستندات القضية (Legal / LC-4) — بيانات وصفية فقط.
@@ -39,6 +41,29 @@ class DocumentController
         $document = $this->service->create($case, $request->validated(), $request);
 
         return $this->ok($document, 201);
+    }
+
+    /**
+     * GET /api/documents/{document}/download — بثّ الملف بعد حارس رؤية القضية.
+     * لا روابط عامة/موقّعة: نظام صلاحيات Laravel هو المرجع الوحيد. المستندات
+     * الوصفية القديمة (بلا ملف) تُعيد 404.
+     */
+    public function download(Request $request, CaseDocument $document): JsonResponse|StreamedResponse
+    {
+        if ($denied = $this->guardCaseView($request->user(), $document->case)) {
+            return $denied;
+        }
+
+        if (! $document->storage_disk || ! $document->storage_path
+            || ! Storage::disk($document->storage_disk)->exists($document->storage_path)) {
+            return response()->json(['data' => null, 'meta' => null, 'errors' => ['code' => 'NO_FILE']], 404);
+        }
+
+        return Storage::disk($document->storage_disk)->download(
+            $document->storage_path,
+            $document->original_name ?: 'document',
+            ['Content-Type' => $document->mime_type ?: 'application/octet-stream'],
+        );
     }
 
     /** DELETE /api/documents/{document} — حذف مستند (بصلاحية documents.delete + رؤية القضية). */

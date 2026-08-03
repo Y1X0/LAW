@@ -2,28 +2,65 @@ import { z } from 'zod'
 import { api, apiRequest } from '@/core/api/client'
 
 /* ============================================================
-   محتوى القضية (Phase 3 / PR-5) — وثائق (بيانات وصفية) · أطراف · خط زمني
-   (append-only) · أرشيف ورقي. فوق العقود الموجودة فقط. الواجهة تعكس قيود الخادم:
-   لا رفع ملف فعلي، لا تعديل/حذف طرف، لا تعديل/حذف حدث تاريخي.
+   محتوى القضية — أطراف · خط زمني (append-only) · أرشيف ورقي فوق العقود الموجودة.
+   الوثائق (Phase 5 / PR-2): رفع فعلي إلى R2 + تنزيل محروس عبر الخادم. الواجهة تعكس
+   قيود الخادم: لا تعديل/حذف طرف، لا تعديل/حذف حدث تاريخي.
    ============================================================ */
 
-// ---- الوثائق (بيانات وصفية فقط — لا رفع ملف) ----
+// ---- الوثائق (رفع/تنزيل فعلي — Phase 5) ----
+export const DOCUMENT_MAX_MB = 20
+export const DOCUMENT_ACCEPT = '.pdf,.jpg,.jpeg,.png,.doc,.docx'
+
 export const documentSchema = z.object({
   id: z.number(),
   title: z.string(),
   document_type: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
+  original_name: z.string().nullable().optional(),
+  mime_type: z.string().nullable().optional(),
+  size_bytes: z.number().nullable().optional(),
 })
 export type CaseDocument = z.infer<typeof documentSchema>
 
 export function fetchDocuments(caseId: number): Promise<CaseDocument[]> {
   return api.get<unknown>(`cases/${caseId}/documents`).then((d) => z.array(documentSchema).parse(d ?? []))
 }
-export function createDocument(caseId: number, input: { title: string; document_type?: string | null; description?: string | null }): Promise<CaseDocument> {
-  return api.post<unknown>(`cases/${caseId}/documents`, input).then((d) => documentSchema.parse(d))
+
+/** رفع مستند فعلي (multipart) — الخادم يقرّر المسار/القرص ويفحص النوع والحجم. */
+export function createDocument(caseId: number, input: { title: string; document_type?: string | null; description?: string | null; file: File }): Promise<CaseDocument> {
+  const form = new FormData()
+  form.set('title', input.title)
+  if (input.document_type) form.set('document_type', input.document_type)
+  if (input.description) form.set('description', input.description)
+  form.set('file', input.file)
+  return api.upload<unknown>(`cases/${caseId}/documents`, form).then((d) => documentSchema.parse(d))
 }
+
 export function deleteDocument(id: number): Promise<unknown> {
   return apiRequest<unknown>(`documents/${id}`, { method: 'DELETE' })
+}
+
+/** تنزيل محروس: يجلب الملف بمصادقة (بعد حارس رؤية القضية) ويحفظه بالاسم الأصلي. */
+export async function downloadDocument(doc: CaseDocument): Promise<void> {
+  const blob = await api.blob(`documents/${doc.id}/download`)
+  const url = URL.createObjectURL(blob)
+  try {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = doc.original_name || doc.title || 'document'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
+/** حجم مقروء بشري (KB/MB) للعرض. */
+export function formatFileSize(bytes?: number | null): string {
+  if (!bytes || bytes <= 0) return ''
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} كB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} مB`
 }
 
 // ---- الأطراف (إضافة/عرض فقط — لا تعديل/حذف على الخادم) ----

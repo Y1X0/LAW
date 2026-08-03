@@ -80,6 +80,8 @@ Route::middleware('auth.token')->group(function () {
     Route::middleware('permission:cases.view_own,cases.view_all')->group(function () {
         Route::get('cases/{case}/timeline', [TimelineController::class, 'index'])->name('cases.timeline.index');
         Route::get('cases/{case}/documents', [DocumentController::class, 'index'])->name('cases.documents.index');
+        // تنزيل الملف يرث نفس حارس رؤية القضية (لا صلاحية جديدة) — Phase 5 PR-2.
+        Route::get('documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
     });
 
     // الخط الزمني: إضافة فقط (لا PUT/DELETE) — تحت cases.update.

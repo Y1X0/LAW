@@ -26,7 +26,16 @@ export function PayrollDashboardPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="الرواتب" subtitle="نظرة عامة على تكلفة الرواتب وأحدث الفترات" />
+      <PageHeader
+        title="الرواتب"
+        subtitle="نظرة عامة على تكلفة الرواتب وأحدث الفترات"
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to="/payroll/periods" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">الفترات</Link>
+            <Link to="/payroll/components" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">المكوّنات</Link>
+          </div>
+        }
+      />
 
       {isPending ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="payroll-dashboard-skeleton">

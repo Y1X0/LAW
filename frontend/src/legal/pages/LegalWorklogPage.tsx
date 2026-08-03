@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Button, Card } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
+import { Pagination } from './components/Pagination'
 import { fetchAllWorklog } from '@/legal/api/worklog'
 import { EmployeePicker } from './components/EmployeePicker'
 
@@ -62,13 +63,7 @@ export function LegalWorklogPage() {
             ))}
           </ul>
 
-          {query.data.meta.total_pages > 1 && (
-            <div className="flex items-center justify-between gap-3 text-sm text-slate-600">
-              <Button variant="ghost" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={query.data.meta.page <= 1}>السابق</Button>
-              <span className="tabular-nums">صفحة {query.data.meta.page} من {query.data.meta.total_pages}</span>
-              <Button variant="ghost" onClick={() => setPage((p) => p + 1)} disabled={query.data.meta.page >= query.data.meta.total_pages}>التالي</Button>
-            </div>
-          )}
+          <Pagination page={query.data.meta.page} totalPages={query.data.meta.total_pages} onChange={setPage} />
         </>
       )}
     </div>

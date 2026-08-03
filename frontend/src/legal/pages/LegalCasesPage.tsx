@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Badge, Button, Card, Field, SelectField } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
+import { Pagination } from './components/Pagination'
 import { CASE_STATUSES, caseStatusLabel, caseStatusTone, fetchCases } from '@/legal/api/cases'
 import { CaseFormModal } from './components/CaseFormModal'
 
@@ -71,13 +72,7 @@ export function LegalCasesPage() {
             ))}
           </ul>
 
-          {query.data.meta.total_pages > 1 && (
-            <div className="flex items-center justify-between gap-3 text-sm text-slate-600">
-              <Button variant="ghost" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={query.data.meta.page <= 1}>السابق</Button>
-              <span className="tabular-nums">صفحة {query.data.meta.page} من {query.data.meta.total_pages}</span>
-              <Button variant="ghost" onClick={() => setPage((p) => p + 1)} disabled={query.data.meta.page >= query.data.meta.total_pages}>التالي</Button>
-            </div>
-          )}
+          <Pagination page={query.data.meta.page} totalPages={query.data.meta.total_pages} onChange={setPage} />
         </>
       )}
 

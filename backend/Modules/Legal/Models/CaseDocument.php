@@ -17,7 +17,13 @@ class CaseDocument extends Model
     use HasFactory;
 
     protected $fillable = [
-        'case_id', 'title', 'document_type', 'description', 'storage_disk', 'storage_path', 'uploaded_by',
+        'case_id', 'title', 'document_type', 'description',
+        'storage_disk', 'storage_path', 'original_name', 'mime_type', 'size_bytes', 'checksum',
+        'uploaded_by',
+    ];
+
+    protected $casts = [
+        'size_bytes' => 'integer',
     ];
 
     public function case(): BelongsTo

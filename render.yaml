@@ -59,6 +59,20 @@ services:
         value: sync # تشغيل المهام ضمن الطلب (لا حاجة لعامل منفصل في v1.0)
       - key: FILESYSTEM_DISK
         value: local
+      # مستندات القضايا على Cloudflare R2 (Phase 5). القرص "r2" في config/filesystems.
+      - key: LEGAL_DOCUMENTS_DISK
+        value: r2
+      - key: R2_DEFAULT_REGION
+        value: auto
+      # القيم الحسّاسة (sync:false) تُضبط كأسرار في لوحة Render بعد إنشاء دلو R2 ومفاتيحه.
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_ENDPOINT
+        sync: false
       - key: FRONTEND_URL # عنوان الواجهة — يحصر CORS (اختياري لكن مُوصى به)
         sync: false
       - key: MAIL_MAILER

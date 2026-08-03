@@ -1,0 +1,59 @@
+name: R2 Integration
+
+# تحقّق حيّ من التكامل مع Cloudflare R2 (Operational Validation) خارج CI الرئيسي.
+# يعمل يدويّاً، وعند دفع تغييرات تمسّ التخزين إلى main. يستخدم GitHub Secrets فقط —
+# لا مفاتيح في المستودع. عند غياب الأسرار يتخطّى الاختبار برسالة واضحة (لا يفشل).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "backend/config/filesystems.php"
+      - "backend/Modules/Legal/Services/DocumentService.php"
+      - "backend/Modules/Legal/Support/DocumentStorage.php"
+      - "backend/tests/Integration/R2LiveTest.php"
+      - ".github/workflows/r2-integration.yml"
+
+jobs:
+  r2-live:
+    name: R2 Live Round-Trip (upload → download → SHA-256 → delete)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: bcmath, intl, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run live R2 integration test
+        env:
+          LEGAL_DOCUMENTS_DISK: r2
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_DEFAULT_REGION: ${{ secrets.R2_DEFAULT_REGION }}
+        run: |
+          if [ -z "$R2_BUCKET" ]; then
+            echo "::notice::أسرار R2 غير مضبوطة — سيتخطّى الاختبار الحيّ. أضِفها في Settings → Secrets and variables → Actions."
+          fi
+          ./vendor/bin/phpunit tests/Integration/R2LiveTest.php

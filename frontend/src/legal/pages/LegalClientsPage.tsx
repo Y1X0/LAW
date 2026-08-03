@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { Badge, Button, Card, Field, SelectField } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
@@ -71,7 +72,7 @@ export function LegalClientsPage() {
               <li key={c.id}>
                 <Card className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <div className="font-bold text-slate-800">{c.name}</div>
+                    <Link to={`/legal/clients/${c.id}`} className="font-bold text-brand-700 hover:underline">{c.name}</Link>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
                       <span>{clientTypeLabel(c.type)}</span>
                       {c.phone && <span className="tabular-nums text-slate-400">{c.phone}</span>}

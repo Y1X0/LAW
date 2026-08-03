@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '@/core/ui/primitives'
 import { SectionCard } from '@/core/ui/section'
 import { ErrorState, Skeleton } from '@/core/ui/states'
@@ -73,8 +74,11 @@ export function RunWorkflowPanel({ runId, onBack }: { runId: number; onBack: () 
           <div className="font-bold text-brand-700 tabular-nums">مسير #{run.data.id}</div>
           <div className="mt-0.5 text-xs text-slate-500">الحالة الحالية للمسير</div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge tone={runStatusTone(status)}>{runStatusLabel(status)}</Badge>
+          {calculated && (
+            <Link to={`/payroll/runs/${runId}/payslips`} className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">عرض الكشوف</Link>
+          )}
           <Button variant="ghost" onClick={onBack}>رجوع للقائمة</Button>
         </div>
       </Card>

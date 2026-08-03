@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { api } from '@/core/api/client'
+import { api, apiRequest } from '@/core/api/client'
 
 /* ============================================================
    الإدارة القانونية — القضايا (Phase 3 / PR-1) من `GET /cases` الموجود.
@@ -74,4 +74,53 @@ export async function fetchCases(params: CaseListParams = {}): Promise<CaseListR
     items: z.array(caseRowSchema).parse(env.data ?? []),
     meta: paginationMetaSchema.parse(env.meta),
   }
+}
+
+// ---- تفاصيل القضية + إنشاء/تعديل/إغلاق (PR-2) ----
+const money = z.union([z.string(), z.number(), z.null()]).optional().transform((v) => (v == null || v === '' ? null : Number(v)))
+
+export const caseDetailSchema = caseRowSchema.extend({
+  court_name: z.string().nullable().optional(),
+  value: money,
+  description: z.string().nullable().optional(),
+  responsible_lawyer_id: z.number().nullable().optional(),
+  assignments: z
+    .array(z.object({
+      id: z.number(),
+      role: z.string(),
+      employee: z.object({ id: z.number(), full_name_ar: z.string() }).nullable().optional(),
+    }))
+    .default([]),
+})
+export type CaseDetail = z.infer<typeof caseDetailSchema>
+
+export function fetchCase(id: number): Promise<CaseDetail> {
+  return api.get<unknown>(`cases/${id}`).then((d) => caseDetailSchema.parse(d))
+}
+
+export interface CaseInput {
+  internal_number: string
+  title: string
+  client_id: number
+  court_case_number?: string | null
+  court_name?: string | null
+  case_type?: string | null
+  value?: number | null
+  status?: string
+  progress?: number
+  opened_date?: string | null
+  description?: string | null
+}
+
+export async function createCase(input: CaseInput): Promise<CaseDetail> {
+  return caseDetailSchema.parse(await api.post<unknown>('cases', input))
+}
+
+export async function updateCase(id: number, input: Partial<CaseInput>): Promise<CaseDetail> {
+  return caseDetailSchema.parse(await apiRequest<unknown>(`cases/${id}`, { method: 'PUT', body: input }))
+}
+
+/** إغلاق القضية — `POST /cases/{id}/close` (يحرسها cases.close). */
+export async function closeCase(id: number): Promise<CaseDetail> {
+  return caseDetailSchema.parse(await api.post<unknown>(`cases/${id}/close`))
 }

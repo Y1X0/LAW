@@ -27,6 +27,7 @@ import { PayrollComponentsPage } from '@/payroll/pages/PayrollComponentsPage'
 import { PayrollSalaryPage } from '@/payroll/pages/PayrollSalaryPage'
 import { PayrollRunsPage } from '@/payroll/pages/PayrollRunsPage'
 import { PayrollPayslipsPage } from '@/payroll/pages/PayrollPayslipsPage'
+import { PayrollReportsPage } from '@/payroll/pages/PayrollReportsPage'
 import { AttendancePage } from '@/employee/pages/AttendancePage'
 import { DashboardPage } from '@/employee/pages/DashboardPage'
 import { LeavePage } from '@/employee/pages/LeavePage'
@@ -104,6 +105,7 @@ export const router = createBrowserRouter(
                     { path: 'payroll/salary', element: <PayrollSalaryPage /> },
                     { path: 'payroll/runs', element: <PayrollRunsPage /> },
                     { path: 'payroll/runs/:runId/payslips', element: <PayrollPayslipsPage /> },
+                    { path: 'payroll/reports', element: <PayrollReportsPage /> },
                   ],
                 },
 

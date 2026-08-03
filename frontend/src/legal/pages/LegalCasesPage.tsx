@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { Badge, Button, Card, Field, SelectField } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { CASE_STATUSES, caseStatusLabel, caseStatusTone, fetchCases } from '@/legal/api/cases'
+import { CaseFormModal } from './components/CaseFormModal'
 
 /**
  * قائمة القضايا للإدارة القانونية (Phase 3 / PR-1) — عرض كل القضايا (view_all)
@@ -14,6 +16,7 @@ export function LegalCasesPage() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
+  const [creating, setCreating] = useState(false)
 
   const query = useQuery({
     queryKey: ['legal', 'cases', { search, status, page }],
@@ -25,7 +28,7 @@ export function LegalCasesPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="القضايا" subtitle="كل قضايا المكتب" />
+      <PageHeader title="القضايا" subtitle="كل قضايا المكتب" action={<Button onClick={() => setCreating(true)}>إنشاء قضية</Button>} />
 
       <Card className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="بحث" value={search} onChange={onSearch} placeholder="رقم داخلي · عنوان · رقم محكمة" />
@@ -52,7 +55,7 @@ export function LegalCasesPage() {
               <li key={c.id}>
                 <Card className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <div className="font-bold text-slate-800">{c.title}</div>
+                    <Link to={`/legal/cases/${c.id}`} className="font-bold text-brand-700 hover:underline">{c.title}</Link>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
                       <span className="tabular-nums text-slate-400">{c.internal_number}</span>
                       <span>{c.client?.name ?? '—'}</span>
@@ -77,6 +80,8 @@ export function LegalCasesPage() {
           )}
         </>
       )}
+
+      {creating && <CaseFormModal onSaved={() => {}} onClose={() => setCreating(false)} />}
     </div>
   )
 }

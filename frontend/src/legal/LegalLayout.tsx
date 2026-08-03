@@ -8,7 +8,9 @@ import { FullPageLoader } from '@/core/ui/states'
  * تحميل الصفحات كسول (lazy) عبر Suspense لتقسيم الحزمة.
  */
 const NAV = [
-  { to: '/legal', label: 'القضايا', end: false },
+  { to: '/legal', label: 'القضايا', end: true },
+  { to: '/legal/tasks', label: 'المهام', end: false },
+  { to: '/legal/worklog', label: 'الإنجاز اليومي', end: false },
 ]
 
 export function LegalLayout() {

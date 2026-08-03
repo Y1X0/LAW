@@ -16,11 +16,17 @@ const CASE = {
   description: 'نزاع حول بند الإيجار', assignments: [{ id: 1, role: 'lead', employee: { id: 9, full_name_ar: 'سارة القحطاني' } }],
 }
 
+const EMP_META = { page: 1, per_page: 10, total: 1, total_pages: 1 }
+const EMPLOYEES = [{ id: 12, employee_no: 'EMP-1002', full_name_ar: 'خالد الشهري', status: 'active' }]
+
 function stub() {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
     const method = init?.method ?? 'GET'
     if (url.includes('/close') && method === 'POST') return ok({ ...CASE, status: 'closed' })
+    if (/cases\/1\/assign\/\d+/.test(url) && method === 'DELETE') return ok({ message: 'ok' })
+    if (/cases\/1\/assign$/.test(url) && method === 'POST') return json({ data: { id: 2, role: 'support' }, meta: null, errors: null }, 201)
+    if (url.includes('employees')) return json({ data: EMPLOYEES, meta: EMP_META, errors: null })
     if (url.includes('clients')) return ok([])
     if (/cases\/1$/.test(url)) return ok(CASE)
     return ok([])
@@ -60,6 +66,36 @@ describe('LegalCaseDetailPage', () => {
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some((c) => (c[1]?.method ?? 'GET') === 'POST' && String(c[0]).includes('/close'))).toBe(true)
+    })
+  })
+
+  it('يُلغي إسناد محامٍ بتأكيد عبر DELETE', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    const fetchMock = stub()
+    const user = userEvent.setup()
+    renderWithProviders(<LegalCaseDetailPage />, opts)
+
+    await user.click(await screen.findByRole('button', { name: 'إزالة' }))
+    await user.click(await screen.findByRole('button', { name: 'تأكيد' }))
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some((c) => (c[1]?.method ?? 'GET') === 'DELETE' && /cases\/1\/assign\/9/.test(String(c[0])))).toBe(true)
+    })
+  })
+
+  it('يُسند محامياً جديداً عبر POST', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    const fetchMock = stub()
+    const user = userEvent.setup()
+    renderWithProviders(<LegalCaseDetailPage />, opts)
+
+    await user.click(await screen.findByRole('button', { name: 'إسناد محامٍ' }))
+    await user.type(await screen.findByPlaceholderText('الاسم أو الرقم الوظيفي'), 'خالد')
+    await user.click(await screen.findByRole('button', { name: /خالد الشهري/ }))
+    await user.click(screen.getByRole('button', { name: 'إسناد' }))
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some((c) => (c[1]?.method ?? 'GET') === 'POST' && /cases\/1\/assign$/.test(String(c[0]).split('?')[0]))).toBe(true)
     })
   })
 })

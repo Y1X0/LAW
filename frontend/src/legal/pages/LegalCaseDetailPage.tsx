@@ -7,8 +7,9 @@ import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
 import { ApiError } from '@/core/api/types'
 import { formatCurrency } from '@/core/lib/format'
-import { caseStatusLabel, caseStatusTone, closeCase, fetchCase } from '@/legal/api/cases'
+import { assignmentRoleLabel, caseStatusLabel, caseStatusTone, closeCase, fetchCase, unassignLawyer } from '@/legal/api/cases'
 import { CaseFormModal } from './components/CaseFormModal'
+import { AssignLawyerModal } from './components/AssignLawyerModal'
 
 /**
  * تفاصيل القضية للمدير (Phase 3 / PR-2) — من `GET /cases/{id}` الموجود، مع تعديل
@@ -21,6 +22,7 @@ export function LegalCaseDetailPage() {
   const { show } = useToast()
   const [editing, setEditing] = useState(false)
   const [confirmClose, setConfirmClose] = useState(false)
+  const [assigning, setAssigning] = useState(false)
 
   const query = useQuery({ queryKey: ['legal', 'case', id], queryFn: () => fetchCase(id), enabled: Number.isFinite(id) })
 
@@ -79,23 +81,53 @@ export function LegalCaseDetailPage() {
         {c.description && <p className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-600">{c.description}</p>}
       </SectionCard>
 
-      <SectionCard title="المحامون المسندون">
+      <SectionCard title="المحامون المسندون" action={<Button onClick={() => setAssigning(true)}>إسناد محامٍ</Button>}>
         {c.assignments.length === 0 ? (
           <EmptyState message="لا يوجد محامون مسندون لهذه القضية." />
         ) : (
           <ul className="space-y-2">
             {c.assignments.map((a) => (
-              <li key={a.id} className="flex items-center justify-between gap-3 text-sm">
-                <span className="font-medium text-slate-800">{a.employee?.full_name_ar ?? '—'}</span>
-                <Badge tone={a.role === 'lead' ? 'green' : 'slate'}>{a.role === 'lead' ? 'رئيسي' : 'مساند'}</Badge>
-              </li>
+              <AssignmentRow key={a.id} caseId={id} employeeId={a.employee?.id ?? null} name={a.employee?.full_name_ar ?? '—'} role={a.role} />
             ))}
           </ul>
         )}
       </SectionCard>
 
       {editing && <CaseFormModal existing={c} onSaved={() => {}} onClose={() => setEditing(false)} />}
+      {assigning && <AssignLawyerModal caseId={id} onClose={() => setAssigning(false)} />}
     </div>
+  )
+}
+
+function AssignmentRow({ caseId, employeeId, name, role }: { caseId: number; employeeId: number | null; name: string; role: string }) {
+  const qc = useQueryClient()
+  const { show } = useToast()
+  const [confirming, setConfirming] = useState(false)
+
+  const remove = useMutation({
+    mutationFn: () => unassignLawyer(caseId, employeeId!),
+    onSuccess: () => {
+      show('تم إلغاء الإسناد')
+      void qc.invalidateQueries({ queryKey: ['legal', 'case', caseId] })
+    },
+    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر إلغاء الإسناد', 'error'),
+  })
+
+  return (
+    <li className="flex items-center justify-between gap-3 text-sm">
+      <span className="font-medium text-slate-800">{name}</span>
+      <div className="flex items-center gap-2">
+        <Badge tone={role === 'lead' ? 'green' : 'slate'}>{assignmentRoleLabel(role)}</Badge>
+        {employeeId != null && (confirming ? (
+          <span className="flex items-center gap-1.5">
+            <Button variant="ghost" onClick={() => remove.mutate()} disabled={remove.isPending}>تأكيد</Button>
+            <Button variant="ghost" onClick={() => setConfirming(false)} disabled={remove.isPending}>إلغاء</Button>
+          </span>
+        ) : (
+          <Button variant="ghost" onClick={() => setConfirming(true)}>إزالة</Button>
+        ))}
+      </div>
+    </li>
   )
 }
 

@@ -124,3 +124,20 @@ export async function updateCase(id: number, input: Partial<CaseInput>): Promise
 export async function closeCase(id: number): Promise<CaseDetail> {
   return caseDetailSchema.parse(await api.post<unknown>(`cases/${id}/close`))
 }
+
+// ---- إسناد المحامين (PR-3) — POST/DELETE الموجودان (يحرسهما cases.assign) ----
+export const ASSIGNMENT_ROLES = ['lead', 'support'] as const
+const ROLE_LABEL: Record<string, string> = { lead: 'رئيسي', support: 'مساند' }
+export function assignmentRoleLabel(r: string): string {
+  return ROLE_LABEL[r] ?? r
+}
+
+/** إسناد محامٍ للقضية — `POST /cases/{id}/assign`. */
+export function assignLawyer(caseId: number, employeeId: number, role: string): Promise<unknown> {
+  return api.post<unknown>(`cases/${caseId}/assign`, { employee_id: employeeId, role })
+}
+
+/** إلغاء إسناد محامٍ — `DELETE /cases/{id}/assign/{employee}`. */
+export function unassignLawyer(caseId: number, employeeId: number): Promise<unknown> {
+  return apiRequest<unknown>(`cases/${caseId}/assign/${employeeId}`, { method: 'DELETE' })
+}

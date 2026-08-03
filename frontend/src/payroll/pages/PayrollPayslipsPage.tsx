@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { Badge, Button, Card } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
@@ -36,12 +36,7 @@ export function PayrollPayslipsPage() {
       <PageHeader
         title="كشوف الرواتب"
         subtitle={run.data ? `مسير #${run.data.id}` : 'كشوف المسير'}
-        action={
-          <div className="flex items-center gap-2">
-            {run.data && <Badge tone={runStatusTone(run.data.status)}>{runStatusLabel(run.data.status)}</Badge>}
-            <Link to="/payroll/runs" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">المسيرات</Link>
-          </div>
-        }
+        action={run.data ? <Badge tone={runStatusTone(run.data.status)}>{runStatusLabel(run.data.status)}</Badge> : undefined}
       />
 
       {payslips.isPending ? (

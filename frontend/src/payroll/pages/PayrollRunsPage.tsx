@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
 import { Badge, Button, Card, SelectField } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
@@ -42,7 +41,6 @@ export function PayrollRunsPage() {
       <PageHeader
         title="مسيرات الرواتب"
         subtitle="تشغيل دورة الرواتب لكل فترة"
-        action={<Link to="/payroll" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">اللوحة</Link>}
       />
 
       {runId ? (

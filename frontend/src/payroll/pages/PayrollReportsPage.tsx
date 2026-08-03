@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
 import { Badge, Button, Card, SelectField } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
@@ -26,11 +25,7 @@ export function PayrollReportsPage() {
   const [tab, setTab] = useState<Tab>('cost')
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="تقارير الرواتب"
-        subtitle="تكلفة الرواتب من النتائج المجمّدة"
-        action={<Link to="/payroll" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">اللوحة</Link>}
-      />
+      <PageHeader title="تقارير الرواتب" subtitle="تكلفة الرواتب من النتائج المجمّدة" />
       <Tabs<Tab> tabs={[{ key: 'cost', label: 'تقرير التكلفة' }, { key: 'employee', label: 'تقرير موظف' }]} active={tab} onChange={setTab} />
       {tab === 'cost' ? <CostReportTab /> : <EmployeeReportTab />}
     </div>

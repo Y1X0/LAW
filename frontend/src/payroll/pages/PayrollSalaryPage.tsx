@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
@@ -30,11 +29,7 @@ export function PayrollSalaryPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="راتب الموظف"
-        subtitle="الراتب الأساسي والمكوّنات المسندة"
-        action={<Link to="/payroll" className="lp-press rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">اللوحة</Link>}
-      />
+      <PageHeader title="راتب الموظف" subtitle="الراتب الأساسي والمكوّنات المسندة" />
 
       {selected ? (
         <EmployeeSalaryPanel employee={selected} onChange={() => setSelected(null)} />

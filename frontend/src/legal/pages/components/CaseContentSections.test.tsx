@@ -84,6 +84,19 @@ describe('CaseDocumentsSection', () => {
       expect(fetchMock.mock.calls.some((c) => (c[1]?.method ?? 'GET') === 'DELETE' && /documents\/5$/.test(String(c[0]).split('?')[0]))).toBe(true)
     })
   })
+
+  it('يُظهر رسالة عند فشل التنزيل (ملف مفقود)', async () => {
+    auth()
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (/documents\/\d+\/download/.test(url)) return json({ data: null, meta: null, errors: { code: 'NO_FILE', message: 'الملف غير موجود.' } }, 404)
+      return ok([{ id: 5, title: 'لائحة الدعوى', original_name: 'laeha.pdf' }])
+    }))
+    const user = userEvent.setup()
+    renderWithProviders(<CaseDocumentsSection caseId={1} />)
+    await user.click(await screen.findByRole('button', { name: 'تنزيل' }))
+    expect(await screen.findByText('الملف غير موجود.')).toBeInTheDocument()
+  })
 })
 
 describe('CasePartiesSection', () => {

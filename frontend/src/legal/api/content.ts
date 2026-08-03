@@ -19,6 +19,7 @@ export const documentSchema = z.object({
   original_name: z.string().nullable().optional(),
   mime_type: z.string().nullable().optional(),
   size_bytes: z.number().nullable().optional(),
+  created_at: z.string().nullable().optional(),
 })
 export type CaseDocument = z.infer<typeof documentSchema>
 

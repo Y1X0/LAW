@@ -25,6 +25,7 @@ import { PayrollDashboardPage } from '@/payroll/pages/PayrollDashboardPage'
 import { PayrollPeriodsPage } from '@/payroll/pages/PayrollPeriodsPage'
 import { PayrollComponentsPage } from '@/payroll/pages/PayrollComponentsPage'
 import { PayrollSalaryPage } from '@/payroll/pages/PayrollSalaryPage'
+import { PayrollRunsPage } from '@/payroll/pages/PayrollRunsPage'
 import { AttendancePage } from '@/employee/pages/AttendancePage'
 import { DashboardPage } from '@/employee/pages/DashboardPage'
 import { LeavePage } from '@/employee/pages/LeavePage'
@@ -100,6 +101,7 @@ export const router = createBrowserRouter(
                     { path: 'payroll/periods', element: <PayrollPeriodsPage /> },
                     { path: 'payroll/components', element: <PayrollComponentsPage /> },
                     { path: 'payroll/salary', element: <PayrollSalaryPage /> },
+                    { path: 'payroll/runs', element: <PayrollRunsPage /> },
                   ],
                 },
 

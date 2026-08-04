@@ -13,6 +13,7 @@ const NAV: NavItem[] = [
   { to: '/admin/org', label: 'الهيكل التنظيمي', icon: 'profile' },
   { to: '/payroll', label: 'الرواتب', icon: 'salary', end: false },
   { to: '/legal', label: 'الإدارة القانونية', icon: 'cases', end: false },
+  { to: '/finance/invoices', label: 'الفواتير', icon: 'salary', end: false },
   { to: '/admin/audit', label: 'سجلّ التدقيق', icon: 'audit' },
   { to: '/admin/data', label: 'إدارة البيانات (Excel)', icon: 'data' },
   { to: '/admin/settings', label: 'الإعدادات', icon: 'settings' },

@@ -15,11 +15,16 @@ const BRANCHES = [
 const DEPARTMENTS = [
   { id: 10, branch_id: 1, name: 'التقاضي', is_active: true, branch: { id: 1, name: 'المكتب الرئيسي' } },
 ]
+const POSITIONS = [
+  { id: 20, branch_id: 1, title: 'محامٍ أول', description: 'ترافع', is_active: true },
+]
 
 function stub() {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
     const method = init?.method ?? 'GET'
+    if (url.includes('/positions') && method === 'POST') return json({ data: { id: 21, branch_id: null, title: 'سكرتير', is_active: true } }, 201)
+    if (url.includes('/positions')) return json({ data: POSITIONS })
     if (url.includes('/branches') && method === 'POST') return json({ data: { id: 2, name: 'فرع جدة', code: 'JED', is_active: true, departments_count: 0 } }, 201)
     if (url.includes('/branches')) return json({ data: BRANCHES })
     if (url.includes('/departments')) return json({ data: DEPARTMENTS })
@@ -79,5 +84,33 @@ describe('AdminOrgPage', () => {
     renderWithProviders(<AdminOrgPage />)
     expect(await screen.findByText('لا توجد فروع بعد. أضِف أول فرع للبدء.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'إضافة قسم' })).toBeDisabled()
+  })
+
+  it('يعرض المناصب من الخادم', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    stub()
+    renderWithProviders(<AdminOrgPage />)
+    expect(await screen.findByText('محامٍ أول')).toBeInTheDocument()
+  })
+
+  it('ينشئ منصباً جديداً عبر POST', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    const fetchMock = stub()
+    const user = userEvent.setup()
+
+    renderWithProviders(<AdminOrgPage />)
+    await screen.findByText('محامٍ أول')
+
+    await user.click(screen.getByRole('button', { name: 'إضافة منصب' }))
+    await user.type(screen.getByLabelText('المسمّى الوظيفي'), 'سكرتير')
+    await user.click(screen.getByRole('button', { name: 'حفظ' }))
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          (c) => (c[1]?.method ?? 'GET') === 'POST' && String(c[0]).includes('positions'),
+        ),
+      ).toBe(true),
+    )
   })
 })

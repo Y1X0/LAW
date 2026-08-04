@@ -18,9 +18,16 @@ import {
   updateBranch,
   updateDepartment,
 } from '@/admin/api/org'
+import {
+  type Position,
+  createPosition,
+  deletePosition,
+  fetchPositions,
+  updatePosition,
+} from '@/admin/api/positions'
 
 /**
- * إدارة الهيكل التنظيمي (M1) — الفروع والأقسام من الواجهة، بديلاً عن البذرة/Excel.
+ * إدارة الهيكل التنظيمي (M1) — الفروع والأقسام والمناصب من الواجهة، بديلاً عن البذرة/Excel.
  * تصميم بطاقات متجاوب (بلا جداول عريضة) ليعمل بلا سحب أفقي على الجوّال.
  */
 export function AdminOrgPage() {
@@ -28,9 +35,10 @@ export function AdminOrgPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="الهيكل التنظيمي" subtitle="الفروع والأقسام" />
+      <PageHeader title="الهيكل التنظيمي" subtitle="الفروع والأقسام والمناصب" />
       <BranchesSection onPickBranch={setBranchFilter} />
       <DepartmentsSection branchFilter={branchFilter} setBranchFilter={setBranchFilter} />
+      <PositionsSection />
     </div>
   )
 }
@@ -293,6 +301,160 @@ function DepartmentModal({
         <label className="flex items-center gap-2 text-sm text-slate-600">
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-4 w-4 rounded border-slate-300" />
           قسم نشط
+        </label>
+        <div className="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={save.isPending}>إلغاء</Button>
+          <Button type="submit" disabled={save.isPending}>{save.isPending ? 'جارٍ…' : 'حفظ'}</Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+/* ───────────────────────── المناصب ───────────────────────── */
+
+function PositionsSection() {
+  const qc = useQueryClient()
+  const { show } = useToast()
+  const [editing, setEditing] = useState<Position | null | 'new'>(null)
+  const [branchFilter, setBranchFilter] = useState<number | ''>('')
+
+  const branches = useQuery({ queryKey: ['admin', 'branches'], queryFn: fetchBranches })
+  const positions = useQuery({
+    queryKey: ['admin', 'positions', branchFilter || 'all'],
+    queryFn: () => fetchPositions(branchFilter || undefined),
+  })
+
+  const branchName = useMemo(
+    () => (id: number | null | undefined) => (id == null ? 'عام (بلا فرع)' : branches.data?.find((b) => b.id === id)?.name ?? '—'),
+    [branches.data],
+  )
+
+  const remove = useMutation({
+    mutationFn: (id: number) => deletePosition(id),
+    onSuccess: () => {
+      show('تم حذف المنصب')
+      void qc.invalidateQueries({ queryKey: ['admin', 'positions'] })
+    },
+    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر حذف المنصب', 'error'),
+  })
+
+  return (
+    <SectionCard
+      title="المناصب"
+      action={<Button onClick={() => setEditing('new')}>إضافة منصب</Button>}
+    >
+      <div className="mb-3 max-w-xs">
+        <SelectField
+          label="تصفية بالفرع"
+          value={branchFilter === '' ? '' : String(branchFilter)}
+          onChange={(e) => setBranchFilter(e.target.value === '' ? '' : Number(e.target.value))}
+        >
+          <option value="">كل الفروع</option>
+          {branches.data?.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </SelectField>
+      </div>
+
+      {positions.isPending ? (
+        <div className="space-y-2" data-testid="positions-skeleton">
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+        </div>
+      ) : positions.isError ? (
+        <ErrorState error={positions.error}>
+          <div className="mt-3"><Button onClick={() => void positions.refetch()}>إعادة المحاولة</Button></div>
+        </ErrorState>
+      ) : positions.data && positions.data.length === 0 ? (
+        <EmptyState message="لا توجد مناصب بعد. أضِف أول منصب." />
+      ) : (
+        <ul className="space-y-2.5">
+          {positions.data?.map((p) => (
+            <li key={p.id}>
+              <Card className="flex flex-wrap items-center justify-between gap-3 p-3.5">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-800">{p.title}</span>
+                    {!p.is_active && <Badge tone="amber">معطّل</Badge>}
+                  </div>
+                  <div className="mt-0.5 text-xs text-slate-400">
+                    {branchName(p.branch_id)}{p.description ? ` · ${p.description}` : ''}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button variant="ghost" onClick={() => setEditing(p)}>تعديل</Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => { if (confirm(`حذف المنصب «${p.title}»؟`)) remove.mutate(p.id) }}
+                    disabled={remove.isPending}
+                  >
+                    حذف
+                  </Button>
+                </div>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {editing !== null && (
+        <PositionModal
+          position={editing === 'new' ? null : editing}
+          branches={branches.data ?? []}
+          onClose={() => setEditing(null)}
+        />
+      )}
+    </SectionCard>
+  )
+}
+
+function PositionModal({
+  position, branches, onClose,
+}: {
+  position: Position | null
+  branches: Branch[]
+  onClose: () => void
+}) {
+  const qc = useQueryClient()
+  const { show } = useToast()
+  const [branchId, setBranchId] = useState<number | ''>(position?.branch_id ?? '')
+  const [title, setTitle] = useState(position?.title ?? '')
+  const [description, setDescription] = useState(position?.description ?? '')
+  const [active, setActive] = useState(position?.is_active ?? true)
+
+  const save = useMutation({
+    mutationFn: () => {
+      const base = { title: title.trim(), description: description.trim() || undefined, is_active: active }
+      // الفرع يُضبط عند الإنشاء فقط (الخادم لا يغيّره لاحقاً).
+      return position
+        ? updatePosition(position.id, base)
+        : createPosition({ ...base, branch_id: branchId === '' ? null : branchId })
+    },
+    onSuccess: () => {
+      show(position ? 'تم تحديث المنصب' : 'تم إنشاء المنصب')
+      void qc.invalidateQueries({ queryKey: ['admin', 'positions'] })
+      onClose()
+    },
+    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت العملية', 'error'),
+  })
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    save.mutate()
+  }
+
+  return (
+    <Modal title={position ? `تعديل المنصب — ${position.title}` : 'إضافة منصب'} onClose={onClose}>
+      <form onSubmit={onSubmit} className="space-y-3">
+        <Field label="المسمّى الوظيفي" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <Field label="الوصف (اختياري)" value={description} onChange={(e) => setDescription(e.target.value)} />
+        {position === null && (
+          <SelectField label="الفرع (اختياري)" value={branchId === '' ? '' : String(branchId)} onChange={(e) => setBranchId(e.target.value === '' ? '' : Number(e.target.value))}>
+            <option value="">عام (بلا فرع)</option>
+            {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </SelectField>
+        )}
+        <label className="flex items-center gap-2 text-sm text-slate-600">
+          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-4 w-4 rounded border-slate-300" />
+          منصب نشط
         </label>
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} disabled={save.isPending}>إلغاء</Button>

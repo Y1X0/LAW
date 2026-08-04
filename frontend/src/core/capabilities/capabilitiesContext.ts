@@ -15,6 +15,8 @@ export interface CapabilitiesValue {
   canManagePayroll: boolean
   /** هل يملك المستخدم وصولاً للإدارة القانونية (صلاحية clients.view — إدارية)؟ */
   canManageLegal: boolean
+  /** هل يملك المستخدم لوحة المؤشّرات الإدارية الشاملة (صلاحية dashboard.view_management)؟ */
+  canViewManagementDashboard: boolean
 }
 
 export const CapabilitiesContext = createContext<CapabilitiesValue | null>(null)

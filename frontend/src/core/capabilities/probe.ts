@@ -72,6 +72,21 @@ export async function probeCanManagePayroll(): Promise<boolean> {
 }
 
 /**
+ * كشف قدرة «لوحة المؤشّرات الإدارية»: نداء لملخّص اللوحة (يحرسه dashboard.view_management،
+ * صلاحية مستقلّة لا يملكها إلا من أُسنِدت له). - 200 ⇒ يملكها. · 401/403 ⇒ لا يملكها.
+ * - خطأ شبكة/5xx ⇒ يُعاد رميه (إعادة محاولة). البيانات تُعاد جلبها في الصفحة نفسها.
+ */
+export async function probeCanViewManagementDashboard(): Promise<boolean> {
+  try {
+    const data = await api.get<unknown>('dashboard/summary')
+    return data != null
+  } catch (error) {
+    if (isDefinitiveNo(error)) return false
+    throw error
+  }
+}
+
+/**
  * كشف قدرة «الإدارة القانونية»: نداء خفيف لقائمة العملاء (يحرسها clients.view —
  * صلاحية إدارية لا يملكها المحامي بعزل view_own). يميّز «مشرف/مدير قانوني» عن المحامي.
  * - 200 ⇒ يملك الإدارة القانونية. · 401/403 ⇒ لا يملكها.

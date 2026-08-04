@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Outlet } from 'react-router-dom'
 import { FullPageLoader } from '@/core/ui/states'
 import { CapabilitiesContext, type CapabilitiesValue } from './capabilitiesContext'
-import { probeCanManageHr, probeCanManageLegal, probeCanManagePayroll, probeIsAdmin, probeIsLawyer } from './probe'
+import { probeCanManageHr, probeCanManageLegal, probeCanManagePayroll, probeCanViewManagementDashboard, probeIsAdmin, probeIsLawyer } from './probe'
 
 const probeOptions = {
   staleTime: Infinity,
@@ -24,8 +24,9 @@ export function CapabilitiesProvider() {
   const admin = useQuery({ queryKey: ['capabilities', 'admin'], queryFn: probeIsAdmin, ...probeOptions })
   const payroll = useQuery({ queryKey: ['capabilities', 'payroll'], queryFn: probeCanManagePayroll, ...probeOptions })
   const legal = useQuery({ queryKey: ['capabilities', 'legal'], queryFn: probeCanManageLegal, ...probeOptions })
+  const dashboard = useQuery({ queryKey: ['capabilities', 'dashboard'], queryFn: probeCanViewManagementDashboard, ...probeOptions })
 
-  const isPending = lawyer.isPending || hr.isPending || admin.isPending || payroll.isPending || legal.isPending
+  const isPending = lawyer.isPending || hr.isPending || admin.isPending || payroll.isPending || legal.isPending || dashboard.isPending
   const value: CapabilitiesValue = {
     status: isPending ? 'loading' : 'ready',
     isLawyer: lawyer.data ?? false,
@@ -33,6 +34,7 @@ export function CapabilitiesProvider() {
     isAdmin: admin.data ?? false,
     canManagePayroll: payroll.data ?? false,
     canManageLegal: legal.data ?? false,
+    canViewManagementDashboard: dashboard.data ?? false,
   }
 
   return (

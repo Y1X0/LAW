@@ -9,6 +9,7 @@ import { RequireLawyer } from '@/core/capabilities/RequireLawyer'
 import { RequirePayroll } from '@/core/capabilities/RequirePayroll'
 import { RequireLegal } from '@/core/capabilities/RequireLegal'
 import { RequireFinance } from '@/finance/RequireFinance'
+import { RequireDashboard } from '@/dashboard/RequireDashboard'
 import { IndexRedirect } from '@/core/layout/IndexRedirect'
 import { RoleLayout } from '@/core/layout/RoleLayout'
 import { AdminHomePage } from '@/admin/pages/AdminHomePage'
@@ -42,6 +43,8 @@ const InvoicesListPage = lazy(() => import('@/finance/pages/InvoicesListPage').t
 const InvoiceDetailPage = lazy(() => import('@/finance/pages/InvoiceDetailPage').then((m) => ({ default: m.InvoiceDetailPage })))
 const ExpensesListPage = lazy(() => import('@/finance/pages/ExpensesListPage').then((m) => ({ default: m.ExpensesListPage })))
 const FinanceReportsPage = lazy(() => import('@/finance/pages/FinanceReportsPage').then((m) => ({ default: m.FinanceReportsPage })))
+// لوحة المؤشّرات الإدارية: تحميل كسول لتقسيمها إلى chunk مستقل.
+const ManagementDashboardPage = lazy(() => import('@/dashboard/pages/ManagementDashboardPage').then((m) => ({ default: m.ManagementDashboardPage })))
 const LegalCaseDetailPage = lazy(() => import('@/legal/pages/LegalCaseDetailPage').then((m) => ({ default: m.LegalCaseDetailPage })))
 const LegalClientsPage = lazy(() => import('@/legal/pages/LegalClientsPage').then((m) => ({ default: m.LegalClientsPage })))
 const LegalClientDetailPage = lazy(() => import('@/legal/pages/LegalClientDetailPage').then((m) => ({ default: m.LegalClientDetailPage })))
@@ -92,6 +95,12 @@ export const router = createBrowserRouter(
                     { path: 'admin/data', element: <AdminDataPage /> },
                     { path: 'admin/settings', element: <AdminSettingsPage /> },
                   ],
+                },
+
+                // ---- لوحة المؤشّرات الإدارية (يملك dashboard.view_management) — Phase 7 ----
+                {
+                  element: <RequireDashboard />,
+                  children: [{ path: 'management', element: <ManagementDashboardPage /> }],
                 },
 
                 // ---- خدمة ذاتية (HR) — للدورين ----

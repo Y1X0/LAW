@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Finance\Http\Controllers\ClientFinanceSummaryController;
+use Modules\Finance\Http\Controllers\ExpenseController;
 use Modules\Finance\Http\Controllers\FinanceCapabilitiesController;
 use Modules\Finance\Http\Controllers\FinancialAccountController;
 use Modules\Finance\Http\Controllers\InvoiceController;
@@ -33,6 +34,13 @@ Route::middleware('auth.token')->group(function () {
         Route::get('finance/accounts', [FinancialAccountController::class, 'index'])->name('finance.accounts.index');
         Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store'])->name('invoices.payments.store');
         Route::post('payments/{payment}/reverse', [PaymentController::class, 'reverse'])->name('payments.reverse');
+    });
+
+    // سندات الصرف — قراءة/تسجيل/عكس (لا حذف). عزل القضية عند الربط.
+    Route::middleware('permission:expenses.create')->group(function () {
+        Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+        Route::post('expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+        Route::post('expenses/{expense}/reverse', [ExpenseController::class, 'reverse'])->name('expenses.reverse');
     });
 
     Route::middleware('permission:invoices.create')->group(function () {

@@ -4,12 +4,13 @@ import { Button, Card, Field } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
-import { GENERAL_FIELDS, fetchSettings, generalValues, updateSettings } from '@/admin/api/settings'
+import { SETTINGS_GROUPS, fetchSettings, settingsValues, updateSettings } from '@/admin/api/settings'
 import { ApiError } from '@/core/api/types'
 
 /**
- * إعدادات المنصّة العامّة (ADMIN-5) — تحرير مجموعة «general» عبر النقاط القائمة
- * `GET/PUT /admin/settings` (تعيد استخدام جدول settings الموجود).
+ * إعدادات المنصّة (ADMIN-5) — تحرير أقسام الإعدادات المُعرَّفة في SETTINGS_GROUPS عبر
+ * النقاط القائمة `GET/PUT /admin/settings` (تعيد استخدام جدول settings الموجود). كل الأقسام
+ * تُحفَظ دفعةً واحدة (الخادم يقبل دفعة). إضافة قسم = تعديل الإعداد فقط، بلا نموذج/قاعدة جديدة.
  */
 export function AdminSettingsPage() {
   const qc = useQueryClient()
@@ -26,7 +27,7 @@ export function AdminSettingsPage() {
   const hydrated = useRef(false)
   useEffect(() => {
     if (data && !hydrated.current) {
-      setValues(generalValues(data))
+      setValues(settingsValues(data))
       hydrated.current = true
     }
   }, [data])
@@ -34,7 +35,7 @@ export function AdminSettingsPage() {
   const save = useMutation({
     mutationFn: () =>
       updateSettings(
-        GENERAL_FIELDS.map((f) => ({ group: 'general', key: f.key, value: values[f.key] ?? '' })),
+        SETTINGS_GROUPS.flatMap((g) => g.fields.map((f) => ({ group: g.group, key: f.key, value: values[f.key] ?? '' }))),
       ),
     onSuccess: () => {
       show('تم حفظ الإعدادات')
@@ -50,7 +51,7 @@ export function AdminSettingsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="الإعدادات العامّة" subtitle="إعدادات المنصّة" />
+      <PageHeader title="الإعدادات" subtitle="إعدادات المنصّة" />
 
       {isPending ? (
         <Card>
@@ -67,23 +68,27 @@ export function AdminSettingsPage() {
           </div>
         </ErrorState>
       ) : (
-        <SectionCard title="عام">
-          <form onSubmit={onSubmit} className="space-y-3">
-            {GENERAL_FIELDS.map((f) => (
-              <Field
-                key={f.key}
-                label={f.label}
-                value={values[f.key] ?? ''}
-                onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-              />
-            ))}
-            <div className="flex justify-end pt-1">
-              <Button type="submit" disabled={save.isPending}>
-                {save.isPending ? 'جارٍ…' : 'حفظ'}
-              </Button>
-            </div>
-          </form>
-        </SectionCard>
+        <form onSubmit={onSubmit} className="space-y-5">
+          {SETTINGS_GROUPS.map((g) => (
+            <SectionCard key={g.group} title={g.title}>
+              <div className="space-y-3">
+                {g.fields.map((f) => (
+                  <Field
+                    key={f.key}
+                    label={f.label}
+                    value={values[f.key] ?? ''}
+                    onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                  />
+                ))}
+              </div>
+            </SectionCard>
+          ))}
+          <div className="flex justify-end">
+            <Button type="submit" disabled={save.isPending}>
+              {save.isPending ? 'جارٍ…' : 'حفظ'}
+            </Button>
+          </div>
+        </form>
       )}
     </div>
   )

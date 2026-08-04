@@ -9,7 +9,10 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
-const SETTINGS = { general: [{ id: 1, key: 'org_name_ar', value: 'مكتب الحق' }] }
+const SETTINGS = {
+  general: [{ id: 1, key: 'org_name_ar', value: 'مكتب الحق' }],
+  identity: [{ id: 5, key: 'commercial_register', value: '1010101010' }],
+}
 
 function stub() {
   const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
@@ -38,6 +41,14 @@ describe('AdminSettingsPage', () => {
     stub()
     renderWithProviders(<AdminSettingsPage />)
     expect(await screen.findByDisplayValue('مكتب الحق')).toBeInTheDocument()
+  })
+
+  it('يعرض قسم بيانات المكتب الرسمية ويملأ قيمته', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    stub()
+    renderWithProviders(<AdminSettingsPage />)
+    expect(await screen.findByText('بيانات المكتب الرسمية')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('1010101010')).toBeInTheDocument()
   })
 
   it('يحفظ الإعدادات عبر PUT', async () => {

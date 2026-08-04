@@ -8,6 +8,7 @@ import { RequireHr } from '@/core/capabilities/RequireHr'
 import { RequireLawyer } from '@/core/capabilities/RequireLawyer'
 import { RequirePayroll } from '@/core/capabilities/RequirePayroll'
 import { RequireLegal } from '@/core/capabilities/RequireLegal'
+import { RequireFinance } from '@/finance/RequireFinance'
 import { IndexRedirect } from '@/core/layout/IndexRedirect'
 import { RoleLayout } from '@/core/layout/RoleLayout'
 import { AdminHomePage } from '@/admin/pages/AdminHomePage'
@@ -35,6 +36,10 @@ const PayrollReportsPage = lazy(() => import('@/payroll/pages/PayrollReportsPage
 // وحدة الإدارة القانونية: تحميل كسول لتقسيمها إلى chunk مستقل.
 import { LegalLayout } from '@/legal/LegalLayout'
 const LegalCasesPage = lazy(() => import('@/legal/pages/LegalCasesPage').then((m) => ({ default: m.LegalCasesPage })))
+// وحدة المالية: تحميل كسول لتقسيمها إلى chunk مستقل.
+import { FinanceLayout } from '@/finance/FinanceLayout'
+const InvoicesListPage = lazy(() => import('@/finance/pages/InvoicesListPage').then((m) => ({ default: m.InvoicesListPage })))
+const InvoiceDetailPage = lazy(() => import('@/finance/pages/InvoiceDetailPage').then((m) => ({ default: m.InvoiceDetailPage })))
 const LegalCaseDetailPage = lazy(() => import('@/legal/pages/LegalCaseDetailPage').then((m) => ({ default: m.LegalCaseDetailPage })))
 const LegalClientsPage = lazy(() => import('@/legal/pages/LegalClientsPage').then((m) => ({ default: m.LegalClientsPage })))
 const LegalClientDetailPage = lazy(() => import('@/legal/pages/LegalClientDetailPage').then((m) => ({ default: m.LegalClientDetailPage })))
@@ -139,6 +144,20 @@ export const router = createBrowserRouter(
                         { path: 'legal/tasks', element: <LegalTasksPage /> },
                         { path: 'legal/worklog', element: <LegalWorklogPage /> },
                         { path: 'legal/cases/:id', element: <LegalCaseDetailPage /> },
+                      ],
+                    },
+                  ],
+                },
+
+                // ---- المالية (يملك invoices.view — المحاسب/المالك) — Phase 6 ----
+                {
+                  element: <RequireFinance />,
+                  children: [
+                    {
+                      element: <FinanceLayout />,
+                      children: [
+                        { path: 'finance/invoices', element: <InvoicesListPage /> },
+                        { path: 'finance/invoices/:id', element: <InvoiceDetailPage /> },
                       ],
                     },
                   ],

@@ -1,4 +1,5 @@
 import { Shell, type NavItem } from '@/core/layout/Shell'
+import { useFinanceCapabilities } from '@/finance/api/capabilities'
 
 /** تنقّل الموظف العادي (كما في Epic 10 — دون تغيير سلوكي). */
 const NAV: NavItem[] = [
@@ -9,6 +10,11 @@ const NAV: NavItem[] = [
   { to: '/profile', label: 'ملفي', icon: 'profile' },
 ]
 
+// رابط الفواتير يظهر فقط لمن يملك القدرة المالية (مثل المحاسب) — الخادم يبقى الحكم النهائي.
+const FINANCE_LINK: NavItem = { to: '/finance/invoices', label: 'الفواتير', icon: 'salary', end: false }
+
 export function EmployeeLayout() {
-  return <Shell nav={NAV} subtitle="بوابة الموظف" />
+  const { canView } = useFinanceCapabilities()
+  const nav: NavItem[] = canView ? [...NAV, FINANCE_LINK] : NAV
+  return <Shell nav={nav} subtitle="بوابة الموظف" />
 }

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Finance\Http\Controllers\FinanceCapabilitiesController;
 use Modules\Finance\Http\Controllers\InvoiceController;
 
 /*
@@ -14,6 +15,9 @@ use Modules\Finance\Http\Controllers\InvoiceController;
 */
 
 Route::middleware('auth.token')->group(function () {
+    // قدرات المستخدم المالية (للعرض في الواجهة فقط) — محروسة بالمصادقة، بلا صلاحية محدّدة.
+    Route::get('finance/capabilities', [FinanceCapabilitiesController::class, 'show'])->name('finance.capabilities');
+
     Route::middleware('permission:invoices.view')->group(function () {
         Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');

@@ -10,21 +10,28 @@ const financeCapabilitiesSchema = z.object({
   can_view: z.boolean(),
   can_create: z.boolean(),
   can_approve: z.boolean(),
+  can_record_payment: z.boolean(),
 })
 
 export interface FinanceCapabilities {
   canView: boolean
   canCreate: boolean
   canApprove: boolean
+  canRecordPayment: boolean
   isPending: boolean
 }
 
-const NONE = { canView: false, canCreate: false, canApprove: false }
+const NONE = { canView: false, canCreate: false, canApprove: false, canRecordPayment: false }
 
 export function fetchFinanceCapabilities(): Promise<typeof NONE> {
   return api.get<unknown>('finance/capabilities').then((d) => {
     const caps = financeCapabilitiesSchema.parse(d)
-    return { canView: caps.can_view, canCreate: caps.can_create, canApprove: caps.can_approve }
+    return {
+      canView: caps.can_view,
+      canCreate: caps.can_create,
+      canApprove: caps.can_approve,
+      canRecordPayment: caps.can_record_payment,
+    }
   })
 }
 

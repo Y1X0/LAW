@@ -17,7 +17,7 @@ const INVOICE = {
 }
 
 function caps(over: Record<string, boolean> = {}) {
-  return { data: { can_view: true, can_create: true, can_approve: true, ...over }, meta: null, errors: null }
+  return { data: { can_view: true, can_create: true, can_approve: true, can_record_payment: true, ...over }, meta: null, errors: null }
 }
 
 function stub(capsOver: Record<string, boolean> = {}) {

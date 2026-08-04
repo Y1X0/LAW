@@ -23,6 +23,7 @@ class FinanceCapabilitiesController
                 'can_view' => (bool) $user?->hasPermission('invoices.view'),
                 'can_create' => (bool) $user?->hasPermission('invoices.create'),
                 'can_approve' => (bool) $user?->hasPermission('invoices.approve'),
+                'can_record_payment' => (bool) $user?->hasPermission('payments.create'),
             ],
             'meta' => null,
             'errors' => null,

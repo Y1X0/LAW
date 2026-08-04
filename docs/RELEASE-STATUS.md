@@ -9,22 +9,24 @@
 | Payroll | ✅ Production Ready (Frontend/UI Layer) |
 | Legal Management | ✅ Production Ready (Frontend/UI Layer) |
 | Client Management | ✅ Production Ready (Frontend/UI Layer) |
-| **Document Management** | 🟡 **Release Candidate** — بانتظار تحقّق حيّ واحد على Cloudflare R2 |
+| **Document Management** | ✅ **Production Ready (Frontend + Backend)** — تحقّق حيّ على Cloudflare R2 نجح |
+
+> **Phase 5 (Document Storage & Upload) — مُغلَقة رسميّاً.**
 
 ---
 
-## Document Management — لماذا Release Candidate وليس Production Ready بعد؟
+## Document Management — إثبات التحقّق الحيّ (Phase 5 مُغلَقة)
 
 العمل البرمجي مكتمل ومُتحقَّق منه في CI (الطبقتان Frontend + Backend، الأمان، معالجة
-الفشل، الاختبارات خضراء، Backlog نظيف). لكن اختبارات CI تستخدم `Storage::fake('r2')`،
-وهي **لا تُثبت** ما يلي، لأنه خارج نطاق ما يستطيع الـCI التحقق منه:
+الفشل، الاختبارات خضراء، Backlog نظيف). اختبارات CI الرئيسية تستخدم `Storage::fake('r2')`،
+وهي وحدها **لا تُثبت** الاتصال الفعلي بـ R2. لذا أُجري تحقّق حيّ مخصّص على **Cloudflare R2 الحقيقي**:
 
-- الاتصال الفعلي بـ Cloudflare R2.
-- صلاحية مفاتيح R2.
-- سياسات الـ Bucket (الخصوصية/الأذونات).
-- سلوك الشبكة والأخطاء الحقيقية.
+- **السير:** `R2 Integration` · التشغيل رقم 2 (`workflow_dispatch`) على `main` — **نجح**.
+- **النتيجة:** `OK (1 test, 6 assertions)` — الاختبار **نُفِّذ** (لم يُتخطَّ)، والأسرار الخمسة حُقنت من GitHub Secrets.
+- **ما أُثبت فعليّاً:** رفع ملف 256KB إلى R2 → تأكيد الوجود → مطابقة الحجم → تنزيل → **مطابقة SHA-256 مع الأصل** → حذف → تأكيد الحذف.
 
-لذلك تبقى الحالة **Release Candidate** حتى تُجرى جولة تحقّق حيّة واحدة على R2 الحقيقي.
+بهذا تحقّق الاتصال الفعلي، وصلاحية المفاتيح، وسياسات الـ Bucket، وسلامة الجولة عبر الشبكة —
+وهي بالضبط النقاط التي لم يكن CI الرئيسي يستطيع إثباتها. الحالة الآن **Production Ready**.
 
 ---
 
@@ -84,15 +86,17 @@
 
 ---
 
-## معايير الترقية إلى Production Ready
+## الترقية إلى Production Ready — تمّت ✅
 
-عند **نجاح سير عمل `R2 Integration`** (بعد ضبط الأسرار) — أو اجتياز الجولة اليدوية على R2 الحقيقي:
+تحقّق المعيار: **سير عمل `R2 Integration` نجح** (التشغيل رقم 2، `workflow_dispatch` على `main`)
+بعد ضبط أسرار GitHub الخمسة. بناءً عليه:
 
-- تُرقّى حالة Document Management إلى **✅ Production Ready (Frontend + Backend)**.
-- تُغلَق **Phase 5 (Document Storage & Upload)** رسميّاً.
+- رُقّيت حالة Document Management إلى **✅ Production Ready (Frontend + Backend)**.
+- أُغلقت **Phase 5 (Document Storage & Upload)** رسميّاً.
 
-> ملاحظة: CI الرئيسي يستخدم `Storage::fake` (لا يُثبت R2 الحقيقي)؛ الإثبات الحيّ صار
-> متاحاً آليّاً عبر سير `R2 Integration` المخصّص بأسرار GitHub.
+> ملاحظة: CI الرئيسي يستخدم `Storage::fake` (لا يُثبت R2 الحقيقي)؛ الإثبات الحيّ تحقّق
+> آليّاً عبر سير `R2 Integration` المخصّص بأسرار GitHub. لإعادة التحقّق مستقبلاً: شغّل السير مجدّداً
+> من تبويب **Actions → R2 Integration → Run workflow**.
 
 ---
 

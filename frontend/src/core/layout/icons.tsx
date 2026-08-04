@@ -14,6 +14,7 @@ export type IconName =
   | 'audit'
   | 'settings'
   | 'data'
+  | 'chart'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-8 9 8M5 9v11h5v-6h4v6h5V9',
@@ -30,6 +31,7 @@ const PATHS: Record<IconName, string> = {
   audit: 'M9 5h6M9 9h6M9 13h4M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z',
   settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z',
   data: 'M4 5h16v14H4zM4 10h16M4 15h16M9 5v14M15 5v14',
+  chart: 'M4 3v18h18M8 17v-5M13 17v-9M18 17v-3',
 }
 
 export function Icon({ name, className = 'h-5 w-5' }: { name: IconName; className?: string }) {

@@ -26,30 +26,56 @@ export async function downloadExport(entity: ExportEntity): Promise<void> {
   URL.revokeObjectURL(url)
 }
 
-const previewSchema = z.object({
+/** كيانات مركز الاستيراد. mapping=true ⇒ يدعم مطابقة الأعمدة (يعيد الخادم fields/detected). */
+export const IMPORT_ENTITIES = [
+  { key: 'clients', label: 'العملاء', mapping: true },
+  { key: 'employees', label: 'الموظفون', mapping: false },
+] as const
+export type ImportEntityKey = (typeof IMPORT_ENTITIES)[number]['key']
+
+const fieldSchema = z.object({ key: z.string(), required: z.boolean() })
+export type ImportField = z.infer<typeof fieldSchema>
+
+/** ملخّص المعاينة + بيانات المطابقة الوصفية (اختيارية — للكيانات الداعمة). */
+const importPreviewSchema = z.object({
   total: z.number(),
   create: z.number(),
   update: z.number(),
   invalid: z.number(),
   errors: z.array(z.object({ row: z.number(), message: z.string() })),
+  fields: z.array(fieldSchema).optional(),
+  match_keys: z.array(z.string()).optional(),
+  detected_headers: z.array(z.string()).optional(),
 })
-export type ImportPreview = z.infer<typeof previewSchema>
+export type ImportPreview = z.infer<typeof importPreviewSchema>
 
 const resultSchema = z.object({ created: z.number(), updated: z.number() })
 export type ImportResult = z.infer<typeof resultSchema>
 
-function fileForm(file: File): FormData {
+export interface ImportOptions {
+  /** field => sheetHeader (يُطبَّق في الخادم قبل التحقّق). */
+  mapping?: Record<string, string>
+  matchKey?: string
+}
+
+function importForm(file: File, opts?: ImportOptions): FormData {
   const form = new FormData()
   form.append('file', file)
+  if (opts?.mapping) {
+    for (const [field, header] of Object.entries(opts.mapping)) {
+      if (header) form.append(`mapping[${field}]`, header)
+    }
+  }
+  if (opts?.matchKey) form.append('match_key', opts.matchKey)
   return form
 }
 
-/** معاينة استيراد الموظفين (تحقّق بلا حفظ). */
-export async function previewEmployeesImport(file: File): Promise<ImportPreview> {
-  return previewSchema.parse(await api.upload<unknown>('admin/data/import/employees/preview', fileForm(file)))
+/** معاينة استيراد كيان (تحقّق بلا حفظ). الواجهة لا تحلّل الملف — الخادم يقرأ ويقرّر. */
+export async function previewImport(entity: string, file: File, opts?: ImportOptions): Promise<ImportPreview> {
+  return importPreviewSchema.parse(await api.upload<unknown>(`admin/data/import/${entity}/preview`, importForm(file, opts)))
 }
 
-/** تنفيذ استيراد الموظفين (حفظ ذرّي). */
-export async function commitEmployeesImport(file: File): Promise<ImportResult> {
-  return resultSchema.parse(await api.upload<unknown>('admin/data/import/employees/commit', fileForm(file)))
+/** تنفيذ استيراد كيان (حفظ ذرّي عبر خدمة النطاق في الخادم). */
+export async function commitImport(entity: string, file: File, opts?: ImportOptions): Promise<ImportResult> {
+  return resultSchema.parse(await api.upload<unknown>(`admin/data/import/${entity}/commit`, importForm(file, opts)))
 }

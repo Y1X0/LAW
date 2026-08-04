@@ -11,9 +11,11 @@
 | Client Management | ✅ Production Ready (Frontend/UI Layer) |
 | **Document Management** | ✅ **Production Ready (Frontend + Backend)** — تحقّق حيّ على Cloudflare R2 نجح |
 | **Financial / Invoicing** | ✅ **Production Ready (Frontend + Backend)** — محاسبة قيد مزدوج كاملة |
+| **Dashboard & Analytics** | ✅ **Production Ready (Frontend + Backend)** — تجميع مؤشّرات قراءة-فقط عبر الوحدات |
 
 > **Phase 5 (Document Storage & Upload) — مُغلَقة رسميّاً.**
 > **Phase 6 (Financial / Invoicing) — مُغلَقة رسميّاً.**
+> **Phase 7 (Dashboard & Analytics) — مُغلَقة رسميّاً.**
 
 ---
 
@@ -37,6 +39,36 @@
 **الإثبات (End-to-End):** `FinancialJourneyTest` يشغّل الرحلة كاملة بدور المحاسب عبر الـAPI
 (فاتورة → اعتماد → قيد → تحصيل → مصروف → تقارير + ملخّص) وتتّسق أرقامها: ميزان متوازن
 1600=1600، مستحقات 600، صافي أرباح 800. المجموعة الخلفية الكاملة والواجهة خضراء بلا تراجع.
+
+---
+
+## Dashboard & Analytics — إغلاق Phase 7 (Production Ready)
+
+لوحة مؤشّرات إدارية شاملة بُنيت على 3 PRات صغيرة (لكلٍّ مسؤولية واحدة، CI أخضر، دمج squash
+بعد موافقة)، على منهجية Discovery-first ومبادئ Phase 6 نفسها: الخادم مصدر الحقيقة والواجهة
+طبقة عرض فقط.
+
+**الخادم (PR-1 #209):** نقطة واحدة `GET /api/dashboard/summary` تُجمِّع مؤشّرات المكتب عبر أربع
+وحدات (`legal / clients / hr / finance`) — **قراءة فقط، لا جداول ولا منطق أعمال جديد**. المجاميع
+المالية **مُعاد استخدامها من `ReportService`** (لا تكرار للمنطق المحاسبي).
+
+**الواجهة (PR-2 #210):** صفحة `/management` **تعكس** النقطة كما تأتي: بطاقات KPI عددية + مؤشّرات
+مالية مُنسّقة من الخادم + صفوف توزيع — **صفر حساب/تجميع في الواجهة**. طبقة API بـ Zod تحوّل
+السلاسل العشرية المالية (`z.coerce.number`). حالات skeleton/error بنمط الوحدات السابقة، وبطاقات
+CSS/SVG **بلا مكتبة رسوم**. تحميل كسول (chunk مستقل) يحفظ الأداء.
+
+**الحوكمة (RBAC):** صلاحية **مستقلّة** `dashboard.view_management` — لا يُعاد استخدام `roles.manage`.
+الحارس `RequireDashboard` يعتمد قدرة `canViewManagementDashboard` مُكتشَفة عبر probe مستقل يعامل
+401/403 كـ«لا» حاسمة (نفس نمط بقيّة الـ probes)؛ الخادم يفرض الصلاحية على المسار (401 دون توكن،
+403 دون صلاحية). المدير العام يملكها ضمناً عبر `admin => PERMISSIONS`.
+
+**الأداء:** `summary()` يشغّل عدداً **ثابتاً ومحدوداً** من الاستعلامات (≈11: عدّادات + مجاميع مُجمَّعة
+`GROUP BY`) لا يتغيّر بحجم البيانات — لا N+1 ولا ترطيب صفوف نموذجيّة.
+
+**الإثبات:** `DashboardSummaryTest` يبني نشاطاً حقيقيّاً عبر الوحدات ويؤكّد التجميع عبر الـAPI خلف
+حارس الصلاحية (403/401)؛ و`ManagementDashboardPage.test` يؤكّد عرض المؤشّرات العددية/المالية
+المُنسّقة وحالة الخطأ. المجموعة الخلفية (626) والواجهة (246) خضراء بلا تراجع، RTL/إتاحة (أيقونات
+`aria-hidden`، عناوين أقسام)، ولا Dead Code/Debug.
 
 ---
 

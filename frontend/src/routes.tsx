@@ -40,6 +40,7 @@ const LegalCasesPage = lazy(() => import('@/legal/pages/LegalCasesPage').then((m
 import { FinanceLayout } from '@/finance/FinanceLayout'
 const InvoicesListPage = lazy(() => import('@/finance/pages/InvoicesListPage').then((m) => ({ default: m.InvoicesListPage })))
 const InvoiceDetailPage = lazy(() => import('@/finance/pages/InvoiceDetailPage').then((m) => ({ default: m.InvoiceDetailPage })))
+const ExpensesListPage = lazy(() => import('@/finance/pages/ExpensesListPage').then((m) => ({ default: m.ExpensesListPage })))
 const LegalCaseDetailPage = lazy(() => import('@/legal/pages/LegalCaseDetailPage').then((m) => ({ default: m.LegalCaseDetailPage })))
 const LegalClientsPage = lazy(() => import('@/legal/pages/LegalClientsPage').then((m) => ({ default: m.LegalClientsPage })))
 const LegalClientDetailPage = lazy(() => import('@/legal/pages/LegalClientDetailPage').then((m) => ({ default: m.LegalClientDetailPage })))
@@ -158,6 +159,7 @@ export const router = createBrowserRouter(
                       children: [
                         { path: 'finance/invoices', element: <InvoicesListPage /> },
                         { path: 'finance/invoices/:id', element: <InvoiceDetailPage /> },
+                        { path: 'finance/expenses', element: <ExpensesListPage /> },
                       ],
                     },
                   ],

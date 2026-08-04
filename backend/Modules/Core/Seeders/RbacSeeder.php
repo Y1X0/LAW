@@ -34,6 +34,7 @@ class RbacSeeder extends Seeder
         'users.manage', 'roles.manage', 'settings.manage', 'audit.view', 'backup.manage', 'org.manage', 'org.view',
         'reports.hr', 'reports.finance', 'reports.cases', 'reports.marketing',
         'dashboard.view_management', // لوحة المؤشرات الإدارية الشاملة (Phase 7)
+        'notifications.view_own', // إشعارات المستخدم داخل النظام (Phase 8)
     ];
 
     /** الأدوار النظامية (docs/05 §3). */
@@ -73,6 +74,7 @@ class RbacSeeder extends Seeder
         'leave.request_own',
         'payslip.view_own',
         'profile.update_own',
+        'notifications.view_own', // كل موظّف يرى إشعاراته (Phase 8)
     ];
 
     /**
@@ -101,6 +103,7 @@ class RbacSeeder extends Seeder
         'payroll.view',
         'dashboard.view_own', 'profile.update_own', 'leave.view_own', 'leave.request_own',
         'attendance.view_own', 'payslip.view_own',
+        'notifications.view_own', // إشعارات HR داخل النظام (Phase 8)
     ];
 
     public function run(): void

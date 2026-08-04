@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/core/auth/useAuth'
 import { Button } from '@/core/ui/primitives'
+import { NotificationsBell } from '@/notifications/NotificationsBell'
 import { Brand } from './Brand'
 import { Icon, type IconName } from './icons'
 
@@ -65,12 +66,15 @@ export function Shell({ nav, subtitle }: { nav: NavItem[]; subtitle: string }) {
           <div className="flex items-center gap-2 md:hidden">
             <Brand subtitle={subtitle} />
           </div>
-          <span className="hidden text-sm text-slate-600 md:inline">
-            {user ? `مرحباً، ${user.name}` : ''}
-          </span>
-          <Button variant="ghost" className="md:hidden" onClick={() => void logout()}>
-            تسجيل الخروج
-          </Button>
+          <div className="flex flex-1 items-center justify-end gap-3">
+            <span className="hidden text-sm text-slate-600 md:inline">
+              {user ? `مرحباً، ${user.name}` : ''}
+            </span>
+            <NotificationsBell />
+            <Button variant="ghost" className="md:hidden" onClick={() => void logout()}>
+              تسجيل الخروج
+            </Button>
+          </div>
         </header>
 
         {/* تنقّل جوّال أفقي */}

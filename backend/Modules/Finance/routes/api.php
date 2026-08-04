@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Finance\Http\Controllers\FinanceCapabilitiesController;
 use Modules\Finance\Http\Controllers\InvoiceController;
+use Modules\Finance\Http\Controllers\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,6 +22,13 @@ Route::middleware('auth.token')->group(function () {
     Route::middleware('permission:invoices.view')->group(function () {
         Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('invoices/{invoice}/payments', [PaymentController::class, 'index'])->name('invoices.payments.index');
+    });
+
+    // سندات القبض — تسجيل/عكس (لا حذف). Idempotency عبر ترويسة Idempotency-Key.
+    Route::middleware('permission:payments.create')->group(function () {
+        Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store'])->name('invoices.payments.store');
+        Route::post('payments/{payment}/reverse', [PaymentController::class, 'reverse'])->name('payments.reverse');
     });
 
     Route::middleware('permission:invoices.create')->group(function () {

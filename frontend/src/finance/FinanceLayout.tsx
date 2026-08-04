@@ -1,22 +1,26 @@
 import { Suspense } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { FullPageLoader } from '@/core/ui/states'
+import { useFinanceCapabilities } from './api/capabilities'
 
 /**
- * هيكل المالية (Phase 6) — تنقّل فرعي فوق شاشات المالية. تُضاف التبويبات (المدفوعات/
- * المصروفات/التقارير) مع بناء شاشاتها لتفادي روابط معطّلة. تحميل الصفحات كسول.
+ * هيكل المالية (Phase 6) — تنقّل فرعي فوق شاشات المالية. تبويب التقارير يظهر فقط لمن
+ * يملك finance.reports. تحميل الصفحات كسول.
  */
-const NAV = [
-  { to: '/finance/invoices', label: 'الفواتير', end: false },
-  { to: '/finance/expenses', label: 'المصروفات', end: false },
-]
-
 export function FinanceLayout() {
+  const { canViewReports } = useFinanceCapabilities()
+
+  const nav = [
+    { to: '/finance/invoices', label: 'الفواتير', end: false },
+    { to: '/finance/expenses', label: 'المصروفات', end: false },
+    ...(canViewReports ? [{ to: '/finance/reports', label: 'التقارير', end: false }] : []),
+  ]
+
   return (
     <div className="space-y-5">
       <nav aria-label="تنقّل المالية" className="overflow-x-auto border-b border-slate-200">
         <div className="flex gap-1">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

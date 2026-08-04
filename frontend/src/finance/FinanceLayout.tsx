@@ -6,7 +6,10 @@ import { FullPageLoader } from '@/core/ui/states'
  * هيكل المالية (Phase 6) — تنقّل فرعي فوق شاشات المالية. تُضاف التبويبات (المدفوعات/
  * المصروفات/التقارير) مع بناء شاشاتها لتفادي روابط معطّلة. تحميل الصفحات كسول.
  */
-const NAV = [{ to: '/finance/invoices', label: 'الفواتير', end: false }]
+const NAV = [
+  { to: '/finance/invoices', label: 'الفواتير', end: false },
+  { to: '/finance/expenses', label: 'المصروفات', end: false },
+]
 
 export function FinanceLayout() {
   return (

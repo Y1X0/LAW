@@ -24,6 +24,7 @@ class FinanceCapabilitiesController
                 'can_create' => (bool) $user?->hasPermission('invoices.create'),
                 'can_approve' => (bool) $user?->hasPermission('invoices.approve'),
                 'can_record_payment' => (bool) $user?->hasPermission('payments.create'),
+                'can_record_expense' => (bool) $user?->hasPermission('expenses.create'),
             ],
             'meta' => null,
             'errors' => null,

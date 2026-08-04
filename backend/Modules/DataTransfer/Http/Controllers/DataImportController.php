@@ -50,12 +50,31 @@ class DataImportController
 
     public function previewClients(Request $request): JsonResponse
     {
-        return $this->ok($this->import->previewClients($this->rowsFromRequest($request)));
+        $raw = $this->rowsFromRequest($request);
+        $detected = $raw === [] ? [] : array_keys($raw[0]);
+        $mapping = $this->clientMapping($request);
+        $rows = $mapping !== null ? $this->import->applyMapping($raw, $mapping) : $raw;
+
+        $summary = $this->import->previewClients($rows, $this->clientMatchKey($request));
+
+        // بيانات وصفية لواجهة مطابقة الأعمدة: الحقول (وإلزاميّتها) ورؤوس الملف المكتشَفة.
+        return $this->ok($summary + [
+            'fields' => array_map(
+                fn (string $key) => ['key' => $key, 'required' => in_array($key, DataImportService::CLIENT_REQUIRED, true)],
+                DataImportService::CLIENT_FIELDS,
+            ),
+            'match_keys' => DataImportService::CLIENT_MATCH_KEYS,
+            'detected_headers' => $detected,
+        ]);
     }
 
     public function commitClients(Request $request): JsonResponse
     {
-        $result = $this->import->commitClients($this->rowsFromRequest($request), $request);
+        $raw = $this->rowsFromRequest($request);
+        $mapping = $this->clientMapping($request);
+        $rows = $mapping !== null ? $this->import->applyMapping($raw, $mapping) : $raw;
+
+        $result = $this->import->commitClients($rows, $request, $this->clientMatchKey($request));
 
         if ($result['errors'] !== []) {
             return response()->json([
@@ -86,6 +105,35 @@ class DataImportController
         } catch (\Throwable) {
             abort(422, 'الملف غير قابل للقراءة كملف Excel صالح.');
         }
+    }
+
+    /**
+     * مواصفة مطابقة الأعمدة (field => header) من الطلب — تُنظَّف: تُقبَل حقول العميل المعروفة
+     * فقط ورؤوس نصّية غير فارغة. غيابها ⇒ null (تُعامَل الرؤوس كأسماء حقول مباشرة — توافق خلفي).
+     */
+    private function clientMapping(Request $request): ?array
+    {
+        $mapping = $request->input('mapping');
+        if (! is_array($mapping)) {
+            return null;
+        }
+
+        $clean = [];
+        foreach ($mapping as $field => $header) {
+            if (in_array($field, DataImportService::CLIENT_FIELDS, true) && is_string($header) && $header !== '') {
+                $clean[$field] = $header;
+            }
+        }
+
+        return $clean !== [] ? $clean : null;
+    }
+
+    /** مفتاح المطابقة المختار (upsert) — ضمن قائمة السماح، وإلّا الافتراضي national_id. */
+    private function clientMatchKey(Request $request): string
+    {
+        $key = (string) $request->input('match_key', 'national_id');
+
+        return in_array($key, DataImportService::CLIENT_MATCH_KEYS, true) ? $key : 'national_id';
     }
 
     private function ok(array $data, int $status = 200): JsonResponse

@@ -22,6 +22,31 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
  */
 class DataImportService
 {
+    /** حقول استيراد العميل القابلة للمطابقة (تُغذّي واجهة مطابقة الأعمدة). */
+    public const CLIENT_FIELDS = ['name', 'type', 'phone', 'email', 'national_id', 'status'];
+
+    /** الحقول الإلزامية للعميل. */
+    public const CLIENT_REQUIRED = ['name', 'type'];
+
+    /** مفاتيح المطابقة المسموحة للترقية (upsert). */
+    public const CLIENT_MATCH_KEYS = ['national_id', 'email', 'name'];
+
+    /**
+     * يعيد تسمية صفوف مُفتاحة برؤوس الملف إلى صفوف مُفتاحة بحقول الكيان، وفق مواصفة
+     * المطابقة (field => header). حقل بلا رأس مُطابِق ⇒ null (يلتقطه التحقّق لاحقاً).
+     */
+    public function applyMapping(array $rows, array $mapping): array
+    {
+        return array_map(function (array $row) use ($mapping) {
+            $out = [];
+            foreach ($mapping as $field => $header) {
+                $out[$field] = ($header !== null && $header !== '') ? ($row[$header] ?? null) : null;
+            }
+
+            return $out;
+        }, $rows);
+    }
+
     /** يقرأ ملف xlsx إلى صفوف ترابطية (رأس ⇒ قيمة)، متجاهلاً الصفوف الفارغة. */
     public function parse(string $path): array
     {
@@ -110,14 +135,14 @@ class DataImportService
     }
 
     /** معاينة استيراد العملاء (dry-run): ملخّص وأخطاء الصفوف بلا حفظ. */
-    public function previewClients(array $rows): array
+    public function previewClients(array $rows, string $matchKey = 'national_id'): array
     {
         $create = 0;
         $update = 0;
         $errors = [];
 
         foreach ($rows as $i => $row) {
-            $result = $this->resolveClientRow($row);
+            $result = $this->resolveClientRow($row, $matchKey);
             if (isset($result['error'])) {
                 $errors[] = ['row' => $i + 2, 'message' => $result['error']];
             } elseif ($result['action'] === 'create') {
@@ -142,12 +167,12 @@ class DataImportService
      *
      * @return array{created:int,updated:int,errors:array}
      */
-    public function commitClients(array $rows, Request $request): array
+    public function commitClients(array $rows, Request $request, string $matchKey = 'national_id'): array
     {
         $resolved = [];
         $errors = [];
         foreach ($rows as $i => $row) {
-            $result = $this->resolveClientRow($row);
+            $result = $this->resolveClientRow($row, $matchKey);
             if (isset($result['error'])) {
                 $errors[] = ['row' => $i + 2, 'message' => $result['error']];
             } else {
@@ -162,20 +187,15 @@ class DataImportService
         $service = app(ClientService::class);
         $created = 0;
         $updated = 0;
-        DB::transaction(function () use ($resolved, $request, $service, &$created, &$updated) {
+        DB::transaction(function () use ($resolved, $request, $service, $matchKey, &$created, &$updated) {
             foreach ($resolved as $r) {
-                if ($r['action'] === 'create') {
+                $existing = $r['action'] === 'update' ? Client::where($matchKey, $r['key'])->first() : null;
+                if ($existing !== null) {
+                    $service->update($existing, $r['data'], $request);
+                    $updated++;
+                } else {
                     $service->create($r['data'], $request);
                     $created++;
-                } else {
-                    $existing = Client::where('national_id', $r['key'])->first();
-                    if ($existing !== null) {
-                        $service->update($existing, $r['data'], $request);
-                        $updated++;
-                    } else {
-                        $service->create($r['data'], $request);
-                        $created++;
-                    }
                 }
             }
         });
@@ -184,10 +204,10 @@ class DataImportService
     }
 
     /**
-     * يتحقّق ويحوّل صفّ عميل عبر قواعد StoreClientRequest (+ الحالة). المفتاح الطبيعي هو
-     * national_id عند وجوده (تحديث)، وإلّا إنشاء. يعيد ['error'] أو ['action','key','data'].
+     * يتحقّق ويحوّل صفّ عميل عبر قواعد StoreClientRequest (+ الحالة). الترقية (upsert) بمفتاح
+     * المطابقة المختار عند وجود قيمته، وإلّا إنشاء. يعيد ['error'] أو ['action','key','data'].
      */
-    private function resolveClientRow(array $row): array
+    private function resolveClientRow(array $row, string $matchKey): array
     {
         $data = [
             'name' => $this->str($row['name'] ?? null),
@@ -205,8 +225,8 @@ class DataImportService
             return ['error' => $validator->errors()->first()];
         }
 
-        $key = $data['national_id'];
-        $existing = $key !== null && Client::where('national_id', $key)->exists();
+        $key = $data[$matchKey] ?? null;
+        $existing = $key !== null && $key !== '' && Client::where($matchKey, $key)->exists();
 
         return ['action' => $existing ? 'update' : 'create', 'key' => $key, 'data' => $data];
     }

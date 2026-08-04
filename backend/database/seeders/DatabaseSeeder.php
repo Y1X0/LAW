@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Modules\Core\Seeders\OrgStructureSeeder;
 use Modules\Core\Seeders\RbacSeeder;
+use Modules\Finance\Seeders\ChartOfAccountsSeeder;
 use Modules\Finance\Seeders\FinanceReferenceSeeder;
 
 class DatabaseSeeder extends Seeder
@@ -25,6 +26,9 @@ class DatabaseSeeder extends Seeder
 
         // البيانات المرجعية المالية (ضريبة/صندوق/تصنيفات مصروفات) — Idempotent وآمنة للإنتاج.
         $this->call(FinanceReferenceSeeder::class);
+
+        // دليل الحسابات الافتراضي (Chart of Accounts) — أساس القيد المزدوج، Idempotent.
+        $this->call(ChartOfAccountsSeeder::class);
 
         // أوّل مالك منصّة عند النشر: يُنشأ مرّة إذا ضُبط INITIAL_ADMIN_EMAIL و
         // INITIAL_ADMIN_PASSWORD (متغيّرا بيئة في لوحة Render) — يغني عن Shell/tinker.

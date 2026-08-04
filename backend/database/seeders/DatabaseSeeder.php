@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Modules\Core\Seeders\OrgStructureSeeder;
 use Modules\Core\Seeders\RbacSeeder;
+use Modules\Finance\Seeders\FinanceReferenceSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -21,6 +22,9 @@ class DatabaseSeeder extends Seeder
         // الهيكل التنظيمي الأساسي (فرع رئيسي + أقسام نظامية) — Idempotent وآمن للإنتاج.
         // مطلوب كي ينجح استيراد الموظفين (يطابق الفرع/القسم بالاسم). لا بيانات تجريبية.
         $this->call(OrgStructureSeeder::class);
+
+        // البيانات المرجعية المالية (ضريبة/صندوق/تصنيفات مصروفات) — Idempotent وآمنة للإنتاج.
+        $this->call(FinanceReferenceSeeder::class);
 
         // أوّل مالك منصّة عند النشر: يُنشأ مرّة إذا ضُبط INITIAL_ADMIN_EMAIL و
         // INITIAL_ADMIN_PASSWORD (متغيّرا بيئة في لوحة Render) — يغني عن Shell/tinker.

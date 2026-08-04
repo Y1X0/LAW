@@ -75,6 +75,18 @@ class RbacSeeder extends Seeder
     ];
 
     /**
+     * صلاحيات دور «المالية» (accountant) — المجال المالي (Finance / Phase 6). يغطّي الفواتير
+     * والقبض والصرف والقيود والتقارير المالية، إضافة إلى قراءة العملاء (سياق الفوترة). تُوصَل
+     * مرّة واحدة؛ نقاط النهاية تصل تدريجيّاً عبر PRات المالية. تُضمّ إليها الخدمة الذاتية أدناه.
+     * (لا يُغيّر نموذج الصلاحيات — يربط صلاحيات موجودة في الكتالوج فقط.)
+     */
+    public const ACCOUNTANT_PERMISSIONS = [
+        'invoices.view', 'invoices.create', 'invoices.approve',
+        'payments.create', 'expenses.create', 'journal.post', 'finance.reports',
+        'clients.view',
+    ];
+
+    /**
      * صلاحيات دور «الموارد البشرية» — بوابة HR: إدارة الموظفين والحضور والإجازات وعرض
      * الرواتب، إضافة إلى الخدمة الذاتية. لا صلاحيات إدارة نظام (لا users/roles/settings).
      * المصدر الوحيد لهذه القائمة (يعيد استخدامها DemoSeeder) — لتفادي التباعد.
@@ -119,7 +131,7 @@ class RbacSeeder extends Seeder
             'lawyer' => array_values(array_unique([...self::LAWYER_PERMISSIONS, ...self::EMPLOYEE_PERMISSIONS])),
             'employee' => self::EMPLOYEE_PERMISSIONS,
             'secretary' => self::EMPLOYEE_PERMISSIONS,
-            'accountant' => self::EMPLOYEE_PERMISSIONS,
+            'accountant' => array_values(array_unique([...self::ACCOUNTANT_PERMISSIONS, ...self::EMPLOYEE_PERMISSIONS])),
             'marketing' => self::EMPLOYEE_PERMISSIONS,
         ];
 

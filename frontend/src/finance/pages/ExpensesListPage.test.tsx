@@ -16,7 +16,7 @@ const EXPENSES = [
 const CATEGORIES = [{ id: 1, name: 'رسوم محكمة' }]
 
 function caps(over: Record<string, boolean> = {}) {
-  return { data: { can_view: true, can_create: true, can_approve: true, can_record_payment: true, can_record_expense: true, ...over }, meta: null, errors: null }
+  return { data: { can_view: true, can_create: true, can_approve: true, can_record_payment: true, can_record_expense: true, can_view_reports: true, ...over }, meta: null, errors: null }
 }
 
 function stub(capsOver: Record<string, boolean> = {}) {

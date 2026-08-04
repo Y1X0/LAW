@@ -5,6 +5,7 @@ use Modules\Finance\Http\Controllers\ClientFinanceSummaryController;
 use Modules\Finance\Http\Controllers\ExpenseCategoryController;
 use Modules\Finance\Http\Controllers\ExpenseController;
 use Modules\Finance\Http\Controllers\FinanceCapabilitiesController;
+use Modules\Finance\Http\Controllers\FinanceReportController;
 use Modules\Finance\Http\Controllers\FinancialAccountController;
 use Modules\Finance\Http\Controllers\InvoiceController;
 use Modules\Finance\Http\Controllers\PaymentController;
@@ -56,4 +57,11 @@ Route::middleware('auth.token')->group(function () {
 
     Route::middleware('permission:invoices.approve')
         ->post('invoices/{invoice}/approve', [InvoiceController::class, 'approve'])->name('invoices.approve');
+
+    // التقارير المالية — قراءة فقط.
+    Route::middleware('permission:finance.reports')->group(function () {
+        Route::get('finance/reports/trial-balance', [FinanceReportController::class, 'trialBalance'])->name('finance.reports.trial-balance');
+        Route::get('finance/reports/receivables', [FinanceReportController::class, 'receivables'])->name('finance.reports.receivables');
+        Route::get('finance/reports/income-expense', [FinanceReportController::class, 'incomeExpense'])->name('finance.reports.income-expense');
+    });
 });

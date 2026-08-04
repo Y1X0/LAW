@@ -22,7 +22,8 @@ class SettingsController
      * عشوائية أو الكتابة فوق مفاتيح حسّاسة تقرأها وحدات أخرى (تصلّب أمني — Stabilization).
      */
     private const ALLOWED = [
-        'general' => ['org_name_ar', 'org_name_en', 'contact_email', 'contact_phone'],
+        'general' => ['org_name_ar', 'org_name_en', 'contact_email', 'contact_phone', 'address', 'website'],
+        'identity' => ['commercial_register'],
     ];
 
     /** GET /api/admin/settings — الإعدادات العامّة مجمّعة حسب المجموعة. */

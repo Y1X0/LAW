@@ -12,12 +12,28 @@ const settingItemSchema = z.object({
 export const settingsSchema = z.record(z.array(settingItemSchema))
 export type Settings = z.infer<typeof settingsSchema>
 
-/** الحقول العامّة المعروضة في نموذج «الإعدادات العامّة» (group=general). */
-export const GENERAL_FIELDS = [
-  { key: 'org_name_ar', label: 'اسم المكتب (عربي)' },
-  { key: 'org_name_en', label: 'اسم المكتب (إنجليزي)' },
-  { key: 'contact_email', label: 'البريد الإلكتروني' },
-  { key: 'contact_phone', label: 'الهاتف' },
+/**
+ * أقسام الإعدادات المعروضة (group → title + fields). مطابقة لقائمة السماح على الخادم
+ * (SettingsController::ALLOWED). إضافة قسم/حقل هنا وفي الخادم فقط — لا تغيير للنموذج/القاعدة.
+ */
+export const SETTINGS_GROUPS = [
+  {
+    group: 'general',
+    title: 'عام',
+    fields: [
+      { key: 'org_name_ar', label: 'اسم المكتب (عربي)' },
+      { key: 'org_name_en', label: 'اسم المكتب (إنجليزي)' },
+      { key: 'contact_email', label: 'البريد الإلكتروني' },
+      { key: 'contact_phone', label: 'الهاتف' },
+      { key: 'address', label: 'العنوان' },
+      { key: 'website', label: 'الموقع الإلكتروني' },
+    ],
+  },
+  {
+    group: 'identity',
+    title: 'بيانات المكتب الرسمية',
+    fields: [{ key: 'commercial_register', label: 'رقم السجل التجاري' }],
+  },
 ] as const
 
 /** الإعدادات العامّة — `GET /admin/settings` (يحرسها settings.manage). */
@@ -36,11 +52,13 @@ export async function updateSettings(settings: SettingInput[]): Promise<Settings
   return settingsSchema.parse(await apiRequest<unknown>('admin/settings', { method: 'PUT', body: { settings } }))
 }
 
-/** يستخرج قيم مجموعة «general» كخريطة key→string للنموذج. */
-export function generalValues(settings: Settings): Record<string, string> {
+/** يسطّح قيم كل المجموعات كخريطة key→string للنموذج (المفاتيح فريدة عبر المجموعات). */
+export function settingsValues(settings: Settings): Record<string, string> {
   const out: Record<string, string> = {}
-  for (const item of settings.general ?? []) {
-    out[item.key] = typeof item.value === 'string' ? item.value : item.value == null ? '' : String(item.value)
+  for (const items of Object.values(settings)) {
+    for (const item of items) {
+      out[item.key] = typeof item.value === 'string' ? item.value : item.value == null ? '' : String(item.value)
+    }
   }
   return out
 }

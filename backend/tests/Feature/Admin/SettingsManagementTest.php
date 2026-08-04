@@ -49,6 +49,37 @@ class SettingsManagementTest extends TestCase
         ])->assertStatus(422)->assertJsonPath('errors.code', 'VALIDATION_ERROR');
     }
 
+    public function test_upserts_extended_general_and_identity_groups(): void
+    {
+        $admin = $this->userWithPermissions(['settings.manage']);
+
+        $this->actingAsToken($admin)->putJson('/api/admin/settings', ['settings' => [
+            ['group' => 'general', 'key' => 'address', 'value' => 'الرياض - العليا'],
+            ['group' => 'general', 'key' => 'website', 'value' => 'https://firm.example'],
+            ['group' => 'identity', 'key' => 'commercial_register', 'value' => '1010101010'],
+        ]])->assertOk()
+            ->assertJsonPath('data.identity.0.key', 'commercial_register')
+            ->assertJsonPath('data.identity.0.value', '1010101010');
+
+        // القيمة تُخزَّن عبر cast=array (JSON)؛ نتحقّق عبر النموذج الذي يفكّها.
+        $address = Setting::whereNull('branch_id')->where('group', 'general')->where('key', 'address')->first();
+        $register = Setting::whereNull('branch_id')->where('group', 'identity')->where('key', 'commercial_register')->first();
+        $this->assertSame('الرياض - العليا', $address->value);
+        $this->assertSame('1010101010', $register->value);
+    }
+
+    public function test_update_rejects_key_in_wrong_group(): void
+    {
+        $admin = $this->userWithPermissions(['settings.manage']);
+
+        // مفتاح صحيح لكن في مجموعة خاطئة (commercial_register تحت general) يُرفَض.
+        $this->actingAsToken($admin)->putJson('/api/admin/settings', [
+            'settings' => [['group' => 'general', 'key' => 'commercial_register', 'value' => 'x']],
+        ])->assertStatus(422);
+
+        $this->assertDatabaseMissing('settings', ['key' => 'commercial_register']);
+    }
+
     public function test_update_rejects_unknown_key(): void
     {
         $admin = $this->userWithPermissions(['settings.manage']);

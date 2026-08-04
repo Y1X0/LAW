@@ -33,6 +33,7 @@ class RbacSeeder extends Seeder
         'archive.view', 'archive.create', 'archive.update', 'archive.delete',
         'users.manage', 'roles.manage', 'settings.manage', 'audit.view', 'backup.manage', 'org.manage', 'org.view',
         'reports.hr', 'reports.finance', 'reports.cases', 'reports.marketing',
+        'dashboard.view_management', // لوحة المؤشرات الإدارية الشاملة (Phase 7)
     ];
 
     /** الأدوار النظامية (docs/05 §3). */

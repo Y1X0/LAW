@@ -78,6 +78,46 @@ services:
       - key: MAIL_MAILER
         value: log # بدّلها إلى smtp + بيانات SMTP لتفعيل بريد إعادة كلمة المرور
 
+  # ---------- التذكيرات المجدولة (Cron — Phase 8) ----------
+  # يشغّل أمر التذكيرات يوميّاً على نفس صورة الـ backend (بلا nginx/هجرات — يتخطّى start.sh
+  # عبر dockerCommand مخصّص). الأمر idempotent ومانع تكرار، فالتشغيل اليومي آمن. لا R2/بريد
+  # (التذكيرات داخل النظام فقط). ملاحظة: خدمات cron في Render تتطلّب خطة مدفوعة (ليست free).
+  - type: cron
+    name: law-reminders
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    schedule: "0 6 * * *" # يوميّاً 06:00 UTC
+    dockerCommand: php artisan notifications:remind
+    envVars:
+      - key: APP_KEY # نفس مفتاح law-api
+        sync: false
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: warning
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase: { name: law-postgres, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: law-postgres, property: port }
+      - key: DB_DATABASE
+        fromDatabase: { name: law-postgres, property: database }
+      - key: DB_USERNAME
+        fromDatabase: { name: law-postgres, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: law-postgres, property: password }
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+
   # ---------- الواجهة (React/Vite SPA — استضافة ثابتة) ----------
   - type: web
     name: law-web

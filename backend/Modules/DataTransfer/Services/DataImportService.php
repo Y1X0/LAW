@@ -2,17 +2,23 @@
 
 namespace Modules\DataTransfer\Services;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Modules\Core\Models\Branch;
 use Modules\Core\Models\Department;
 use Modules\HR\Models\Employee;
+use Modules\Legal\Http\Requests\StoreClientRequest;
+use Modules\Legal\Models\Client;
+use Modules\Legal\Services\ClientService;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
- * استيراد بيانات رئيسية من Excel. المرحلة 2 تدعم الموظفين فقط (مفتاح طبيعي نظيف:
- * employee_no). التحقّق يتم لكل الصفوف أولاً؛ الحفظ ذرّي (الكل-أو-لا-شيء) عبر DB::transaction.
- * الاستيراد لا يتجاوز منطق الأعمال للبيانات المشتقّة (حضور/إجازات/رواتب) — لذلك تُستثنى.
+ * استيراد بيانات رئيسية من Excel. يدعم الموظفين (مفتاح طبيعي employee_no) والعملاء
+ * (مفتاح national_id عند وجوده). التحقّق يتم لكل الصفوف أولاً؛ الحفظ ذرّي (الكل-أو-لا-شيء)
+ * عبر DB::transaction. استيراد العملاء يمرّ عبر ClientService (لا يتجاوز منطق النطاق —
+ * تدقيق لكل صف). البيانات المشتقّة (حضور/إجازات/رواتب) تُستثنى.
  */
 class DataImportService
 {
@@ -101,6 +107,108 @@ class DataImportService
         });
 
         return ['created' => $created, 'updated' => $updated, 'errors' => []];
+    }
+
+    /** معاينة استيراد العملاء (dry-run): ملخّص وأخطاء الصفوف بلا حفظ. */
+    public function previewClients(array $rows): array
+    {
+        $create = 0;
+        $update = 0;
+        $errors = [];
+
+        foreach ($rows as $i => $row) {
+            $result = $this->resolveClientRow($row);
+            if (isset($result['error'])) {
+                $errors[] = ['row' => $i + 2, 'message' => $result['error']];
+            } elseif ($result['action'] === 'create') {
+                $create++;
+            } else {
+                $update++;
+            }
+        }
+
+        return [
+            'total' => count($rows),
+            'create' => $create,
+            'update' => $update,
+            'invalid' => count($errors),
+            'errors' => array_slice($errors, 0, 100),
+        ];
+    }
+
+    /**
+     * تطبيق استيراد العملاء ذرّياً عبر ClientService (تدقيق + created_by لكل صف).
+     * يتحقّق من كل الصفوف أولاً؛ إن وُجد أي خطأ لا يُحفَظ شيء.
+     *
+     * @return array{created:int,updated:int,errors:array}
+     */
+    public function commitClients(array $rows, Request $request): array
+    {
+        $resolved = [];
+        $errors = [];
+        foreach ($rows as $i => $row) {
+            $result = $this->resolveClientRow($row);
+            if (isset($result['error'])) {
+                $errors[] = ['row' => $i + 2, 'message' => $result['error']];
+            } else {
+                $resolved[] = $result;
+            }
+        }
+
+        if ($errors !== []) {
+            return ['created' => 0, 'updated' => 0, 'errors' => $errors];
+        }
+
+        $service = app(ClientService::class);
+        $created = 0;
+        $updated = 0;
+        DB::transaction(function () use ($resolved, $request, $service, &$created, &$updated) {
+            foreach ($resolved as $r) {
+                if ($r['action'] === 'create') {
+                    $service->create($r['data'], $request);
+                    $created++;
+                } else {
+                    $existing = Client::where('national_id', $r['key'])->first();
+                    if ($existing !== null) {
+                        $service->update($existing, $r['data'], $request);
+                        $updated++;
+                    } else {
+                        $service->create($r['data'], $request);
+                        $created++;
+                    }
+                }
+            }
+        });
+
+        return ['created' => $created, 'updated' => $updated, 'errors' => []];
+    }
+
+    /**
+     * يتحقّق ويحوّل صفّ عميل عبر قواعد StoreClientRequest (+ الحالة). المفتاح الطبيعي هو
+     * national_id عند وجوده (تحديث)، وإلّا إنشاء. يعيد ['error'] أو ['action','key','data'].
+     */
+    private function resolveClientRow(array $row): array
+    {
+        $data = [
+            'name' => $this->str($row['name'] ?? null),
+            'type' => $this->str($row['type'] ?? null),
+            'phone' => $this->str($row['phone'] ?? null) ?: null,
+            'email' => $this->str($row['email'] ?? null) ?: null,
+            'national_id' => $this->str($row['national_id'] ?? null) ?: null,
+            'status' => $this->str($row['status'] ?? null) ?: 'active',
+        ];
+
+        $validator = Validator::make($data, (new StoreClientRequest)->rules() + [
+            'status' => ['in:'.implode(',', Client::STATUSES)],
+        ]);
+        if ($validator->fails()) {
+            return ['error' => $validator->errors()->first()];
+        }
+
+        $key = $data['national_id'];
+        $existing = $key !== null && Client::where('national_id', $key)->exists();
+
+        return ['action' => $existing ? 'update' : 'create', 'key' => $key, 'data' => $data];
     }
 
     /** يتحقّق ويحوّل صفّ موظف؛ يعيد ['error'=>..] أو ['action','key','attributes']. */

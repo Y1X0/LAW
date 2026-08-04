@@ -7,9 +7,10 @@ use Illuminate\Http\Request;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\DataTransfer\Services\DataImportService;
 use Modules\HR\Models\Employee;
+use Modules\Legal\Models\Client;
 
 /**
- * استيراد بيانات رئيسية من Excel (المرحلة 2 — الموظفون). preview: تحقّق بلا حفظ.
+ * استيراد بيانات رئيسية من Excel (الموظفون + العملاء). preview: تحقّق بلا حفظ.
  * commit: حفظ ذرّي (الكل-أو-لا-شيء). محميّ بصلاحية إنشاء الكيان في routes/api.php.
  */
 class DataImportController
@@ -41,6 +42,29 @@ class DataImportController
         }
 
         $this->recordAudit($request, 'employees_imported', Employee::class, 0, [
+            'created' => $result['created'], 'updated' => $result['updated'],
+        ]);
+
+        return $this->ok(['created' => $result['created'], 'updated' => $result['updated']]);
+    }
+
+    public function previewClients(Request $request): JsonResponse
+    {
+        return $this->ok($this->import->previewClients($this->rowsFromRequest($request)));
+    }
+
+    public function commitClients(Request $request): JsonResponse
+    {
+        $result = $this->import->commitClients($this->rowsFromRequest($request), $request);
+
+        if ($result['errors'] !== []) {
+            return response()->json([
+                'data' => null, 'meta' => null,
+                'errors' => ['code' => 'IMPORT_VALIDATION', 'message' => 'يوجد صفوف غير صحيحة — لم يُحفَظ شيء.', 'rows' => $result['errors']],
+            ], 422);
+        }
+
+        $this->recordAudit($request, 'clients_imported', Client::class, 0, [
             'created' => $result['created'], 'updated' => $result['updated'],
         ]);
 

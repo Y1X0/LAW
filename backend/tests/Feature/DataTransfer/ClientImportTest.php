@@ -22,9 +22,15 @@ class ClientImportTest extends TestCase
 
     private function xlsx(array $rows): UploadedFile
     {
+        return $this->xlsxWith(self::HEADERS, $rows);
+    }
+
+    /** يبني xlsx برؤوس مخصّصة (لاختبار مطابقة الأعمدة). */
+    private function xlsxWith(array $headers, array $rows): UploadedFile
+    {
         $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->fromArray(self::HEADERS, null, 'A1');
+        $sheet->fromArray($headers, null, 'A1');
         if ($rows !== []) {
             $sheet->fromArray($rows, null, 'A2');
         }
@@ -101,5 +107,52 @@ class ClientImportTest extends TestCase
 
         $this->actingAsToken($viewer)->post('/api/admin/data/import/clients/commit', ['file' => $file])
             ->assertStatus(403);
+    }
+
+    public function test_column_mapping_remaps_arbitrary_headers(): void
+    {
+        $actor = $this->userWithPermissions(['clients.create']);
+        // رؤوس عربية مختلفة عن أسماء الحقول — تُطابَق عبر mapping.
+        $file = $this->xlsxWith(['الاسم', 'النوع', 'الجوال', 'الهوية'], [
+            ['أحمد', 'individual', '079', '444'],
+        ]);
+
+        $this->actingAsToken($actor)->post('/api/admin/data/import/clients/commit', [
+            'file' => $file,
+            'mapping' => ['name' => 'الاسم', 'type' => 'النوع', 'phone' => 'الجوال', 'national_id' => 'الهوية'],
+        ])->assertOk()->assertJsonPath('data.created', 1);
+
+        $this->assertDatabaseHas('clients', ['name' => 'أحمد', 'national_id' => '444', 'phone' => '079']);
+    }
+
+    public function test_preview_returns_fields_and_detected_headers(): void
+    {
+        $actor = $this->userWithPermissions(['clients.create']);
+        $file = $this->xlsxWith(['الاسم', 'الهوية'], [['أحمد', '444']]);
+
+        $res = $this->actingAsToken($actor)->post('/api/admin/data/import/clients/preview', ['file' => $file])
+            ->assertOk()
+            ->assertJsonPath('data.detected_headers', ['الاسم', 'الهوية']);
+
+        // الحقول تُعاد مع إلزاميّتها (name/type إلزاميّان) لبناء واجهة المطابقة.
+        $fields = collect($res->json('data.fields'));
+        $this->assertTrue($fields->firstWhere('key', 'name')['required']);
+        $this->assertFalse($fields->firstWhere('key', 'phone')['required']);
+    }
+
+    public function test_configurable_match_key_upserts_by_email(): void
+    {
+        Client::create(['name' => 'اسم قديم', 'type' => 'individual', 'email' => 'x@x.com', 'status' => 'active']);
+        $actor = $this->userWithPermissions(['clients.create']);
+        // لا national_id؛ المطابقة بالبريد → تحديث لا إنشاء.
+        $file = $this->xlsx([['اسم جديد', 'individual', '079', 'x@x.com', '', 'active']]);
+
+        $this->actingAsToken($actor)->post('/api/admin/data/import/clients/commit', [
+            'file' => $file,
+            'match_key' => 'email',
+        ])->assertOk()->assertJsonPath('data.updated', 1)->assertJsonPath('data.created', 0);
+
+        $this->assertDatabaseHas('clients', ['email' => 'x@x.com', 'name' => 'اسم جديد']);
+        $this->assertSame(1, Client::where('email', 'x@x.com')->count());
     }
 }

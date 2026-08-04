@@ -17,6 +17,7 @@ import {
   invoiceStatusTone,
 } from '@/finance/api/invoices'
 import { InvoiceFormModal } from './components/InvoiceFormModal'
+import { PaymentsSection } from './components/PaymentsSection'
 
 function Info({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -42,7 +43,7 @@ export function InvoiceDetailPage() {
   const invoiceId = Number(id)
   const qc = useQueryClient()
   const { show } = useToast()
-  const { canCreate, canApprove } = useFinanceCapabilities()
+  const { canCreate, canApprove, canRecordPayment } = useFinanceCapabilities()
   const [editing, setEditing] = useState(false)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
 
@@ -159,6 +160,8 @@ export function InvoiceDetailPage() {
           </SectionCard>
         )}
       </div>
+
+      <PaymentsSection invoiceId={invoice.id} invoiceStatus={invoice.status} canRecordPayment={canRecordPayment} />
 
       {editing && <InvoiceFormModal existing={invoice} onClose={() => setEditing(false)} />}
     </div>

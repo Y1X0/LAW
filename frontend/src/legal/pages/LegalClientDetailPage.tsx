@@ -6,6 +6,9 @@ import { PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
 import { ApiError } from '@/core/api/types'
+import { formatCurrency } from '@/core/lib/format'
+import { useFinanceCapabilities } from '@/finance/api/capabilities'
+import { fetchClientFinanceSummary } from '@/finance/api/clients'
 import { caseStatusLabel, caseStatusTone, fetchCases } from '@/legal/api/cases'
 import { clientStatusLabel, clientStatusTone, clientTypeLabel, fetchClient, setClientStatus } from '@/legal/api/clients'
 import { ClientFormModal } from './components/ClientFormModal'
@@ -87,10 +90,37 @@ export function LegalClientDetailPage() {
         {c.notes && <p className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-600">{c.notes}</p>}
       </SectionCard>
 
+      <ClientFinanceSummarySection clientId={id} />
+
       <ClientCasesSection clientId={id} />
 
       {editing && <ClientFormModal existing={c} onClose={() => setEditing(false)} />}
     </div>
+  )
+}
+
+function ClientFinanceSummarySection({ clientId }: { clientId: number }) {
+  const { canView } = useFinanceCapabilities()
+  const query = useQuery({
+    queryKey: ['finance', 'client-summary', clientId],
+    queryFn: () => fetchClientFinanceSummary(clientId),
+    enabled: canView,
+  })
+
+  // يظهر القسم فقط لمن يملك الوصول المالي — المجاميع كلّها من الخادم (لا حساب في الواجهة).
+  if (!canView) return null
+
+  return (
+    <SectionCard title="الملخّص المالي">
+      {query.isPending ? <Skeleton className="h-14 w-full" /> :
+       query.isError ? <ErrorState error={query.error}><div className="mt-3"><Button onClick={() => void query.refetch()}>إعادة المحاولة</Button></div></ErrorState> : (
+        <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
+          <Info label={`إجمالي الفواتير (${query.data.invoice_count})`} value={<span className="tabular-nums">{formatCurrency(query.data.total_invoiced, 'SAR')}</span>} />
+          <Info label="المدفوع" value={<span className="tabular-nums text-green-700">{formatCurrency(query.data.total_paid, 'SAR')}</span>} />
+          <Info label="المتبقّي" value={<span className="tabular-nums font-semibold text-brand-700">{formatCurrency(query.data.outstanding, 'SAR')}</span>} />
+        </div>
+      )}
+    </SectionCard>
   )
 }
 

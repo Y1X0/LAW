@@ -13,6 +13,7 @@ use Modules\Leave\Events\LeaveCancelled;
 use Modules\Leave\Models\LeaveBalance;
 use Modules\Leave\Models\LeaveRequest;
 use Modules\Leave\Models\LeaveType;
+use Modules\Notifications\Concerns\NotifiesUsers;
 
 /**
  * منطق الإجازات (Issue #17, docs/03 أ-2, docs/10 §2.2):
@@ -21,7 +22,7 @@ use Modules\Leave\Models\LeaveType;
  */
 class LeaveService
 {
-    use RecordsAudit;
+    use NotifiesUsers, RecordsAudit;
 
     /** أيام نهاية الأسبوع (Carbon: 5=الجمعة، 6=السبت). */
     private const WEEKEND = [Carbon::FRIDAY, Carbon::SATURDAY];
@@ -110,6 +111,12 @@ class LeaveService
         $this->recordAudit($request, 'leave_approved', LeaveRequest::class, $leave->id, [
             'employee_id' => $leave->employee_id, 'days' => $leave->days,
         ]);
+        // إشعار مقدّم الطلب (إن كان له حساب دخول) بقرار الاعتماد.
+        $this->notify(
+            $leave->employee->user_id, 'leave_approved', 'اعتُمد طلب إجازتك',
+            "إجازتك من {$leave->start_date->toDateString()} إلى {$leave->end_date->toDateString()} ({$leave->days} يوم).",
+            'LeaveRequest', $leave->id,
+        );
 
         return $leave;
     }
@@ -129,6 +136,11 @@ class LeaveService
         $this->recordAudit($request, 'leave_rejected', LeaveRequest::class, $leave->id, [
             'employee_id' => $leave->employee_id, 'reason' => $reason,
         ]);
+        // إشعار مقدّم الطلب (إن كان له حساب دخول) بقرار الرفض وسببه.
+        $this->notify(
+            $leave->employee->user_id, 'leave_rejected', 'رُفض طلب إجازتك', $reason,
+            'LeaveRequest', $leave->id,
+        );
 
         return $leave;
     }

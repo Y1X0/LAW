@@ -63,7 +63,8 @@ Render شغّل `law-scheduler` يدويّاً (**Trigger Run**) وراقب سج
 | `SESSION_DRIVER` | مطلوب | `database` | المصادقة توكن؛ الجلسات نادرة |
 | `QUEUE_CONNECTION` | مطلوب | `sync` | تشغيل المهام ضمن الطلب (لا عامل) |
 | `LOG_CHANNEL` | مُوصى | `stderr` | سجلّات إلى Render (القرص مؤقّت) |
-| `FRONTEND_URL` | اختياري | عنوان `law-web` | يحصر CORS بالواجهة فقط |
+| `FRONTEND_URL` | **مطلوب** | عنوان `law-web` | CORS الآن fail-closed — فارغ ⇒ رفض كل الأصول العابرة (B5) |
+| `SESSION_SECURE_COOKIE` | مطلوب | `true` | كوكيز الجلسة على HTTPS فقط (مضبوط في render.yaml) |
 | `MAIL_*` (SMTP) | لتفعيل البريد | `smtp` + بيانات المزوّد | استعادة كلمة المرور — انظر أدناه (وإلّا `log`) |
 | `FILESYSTEM_DISK` | افتراضي | `local` | لا رفع ملفات فعلي بعد (بيانات وصفية) |
 
@@ -112,7 +113,9 @@ Render شغّل `law-scheduler` يدويّاً (**Trigger Run**) وراقب سج
 - ✅ `APP_DEBUG=false` / `APP_ENV=production` في render.yaml.
 - ✅ لا أسرار في Git — `.env` مُتجاهَل و مستبعَد من الصورة (`.dockerignore`).
 - ✅ سجلّات مناسبة — `LOG_CHANNEL=stderr`.
-- ✅ رؤوس أمان في nginx (OPS-2): `X-Frame-Options` · `X-Content-Type-Options` · `Referrer-Policy` · `HSTS`. (CSP مؤجّل حتى اختبار الواجهة.) تُتحقَّق فعليًا بأول بناء/نشر على Render.
+- ✅ رؤوس أمان (B5 · PR-2): **law-api (nginx):** `X-Frame-Options` · `X-Content-Type-Options: nosniff` · `Referrer-Policy` · `HSTS` (سنة + `preload`) · **CSP صارم** (`default-src 'none'` — واجهة JSON/تنزيلات). **law-web (SPA، رؤوس Render):** نفس الرؤوس الصارمة مفروضة + **CSP بوضع Report-Only** (يبدأ بلا كسر لأن الواجهة تستخدم أنماطاً سطريّة وخطوط Google؛ بدّله إلى `Content-Security-Policy` بعد التحقّق من عدم وجود انتهاكات في وحدة تحكّم المتصفّح). تُتحقَّق فعليًا بأول نشر على Render.
+- ✅ **CORS fail-closed** (B5 · PR-2): `config/cors.php` يرفض كل الأصول العابرة إن لم يُضبط `FRONTEND_URL` (بدل `*`) — لذا **`FRONTEND_URL` مطلوب في الإنتاج**.
+- ✅ **كوكيز الجلسة آمنة:** `SESSION_SECURE_COOKIE=true` في `render.yaml` (HTTPS فقط).
 
 ## قرارات تحتاج موافقتك
 1. **الخطط (plan):** `render.yaml` يستخدم `free` — للإنتاج الفعلي ارفع الخدمة والقاعدة إلى `starter`+ (الـfree تنام وتفقد بيانات القاعدة بعد 90 يومًا).

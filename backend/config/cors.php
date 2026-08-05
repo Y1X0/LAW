@@ -13,8 +13,9 @@ return [
 
     'allowed_methods' => ['*'],
 
-    // أصل الواجهة إن ضُبط، وإلّا '*' (السلوك الافتراضي القائم).
-    'allowed_origins' => $frontend ?: ['*'],
+    // أصل الواجهة إن ضُبط، وإلّا قائمة فارغة (fail-closed — لا يُسمح لأي أصل عابر).
+    // يجب ضبط FRONTEND_URL في الإنتاج (B5 · PR-2).
+    'allowed_origins' => $frontend ?: [],
 
     'allowed_origins_patterns' => [],
 

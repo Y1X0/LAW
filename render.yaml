@@ -55,6 +55,8 @@ services:
         value: database
       - key: SESSION_DRIVER
         value: database
+      - key: SESSION_SECURE_COOKIE # B5 · PR-2: كوكيز الجلسة على HTTPS فقط في الإنتاج
+        value: "true"
       - key: QUEUE_CONNECTION
         value: sync # تشغيل المهام ضمن الطلب (لا حاجة لعامل منفصل في v1.0)
       - key: FILESYSTEM_DISK
@@ -73,8 +75,8 @@ services:
         sync: false
       - key: R2_ENDPOINT
         sync: false
-      - key: FRONTEND_URL # عنوان الواجهة — يحصر CORS (اختياري لكن مُوصى به)
-        sync: false
+      - key: FRONTEND_URL # عنوان الواجهة — يحصر CORS. **مطلوب في الإنتاج** (B5 · PR-2):
+        sync: false      # CORS الآن fail-closed؛ إن تُرك فارغاً تُرفَض كل الأصول العابرة.
       # أوّل مالك منصّة (B4): يُنشأ تلقائيّاً عند الإقلاع من هذين السرّين (DatabaseSeeder،
       # idempotent). المسار الرسمي لأوّل مدير — لا حاجة لـ tinker. دوِّر كلمة المرور بعد أوّل دخول.
       - key: INITIAL_ADMIN_EMAIL
@@ -187,6 +189,26 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+    # رؤوس أمان الواجهة (B5 · PR-2). الرؤوس الصارمة مفروضة؛ أما CSP فيبدأ **Report-Only**
+    # (لا يكسر الواجهة) لأن SPA تستخدم أنماطاً سطريّة style={{}} وتحمّل خطوط Google. بعد التحقّق
+    # من عدم وجود انتهاكات في وحدة تحكّم المتصفّح، بدّل الاسم إلى Content-Security-Policy لفرضه.
+    # connect-src يسمح https: للوصول إلى نطاق الـ API العابر (VITE_API_URL). راجع docs/DEPLOY-RENDER.
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Strict-Transport-Security
+        value: "max-age=31536000; includeSubDomains; preload"
+      - path: /*
+        name: Content-Security-Policy-Report-Only
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'"
     envVars:
       - key: VITE_API_URL # وقت البناء: https://<law-api-domain>/api
         sync: false

@@ -17,6 +17,7 @@
 | **Backup & Restore** | ✅ **Production Ready (Frontend + Backend)** — نسخ pg_dump إلى R2 منفصل، احتفاظ GFS، واجهة Owner، استعادة CLI مُختبَرة حيّاً |
 | **Email (SMTP)** | ✅ **Production Ready (Backend + Frontend)** — استعادة كلمة المرور + قناة بريد الإشعارات (قائمة بيضاء)؛ الإرسال الحقيقي يُفعَّل بأسرار `MAIL_*` |
 | **Scheduling (Cron)** | ✅ **Production Ready (Backend + Infra)** — مُجدوِل Laravel موحّد (`schedule:run`)؛ تذكيرات + نسخ احتياطي، بصمة Pull معطّلة عمداً على السحابة |
+| **Go-Live Package** | ✅ **جاهزة (توثيق تشغيلي)** — `GO-LIVE.md`: ملخّص تنفيذي + متغيّرات + Smoke Tests + Go/No-Go + Rollback + تسليم |
 
 > **Phase 5 (Document Storage & Upload) — مُغلَقة رسميّاً.**
 > **Phase 6 (Financial / Invoicing) — مُغلَقة رسميّاً.**
@@ -26,6 +27,7 @@
 > **Phase 13 · B1 (Backup & Restore) — مُغلَقة رسميّاً (أوّل حاصرة Go-Live).**
 > **Phase 13 · B2 (SMTP / Email) — مُغلَقة رسميّاً (ثاني حاصرة Go-Live).**
 > **Phase 13 · B3 (Scheduling / Cron) — مُغلَقة رسميّاً (ثالث حاصرة Go-Live).**
+> **Phase 13 · B4 (Go-Live Package) — مُغلَقة رسميّاً (رابع حاصرة Go-Live).**
 
 ---
 
@@ -127,6 +129,32 @@ Push/Web-Push. لا حاجة لها لتسليم شركة واحدة الآن �
 بديل تشغيلي: خدمة `type: worker` تشغّل `schedule:work` (تتفادى إقلاع حاوية كل دقيقة) — مُوثّق في
 `DEPLOY-RENDER.md`، يُبدَّل بلا تغيير كود عند الحاجة. وتفعيل شبكة أمان البصمة Pull متى وُجد مُشغّل
 داخل شبكة المكتب. لا حاجة لأيّهما لتسليم شركة واحدة على السحابة الآن.
+
+---
+
+## Go-Live Package — إغلاق Phase 13 · B4
+
+رابع حاصرة تسليم: **حزمة إطلاق واحدة** (`docs/GO-LIVE.md`) يتبعها مسؤول الـ IT لإطلاق النظام
+وتسليمه لشركة واحدة — تُحوّل معرفة النشر المبعثرة إلى مرجع تشغيلي واحد. **توثيقيّة بطبيعتها**
+(لا منطق جديد)، بلمسة إعداد صغيرة مرافقة.
+
+**البنية:** الوثيقة تبدأ بـ**ملخّص تنفيذي من صفحة واحدة** (متطلّبات → نشر مختصر → Smoke Tests →
+Go/No-Go → تسليم → روابط) يكفي للتنفيذ السريع، ثم أقسام تفصيليّة: جدول متغيّرات موحّد (يشمل
+إضافات B2 · MAIL و B3 · R2_BACKUP و B4 · INITIAL_ADMIN)، خطوات النشر، **9 Smoke Tests مرتّبة**،
+قائمة Go/No-Go، **خطة Rollback** (تراجع الإصدار على Render + استعادة القاعدة عبر backup:restore)،
+و**Checklist تسليم نهائية**. **لا يكرّر** الأدلّة الأخرى بل يربطها (DEPLOY-RENDER · BACKUP-RUNBOOK).
+
+**أوّل مدير — المسار الرسمي:** كُشِفت آليّة `INITIAL_ADMIN_EMAIL`/`INITIAL_ADMIN_PASSWORD` (قائمة
+أصلاً في `DatabaseSeeder`، idempotent) في `render.yaml` و`.env.example`، وأُزيل `tinker` كطريقة
+أساسيّة من `DEPLOY-RENDER` (يبقى بديلاً يدويّاً). مؤتمت وقابل للتكرار ويقلّل الخطأ البشري عند التسليم.
+
+**ما استُعيد لا أُعيد بناؤه:** خطوات النشر ومتغيّرات البيئة (DEPLOY-RENDER)، بذر الهيكل التنظيمي
+الأساسي وRBAC (OrgStructureSeeder/RbacSeeder، آمنة للإنتاج وتلقائيّة في start.sh)، وRollback القاعدة
+(BACKUP-RUNBOOK). B4 نظّمها في حزمة واحدة وسدّ الفجوات (Smoke Tests · Go/No-Go · تسليم · كشف أوّل مدير).
+
+### المتبقّي بعد B4
+
+🟡 **B5** (مراجعة أمنية نهائية) · 🟡 **B6** (UAT بالأدوار الحقيقية) — آخر حاصرتين قبل الجاهزية التجاريّة.
 
 ---
 

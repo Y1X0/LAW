@@ -57,6 +57,7 @@ Render شغّل `law-scheduler` يدويّاً (**Trigger Run**) وراقب سج
 | `APP_ENV` | **مطلوب** | `production` | مضبوط في render.yaml |
 | `APP_DEBUG` | **مطلوب** | `false` | مضبوط — لا تسريب Stack-trace |
 | `APP_URL` | **مطلوب** | `https://law-api-xxx.onrender.com` | يُضبط يدويًا بعد الإنشاء |
+| `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_PASSWORD` | **مطلوب** | بريد + كلمة قويّة | أوّل مدير — يُنشأ تلقائيّاً عند الإقلاع (B4). دوِّر الكلمة بعد أوّل دخول |
 | `DB_*` | **مطلوب** | من `law-postgres` | مربوط تلقائيًا في render.yaml |
 | `CACHE_STORE` | مطلوب | `database` | يعمل عبر جدول cache (لا Redis) |
 | `SESSION_DRIVER` | مطلوب | `database` | المصادقة توكن؛ الجلسات نادرة |
@@ -97,14 +98,12 @@ Render شغّل `law-scheduler` يدويّاً (**Trigger Run**) وراقب سج
 1. ادفع الكود إلى GitHub (تمّ). في Render: **New → Blueprint** واختر المستودع؛ يقرأ `render.yaml`.
 2. Render ينشئ: قاعدة `law-postgres`، خدمة `law-api`، موقع `law-web`.
 3. اضبط الأسرار (`sync:false`):
-   - `law-api`: `APP_KEY` (ولّده محليًا: `cd backend && php artisan key:generate --show`)، `APP_URL` (عنوان law-api)، اختياريًا `FRONTEND_URL` و`MAIL_*`.
+   - `law-api`: `APP_KEY` (ولّده محليًا: `cd backend && php artisan key:generate --show`)، `APP_URL` (عنوان law-api)، **`INITIAL_ADMIN_EMAIL` و`INITIAL_ADMIN_PASSWORD`** (أوّل مدير)، أسرار `R2_*`، اختياريًا `FRONTEND_URL` و`MAIL_*`.
+   - `law-scheduler`: `APP_KEY` (نفس قيمة law-api)، `MAIL_*` (بريد التذكيرات)، `R2_BACKUP_*` (النسخ).
    - `law-web`: `VITE_API_URL = https://<law-api>/api` ثم **أعد البناء** (تُحقن وقت البناء).
-4. أوّل نشر (وكل إقلاع) يشغّل `start.sh`: `migrate --force` + بذر الأدوار (idempotent) ثم يقلع الخادم.
-5. **إنشاء أوّل مالك منصّة** (قاعدة الإنتاج فيها أدوار بلا مستخدمين — أنشئ حساب Super Admin مرّة من Shell خدمة `law-api`):
-   ```sh
-   php artisan tinker --execute="\$u=App\Models\User::firstOrCreate(['email'=>'owner@your-firm.com'],['name'=>'مالك المكتب','password'=>bcrypt('ضع-كلمة-قوية'),'status'=>'active','email_verified_at'=>now()]); \$u->assignRole('admin'); echo 'admin ready';"
-   ```
-6. تحقّق: `https://<law-api>/up` = 200 · الدخول من `law-web` بحساب المالك أعلاه.
+4. أوّل نشر (وكل إقلاع) يشغّل `start.sh`: `migrate --force` + بذر أساسي (أدوار + هيكل تنظيمي + **أوّل مدير من `INITIAL_ADMIN_*`**، كلها idempotent) ثم يقلع الخادم.
+5. **أوّل مالك منصّة — تلقائيّاً (المسار الرسمي):** إن ضُبط `INITIAL_ADMIN_EMAIL`/`INITIAL_ADMIN_PASSWORD` (خطوة 3)، يُنشئه `DatabaseSeeder` عند الإقلاع ويُسنِد له دور `admin` (idempotent — مرّة واحدة). **دوِّر كلمة المرور بعد أوّل دخول.** لا حاجة لـ `tinker`. (بديل يدوي عند الحاجة فقط: `php artisan tinker` من Shell الخدمة لإنشاء المستخدم وإسناد الدور.)
+6. تحقّق: `https://<law-api>/up` = 200 · الدخول من `law-web` بحساب المدير أعلاه. راجع [GO-LIVE §⑤](GO-LIVE.md) لقائمة Smoke Tests الكاملة.
 7. لعرض تجريبي فقط: شغّل بذرة الديمو مرّة (Shell الخدمة): `php artisan db:seed --class="Database\Seeders\DemoSeeder" --force` (حسابات `*@demo.law` كلمة المرور `Passw0rd!`). **لا تشغّلها في إنتاج حقيقي.**
 
 ## سلامة الإنتاج (مُتحقَّق)

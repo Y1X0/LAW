@@ -23,6 +23,12 @@ Route::middleware('auth.token')->prefix('admin/data')->group(function () {
         Route::post('import/clients/commit', [DataImportController::class, 'commitClients'])->name('data.import.clients.commit');
     });
 
+    // القضايا: تمرّ عبر CaseService (تدقيق + إسناد lead + خط زمني استيراد صادق لكل صفّ).
+    Route::middleware('permission:cases.create')->group(function () {
+        Route::post('import/cases/preview', [DataImportController::class, 'previewCases'])->name('data.import.cases.preview');
+        Route::post('import/cases/commit', [DataImportController::class, 'commitCases'])->name('data.import.cases.commit');
+    });
+
     Route::middleware('permission:employees.view')
         ->get('export/employees', [DataExportController::class, 'employees'])->name('data.export.employees');
 

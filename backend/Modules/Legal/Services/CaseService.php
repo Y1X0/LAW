@@ -22,11 +22,16 @@ class CaseService
 
     public function __construct(private readonly TimelineService $timeline) {}
 
-    public function create(array $data, Request $request): LegalCase
+    /**
+     * ينشئ قضية. $origin يميّز المصدر لخطّ زمني صادق: الإدخال اليدوي يُسجَّل «تم إنشاء
+     * القضية»، وهجرة قضية قديمة من نظام سابق تُسجَّل «تم استيراد القضية من النظام السابق»
+     * (لأن «إنشاء» يضلّل لقضية عمرها سنوات). opened_date يبقى تاريخ الفتح القانوني.
+     */
+    public function create(array $data, Request $request, string $origin = 'manual'): LegalCase
     {
         $data['created_by'] = $request->user()?->id;
 
-        return DB::transaction(function () use ($data, $request) {
+        return DB::transaction(function () use ($data, $request, $origin) {
             $case = LegalCase::create($data);
 
             // المحامي الرئيسي يُسجَّل كإسناد lead تلقائياً (أساس رؤيته للقضية).
@@ -35,7 +40,11 @@ class CaseService
             }
 
             $this->recordAudit($request, 'case_created', LegalCase::class, $case->id, ['internal_number' => $case->internal_number]);
-            $this->timeline->recordAuto($case, 'case_created', 'تم إنشاء القضية', $request);
+
+            [$eventType, $title] = $origin === 'import'
+                ? ['case_imported', 'تم استيراد القضية من النظام السابق']
+                : ['case_created', 'تم إنشاء القضية'];
+            $this->timeline->recordAuto($case, $eventType, $title, $request);
 
             return $case;
         });

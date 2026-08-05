@@ -26,12 +26,17 @@ export async function downloadExport(entity: ExportEntity): Promise<void> {
   URL.revokeObjectURL(url)
 }
 
-/** كيانات مركز الاستيراد. mapping=true ⇒ يدعم مطابقة الأعمدة (يعيد الخادم fields/detected). */
-export const IMPORT_ENTITIES = [
-  { key: 'clients', label: 'العملاء', mapping: true },
-  { key: 'employees', label: 'الموظفون', mapping: false },
-] as const
-export type ImportEntityKey = (typeof IMPORT_ENTITIES)[number]['key']
+/**
+ * كيان مستورد كما يعلنه الخادم (سِجلّ مركزي مصفّى بالصلاحيات). mapping=true ⇒ يدعم مطابقة
+ * الأعمدة. الواجهة لا تُعرّف الأنواع؛ تعرض ما يُتيحه الخادم — إضافة مستورد جديد تظهر تلقائياً.
+ */
+const importEntitySchema = z.object({ key: z.string(), label: z.string(), mapping: z.boolean() })
+export type ImportEntity = z.infer<typeof importEntitySchema>
+
+/** يجلب سِجلّ المستوردات المتاحة للمستخدم الحالي (مصدر الحقيقة الوحيد لمركز الهجرة). */
+export async function fetchImportManifest(): Promise<ImportEntity[]> {
+  return z.array(importEntitySchema).parse(await api.get<unknown>('admin/data/import/manifest'))
+}
 
 const fieldSchema = z.object({ key: z.string(), required: z.boolean() })
 export type ImportField = z.infer<typeof fieldSchema>

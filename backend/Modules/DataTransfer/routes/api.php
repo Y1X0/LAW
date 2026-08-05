@@ -11,6 +11,9 @@ use Modules\DataTransfer\Http\Controllers\DataImportController;
 */
 
 Route::middleware('auth.token')->prefix('admin/data')->group(function () {
+    // سِجلّ المستوردات المتاحة للمستخدم (مصفّى بصلاحيّاته) — تبني منه الواجهة قائمة الأنواع.
+    Route::get('import/manifest', [DataImportController::class, 'manifest'])->name('data.import.manifest');
+
     // الاستيراد: معاينة بلا حفظ، ثم حفظ ذرّي — محميّ بصلاحية إنشاء الكيان.
     Route::middleware('permission:employees.create')->group(function () {
         Route::post('import/employees/preview', [DataImportController::class, 'previewEmployees'])->name('data.import.employees.preview');

@@ -25,6 +25,17 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
  */
 class DataImportService
 {
+    /**
+     * سِجلّ المستوردات المتاحة — مصدر الحقيقة الوحيد لمركز الهجرة. تعرضه واجهة الاستيراد
+     * مصفّى حسب صلاحيّات المستخدم. إضافة مستورد جديد مستقبلاً = مسارا preview/commit + سطر
+     * هنا فيظهر تلقائياً في الواجهة دون تعديلها. mapping=true ⇒ يدعم مطابقة الأعمدة.
+     */
+    public const IMPORTERS = [
+        ['key' => 'clients', 'label' => 'العملاء', 'permission' => 'clients.create', 'mapping' => true],
+        ['key' => 'cases', 'label' => 'القضايا', 'permission' => 'cases.create', 'mapping' => true],
+        ['key' => 'employees', 'label' => 'الموظفون', 'permission' => 'employees.create', 'mapping' => false],
+    ];
+
     /** حقول استيراد العميل القابلة للمطابقة (تُغذّي واجهة مطابقة الأعمدة). */
     public const CLIENT_FIELDS = ['name', 'type', 'phone', 'email', 'national_id', 'status'];
 

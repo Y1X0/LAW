@@ -1,27 +1,37 @@
-import { useRef, useState, type ChangeEvent } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Button, SelectField } from '@/core/ui/primitives'
 import { SectionCard } from '@/core/ui/section'
 import { useToast } from '@/core/ui/useToast'
 import { ApiError } from '@/core/api/types'
-import { IMPORT_ENTITIES, type ImportPreview, commitImport, previewImport } from '@/admin/api/data'
+import { type ImportPreview, commitImport, fetchImportManifest, previewImport } from '@/admin/api/data'
 
 /**
- * مركز استيراد البيانات (Phase 10 · PR-3) — تعميم الاستيراد لعدّة كيانات بخطوات واضحة:
+ * منصّة هجرة البيانات (Phase 11 · PR-2) — مركز موحّد لاستيراد أي كيان بنفس الخطوات:
  * اختيار النوع → رفع → معاينة → مطابقة الأعمدة + مفتاح المطابقة → تأكيد → نتيجة.
+ * قائمة الأنواع تأتي من سِجلّ الخادم (مصفّى بالصلاحيات)؛ إضافة مستورد جديد تظهر تلقائياً.
  * لا منطق Excel في الواجهة: الخادم يحلّل ويقرّر ويعيد detected_headers/fields للعرض فقط.
  */
 export function ImportCenter() {
   const { show } = useToast()
-  const [entityKey, setEntityKey] = useState<string>(IMPORT_ENTITIES[0].key)
+  const [entityKey, setEntityKey] = useState<string>('')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<ImportPreview | null>(null)
   const [mapping, setMapping] = useState<Record<string, string>>({})
   const [matchKey, setMatchKey] = useState<string>('')
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const entity = IMPORT_ENTITIES.find((e) => e.key === entityKey) ?? IMPORT_ENTITIES[0]
-  const supportsMapping = entity.mapping
+  const manifestQuery = useQuery({ queryKey: ['import-manifest'], queryFn: fetchImportManifest })
+  const entities = manifestQuery.data ?? []
+
+  // أوّل نوع متاح يصبح الافتراضي بمجرّد وصول السِجلّ (دون تثبيت نوع في الواجهة).
+  useEffect(() => {
+    const first = manifestQuery.data?.[0]?.key
+    if (entityKey === '' && first) setEntityKey(first)
+  }, [manifestQuery.data, entityKey])
+
+  const entity = entities.find((e) => e.key === entityKey)
+  const supportsMapping = entity?.mapping ?? false
 
   function resetImport() {
     setFile(null)
@@ -70,15 +80,22 @@ export function ImportCenter() {
   }
 
   return (
-    <SectionCard title="مركز استيراد البيانات">
+    <SectionCard title="منصّة هجرة البيانات">
       <p className="mb-4 text-sm text-slate-500">
-        اختر نوع البيانات، ارفع ملف Excel، عايِن، طابِق الأعمدة، ثم أكّد. الاستيراد ذرّي — صفّ واحد غير
-        صحيح يمنع الحفظ كاملاً. التحليل والتحقّق يتمّان في الخادم؛ قاعدة البيانات هي المرجع الرسمي.
+        مركز موحّد لهجرة بيانات المكتب: اختر نوع البيانات، ارفع ملف Excel، عايِن، طابِق الأعمدة، ثم أكّد.
+        الاستيراد ذرّي — صفّ واحد غير صحيح يمنع الحفظ كاملاً. التحليل والتحقّق يتمّان في الخادم؛ قاعدة
+        البيانات هي المرجع الرسمي.
       </p>
 
+      {manifestQuery.isPending ? (
+        <p className="text-sm text-slate-500">جارٍ تحميل الأنواع المتاحة…</p>
+      ) : entities.length === 0 ? (
+        <p className="text-sm text-slate-500">لا تملك صلاحية استيراد أيّ نوع من البيانات.</p>
+      ) : (
+        <>
       <div className="sm:max-w-xs">
         <SelectField label="نوع البيانات" value={entityKey} onChange={onEntity}>
-          {IMPORT_ENTITIES.map((e) => (
+          {entities.map((e) => (
             <option key={e.key} value={e.key}>{e.label}</option>
           ))}
         </SelectField>
@@ -168,6 +185,8 @@ export function ImportCenter() {
             </div>
           )}
         </div>
+      )}
+        </>
       )}
     </SectionCard>
   )

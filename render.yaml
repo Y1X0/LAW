@@ -95,58 +95,23 @@ services:
       - key: MAIL_FROM_NAME
         sync: false
 
-  # ---------- التذكيرات المجدولة (Cron — Phase 8) ----------
-  # يشغّل أمر التذكيرات يوميّاً على نفس صورة الـ backend (بلا nginx/هجرات — يتخطّى start.sh
-  # عبر dockerCommand مخصّص). الأمر idempotent ومانع تكرار، فالتشغيل اليومي آمن. لا R2/بريد
-  # (التذكيرات داخل النظام فقط). ملاحظة: خدمات cron في Render تتطلّب خطة مدفوعة (ليست free).
+  # ---------- المُجدوِل الموحّد (Cron — B3) ----------
+  # خدمة cron واحدة تشغّل مُجدوِل Laravel كل دقيقة (`php artisan schedule:run`) على نفس صورة
+  # الـ backend (بلا nginx/هجرات — dockerCommand مخصّص يتخطّى start.sh). كل المواعيد مُعرَّفة في
+  # backend/routes/console.php (مصدر واحد): التذكيرات يوميّاً 06:00، والنسخ الاحتياطي يوميّاً 03:00.
+  # إضافة مهمة مستقبلاً = سطر في console.php لا تعديل هنا. كل الأوامر idempotent ومانعة للتكرار.
+  # لذا تحمل الخدمة أسرار MAIL_* (بريد التذكيرات) و R2_BACKUP_* (النسخ) معاً. ملاحظة: خدمات cron
+  # في Render تتطلّب خطة مدفوعة (ليست free). بديل تشغيلي: خدمة worker تشغّل `schedule:work` دائماً
+  # (تتفادى إقلاع حاوية كل دقيقة) — راجع docs/DEPLOY-RENDER.md. مزامنة البصمة Pull **غير مُجدوَلة**
+  # هنا (معطّلة افتراضياً؛ تحتاج مُشغّلاً داخل شبكة المكتب — راجع console.php والتوثيق).
   - type: cron
-    name: law-reminders
+    name: law-scheduler
     runtime: docker
     plan: starter
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    schedule: "0 6 * * *" # يوميّاً 06:00 UTC
-    dockerCommand: php artisan notifications:remind
-    envVars:
-      - key: APP_KEY # نفس مفتاح law-api
-        sync: false
-      - key: APP_ENV
-        value: production
-      - key: APP_DEBUG
-        value: "false"
-      - key: LOG_CHANNEL
-        value: stderr
-      - key: LOG_LEVEL
-        value: warning
-      - key: DB_CONNECTION
-        value: pgsql
-      - key: DB_HOST
-        fromDatabase: { name: law-postgres, property: host }
-      - key: DB_PORT
-        fromDatabase: { name: law-postgres, property: port }
-      - key: DB_DATABASE
-        fromDatabase: { name: law-postgres, property: database }
-      - key: DB_USERNAME
-        fromDatabase: { name: law-postgres, property: user }
-      - key: DB_PASSWORD
-        fromDatabase: { name: law-postgres, property: password }
-      - key: CACHE_STORE
-        value: database
-      - key: QUEUE_CONNECTION
-        value: sync
-
-  # ---------- النسخ الاحتياطي اليومي (Cron — Phase 13) ----------
-  # يشغّل backup:run يوميّاً على نفس صورة الـ backend. pg_dump مثبَّت في الصورة. النسخ ترفع إلى
-  # دلو R2 منفصل (R2_BACKUP_*). النوع يُشتقّ من التاريخ (GFS)، والاحتفاظ يُقلَّم تلقائياً. ملاحظة:
-  # خدمات cron في Render تتطلّب خطة مدفوعة. الاستعادة ليست هنا — تُجرى يدويّاً عبر backup:restore.
-  - type: cron
-    name: law-backup
-    runtime: docker
-    plan: starter
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    schedule: "0 3 * * *" # يوميّاً 03:00 UTC
-    dockerCommand: php artisan backup:run
+    schedule: "* * * * *" # كل دقيقة — Laravel يقرّر ما يستحقّ التشغيل
+    dockerCommand: php artisan schedule:run
     envVars:
       - key: APP_KEY # نفس مفتاح law-api
         sync: false
@@ -176,6 +141,23 @@ services:
         value: sync
       - key: FILESYSTEM_DISK
         value: local
+      # بريد التذكيرات (SMTP — B2). فارغ ⇒ log (لا إرسال) فلا يتعطّل شيء قبل الضبط.
+      - key: MAIL_MAILER
+        sync: false
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_SCHEME
+        sync: false
+      - key: MAIL_FROM_ADDRESS
+        sync: false
+      - key: MAIL_FROM_NAME
+        sync: false
       # دلو R2 منفصل للنسخ (غير دلو الوثائق) — تُضبط أسراره في لوحة Render.
       - key: R2_BACKUP_DEFAULT_REGION
         value: auto

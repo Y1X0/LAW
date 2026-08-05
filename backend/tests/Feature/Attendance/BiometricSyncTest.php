@@ -100,14 +100,17 @@ class BiometricSyncTest extends TestCase
         $this->assertSame('online', $device->status);
     }
 
-    public function test_command_dispatches_sync_for_active_devices(): void
+    public function test_command_dispatches_sync_for_active_pull_devices_only(): void
     {
         Queue::fake();
-        BiometricDevice::create(['name' => 'نشط', 'vendor' => 'zkteco', 'api_mode' => 'pull', 'is_active' => true]);
+        BiometricDevice::create(['name' => 'نشط Pull', 'vendor' => 'zkteco', 'api_mode' => 'pull', 'is_active' => true]);
         BiometricDevice::create(['name' => 'معطّل', 'vendor' => 'zkteco', 'api_mode' => 'pull', 'is_active' => false]);
+        // جهاز Push نشط — يدفع سجلّاته إلى الـ API فلا يُسحَب (يُستثنى من المزامنة).
+        BiometricDevice::create(['name' => 'نشط Push', 'vendor' => 'zkteco', 'api_mode' => 'push', 'is_active' => true]);
 
         $this->artisan('biometric:sync')->assertSuccessful();
 
+        // جهاز واحد فقط (النشط بوضع Pull).
         Queue::assertPushed(SyncBiometricDeviceJob::class, 1);
     }
 }

@@ -118,6 +118,59 @@ services:
       - key: QUEUE_CONNECTION
         value: sync
 
+  # ---------- النسخ الاحتياطي اليومي (Cron — Phase 13) ----------
+  # يشغّل backup:run يوميّاً على نفس صورة الـ backend. pg_dump مثبَّت في الصورة. النسخ ترفع إلى
+  # دلو R2 منفصل (R2_BACKUP_*). النوع يُشتقّ من التاريخ (GFS)، والاحتفاظ يُقلَّم تلقائياً. ملاحظة:
+  # خدمات cron في Render تتطلّب خطة مدفوعة. الاستعادة ليست هنا — تُجرى يدويّاً عبر backup:restore.
+  - type: cron
+    name: law-backup
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    schedule: "0 3 * * *" # يوميّاً 03:00 UTC
+    dockerCommand: php artisan backup:run
+    envVars:
+      - key: APP_KEY # نفس مفتاح law-api
+        sync: false
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: warning
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase: { name: law-postgres, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: law-postgres, property: port }
+      - key: DB_DATABASE
+        fromDatabase: { name: law-postgres, property: database }
+      - key: DB_USERNAME
+        fromDatabase: { name: law-postgres, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: law-postgres, property: password }
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: FILESYSTEM_DISK
+        value: local
+      # دلو R2 منفصل للنسخ (غير دلو الوثائق) — تُضبط أسراره في لوحة Render.
+      - key: R2_BACKUP_DEFAULT_REGION
+        value: auto
+      - key: R2_BACKUP_ACCESS_KEY_ID
+        sync: false
+      - key: R2_BACKUP_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BACKUP_BUCKET
+        sync: false
+      - key: R2_BACKUP_ENDPOINT
+        sync: false
+
   # ---------- الواجهة (React/Vite SPA — استضافة ثابتة) ----------
   - type: web
     name: law-web

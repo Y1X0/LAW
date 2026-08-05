@@ -5,6 +5,7 @@ namespace Modules\Backup\Services;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Modules\Backup\Contracts\DatabaseDumper;
+use Modules\Backup\Contracts\DatabaseRestorer;
 use Modules\Backup\Models\Backup;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\Core\Models\AuditLog;
@@ -24,7 +25,10 @@ class BackupService
     /** قرص تخزين النسخ (دلو R2 منفصل عن الوثائق). */
     public const DISK = 'backups';
 
-    public function __construct(private readonly DatabaseDumper $dumper) {}
+    public function __construct(
+        private readonly DatabaseDumper $dumper,
+        private readonly DatabaseRestorer $restorer,
+    ) {}
 
     /**
      * ينشئ نسخة: يفرّغ القاعدة → يرفعها → يسجّل النتيجة → يقلّم الاحتفاظ. يرمي عند الفشل
@@ -61,6 +65,36 @@ class BackupService
         }
 
         return $backup->fresh();
+    }
+
+    /**
+     * يستعيد قاعدة البيانات من نسخة (عملية مدمِّرة — تستبدل البيانات الحالية). ينزّل الملف من
+     * تخزين النسخ ثم يشغّل pg_restore. يُدقَّق (backup_restored) — يُكتب في القاعدة المُستعادة.
+     *
+     * @throws \RuntimeException|\Throwable
+     */
+    public function restore(Backup $backup, ?Request $request = null): void
+    {
+        if ($backup->status !== 'completed' || ! $backup->path) {
+            throw new \RuntimeException('النسخة غير مكتملة — لا يمكن الاستعادة منها.');
+        }
+
+        $tmp = tempnam(sys_get_temp_dir(), 'lawrs').'.dump';
+        $src = Storage::disk($backup->disk)->readStream($backup->path);
+        $dst = fopen($tmp, 'wb');
+        stream_copy_to_stream($src, $dst);
+        fclose($dst);
+        if (is_resource($src)) {
+            fclose($src);
+        }
+
+        try {
+            $this->restorer->restore($tmp);
+        } finally {
+            @unlink($tmp);
+        }
+
+        $this->audit($request, 'backup_restored', $backup->id, ['filename' => $backup->filename]);
     }
 
     /** يقلّم النسخ المكتملة الزائدة عن حدّ الاحتفاظ لكل نوع (الأقدم أولاً) — ملفاً وصفّاً. */

@@ -86,6 +86,20 @@ export function LegalCaseDetailPage() {
         {c.description && <p className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-600">{c.description}</p>}
       </SectionCard>
 
+      {c.custom_fields.length > 0 && (
+        <SectionCard title="الحقول المخصّصة">
+          <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+            {c.custom_fields.map((f) => (
+              <Info
+                key={f.key}
+                label={f.label}
+                value={f.type === 'boolean' ? (f.value ? 'نعم' : 'لا') : (f.value === null || f.value === '' ? '—' : String(f.value))}
+              />
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
       <SectionCard title="المحامون المسندون" action={<Button onClick={() => setAssigning(true)}>إسناد محامٍ</Button>}>
         {c.assignments.length === 0 ? (
           <EmptyState message="لا يوجد محامون مسندون لهذه القضية." />

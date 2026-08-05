@@ -79,6 +79,15 @@ export async function fetchCases(params: CaseListParams = {}): Promise<CaseListR
 // ---- تفاصيل القضية + إنشاء/تعديل/إغلاق (PR-2) ----
 const money = z.union([z.string(), z.number(), z.null()]).optional().transform((v) => (v == null || v === '' ? null : Number(v)))
 
+/** قيمة حقل مخصّص مرئية (Phase 12) — يعيدها الخادم مصفّاة بـ view_roles وعزل القضية. */
+const customFieldValueSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  type: z.string(),
+  value: z.union([z.string(), z.number(), z.boolean(), z.null()]),
+})
+export type CustomFieldValue = z.infer<typeof customFieldValueSchema>
+
 export const caseDetailSchema = caseRowSchema.extend({
   court_name: z.string().nullable().optional(),
   value: money,
@@ -91,8 +100,29 @@ export const caseDetailSchema = caseRowSchema.extend({
       employee: z.object({ id: z.number(), full_name_ar: z.string() }).nullable().optional(),
     }))
     .default([]),
+  // الحقول المخصّصة المرئية (سياق التفاصيل) — من الخادم، مصفّاة بالصلاحيات.
+  custom_fields: z.array(customFieldValueSchema).optional().default([]),
 })
 export type CaseDetail = z.infer<typeof caseDetailSchema>
+
+/** عنصر مخطّط الحقول المخصّصة للنموذج (Phase 12) — editable من الخادم؛ الواجهة تعكسه فقط. */
+const customFieldFormItemSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  type: z.string(),
+  options: z.array(z.string()).nullable().optional(),
+  required: z.boolean(),
+  editable: z.boolean(),
+  value: z.union([z.string(), z.number(), z.boolean(), z.null()]),
+})
+export type CustomFieldFormItem = z.infer<typeof customFieldFormItemSchema>
+
+/** مخطّط الحقول المخصّصة لنموذج الإنشاء/التعديل — `GET /cases/custom-fields/form`. */
+export async function fetchCaseCustomFieldForm(context: 'create' | 'edit', caseId?: number): Promise<CustomFieldFormItem[]> {
+  const q = new URLSearchParams({ context })
+  if (caseId != null) q.set('case', String(caseId))
+  return z.array(customFieldFormItemSchema).parse(await api.get<unknown>(`cases/custom-fields/form?${q.toString()}`))
+}
 
 export function fetchCase(id: number): Promise<CaseDetail> {
   return api.get<unknown>(`cases/${id}`).then((d) => caseDetailSchema.parse(d))
@@ -110,6 +140,8 @@ export interface CaseInput {
   progress?: number
   opened_date?: string | null
   description?: string | null
+  /** قيم الحقول المخصّصة (Phase 12): مفتاح الحقل ⇒ القيمة؛ يفرضها الخادم. */
+  custom_fields?: Record<string, string | number | boolean | null>
 }
 
 export async function createCase(input: CaseInput): Promise<CaseDetail> {

@@ -33,6 +33,10 @@ Route::middleware('auth.token')->group(function () {
     });
 
     // ---- LC-2: القضايا ----
+    // مخطّط الحقول المخصّصة للنموذج (Phase 12) — لمن يُنشئ/يعدّل/يعرض القضايا؛ التصفية بالخادم.
+    Route::middleware('permission:cases.create,cases.update,cases.view_own,cases.view_all')
+        ->get('cases/custom-fields/form', [CaseController::class, 'customFieldsForm'])->name('cases.custom-fields.form');
+
     // القراءة متاحة للإدارة (view_all) أو المحامي المسند (view_own) — والتنطيق داخل المتحكّم.
     Route::middleware('permission:cases.view_own,cases.view_all')->group(function () {
         Route::get('cases', [CaseController::class, 'index'])->name('cases.index');

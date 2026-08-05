@@ -77,6 +77,49 @@ class CustomFieldValueService
     }
 
     /**
+     * مخطّط الحقول لنموذج الإنشاء/التعديل. الإنشاء (entityId=null): الحقول القابلة للتعديل فقط.
+     * التعديل: الحقول المرئية، مع علم editable وقيمتها الحالية — فتُرسم غير القابلة للتعديل للعرض
+     * فقط. الواجهة تعكس editable بلا منطق صلاحيات؛ الفرض النهائي في write() (الخادم الحارس).
+     *
+     * @return array<int, array{key:string,label:string,type:string,options:mixed,required:bool,editable:bool,value:mixed}>
+     */
+    public function formSchema(string $entity, ?int $entityId, ?User $user, string $context): array
+    {
+        $definitions = $this->activeDefinitions($entity)
+            ->filter(fn (CustomFieldDefinition $d) => $this->contextIncludes($d, $context));
+
+        $values = collect();
+        if ($entityId !== null && $definitions->isNotEmpty()) {
+            $values = CustomFieldValue::where('entity', $entity)->where('entity_id', $entityId)
+                ->whereIn('definition_id', $definitions->pluck('id'))->get()->keyBy('definition_id');
+        }
+
+        $out = [];
+        foreach ($definitions as $def) {
+            $canEdit = $this->canEdit($def, $user);
+            if ($entityId === null) {
+                if (! $canEdit) {
+                    continue; // إنشاء: مدخلات قابلة للتعديل فقط
+                }
+            } elseif (! $this->canView($def, $user)) {
+                continue; // تعديل: الحقول المرئية فقط
+            }
+            $existing = $values->get($def->id);
+            $out[] = [
+                'key' => $def->key,
+                'label' => $def->label,
+                'type' => $def->type,
+                'options' => $def->options,
+                'required' => $def->required,
+                'editable' => $canEdit,
+                'value' => $existing !== null ? $this->readValue($def, $existing) : null,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
      * يكتب قيم الحقول المخصّصة لصفّ كيان (داخل معاملة المُستدعي — حفظ ذرّي). يفرض edit_roles
      * على كل حقل متغيّر، ويُدقّق كل تغيّر (old→new). $auditableType هو صنف الكيان (سلسلة) لربط
      * التدقيق به دون أن تعتمد هذه الوحدة على وحدة الكيان.

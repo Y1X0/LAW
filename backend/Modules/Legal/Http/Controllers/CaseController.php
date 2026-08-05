@@ -82,6 +82,29 @@ class CaseController
         ]);
     }
 
+    /**
+     * GET /api/cases/custom-fields/form — مخطّط الحقول المخصّصة لنموذج الإنشاء/التعديل.
+     * context=create ⇒ الحقول القابلة للتعديل. context=edit&case={id} ⇒ الحقول المرئية للقضية
+     * (بعد guardCaseView) مع editable وقيمتها. الفرض النهائي في الحفظ (الخادم الحارس).
+     */
+    public function customFieldsForm(Request $request): JsonResponse
+    {
+        $context = $request->query('context') === 'edit' ? 'edit' : 'create';
+        $caseId = null;
+
+        if ($context === 'edit') {
+            $case = LegalCase::findOrFail($request->query('case'));
+            if ($denied = $this->guardCaseView($request->user(), $case)) {
+                return $denied;
+            }
+            $caseId = $case->id;
+        }
+
+        return $this->ok(app(CustomFieldValueService::class)->formSchema(
+            LegalCase::CUSTOM_FIELD_ENTITY, $caseId, $request->user(), $context,
+        ));
+    }
+
     /** GET /api/cases/{case} — 403 إن لم تكن القضية مسندة للمحامي (بلا view_all). */
     public function show(Request $request, LegalCase $case): JsonResponse
     {

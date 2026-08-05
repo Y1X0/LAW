@@ -4,8 +4,10 @@ namespace Modules\CustomFields\Services;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\CustomFields\Models\CustomFieldDefinition;
+use Modules\CustomFields\Models\CustomFieldValue;
 
 /**
  * إدارة تعريفات الحقول المخصّصة (Phase 12 · PR-1). CRUD مع تدقيق لكل عملية — تعريف الحقل
@@ -47,8 +49,18 @@ class CustomFieldService
         return $definition;
     }
 
+    /**
+     * يحذف تعريفاً. يُمنَع الحذف إن كان للحقل قيم مسجّلة (بيانات قانونية لا تُمحى) — يُعطَّل بدلاً
+     * منه. لا cascade على القيم (القيد restrict على مستوى القاعدة يضمن ذلك أيضاً).
+     */
     public function delete(CustomFieldDefinition $definition, Request $request): void
     {
+        if (CustomFieldValue::where('definition_id', $definition->id)->exists()) {
+            throw ValidationException::withMessages([
+                'id' => ['لا يمكن حذف حقل يحتوي قيماً مسجّلة. عطّله بدلاً من حذفه.'],
+            ]);
+        }
+
         $id = $definition->id;
         $meta = ['entity' => $definition->entity, 'key' => $definition->key];
         $definition->delete();

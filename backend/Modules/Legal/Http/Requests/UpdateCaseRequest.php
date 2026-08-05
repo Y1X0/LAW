@@ -33,6 +33,8 @@ class UpdateCaseRequest extends FormRequest
             'progress' => ['sometimes', 'integer', 'min:0', 'max:100'],
             'opened_date' => ['sometimes', 'nullable', 'date'],
             'description' => ['sometimes', 'nullable', 'string', 'max:5000'],
+            // قيم الحقول المخصّصة (Phase 12): مفتاح الحقل ⇒ القيمة؛ يتحقّق منها CustomFieldValueService.
+            'custom_fields' => ['sometimes', 'array'],
         ];
     }
 }

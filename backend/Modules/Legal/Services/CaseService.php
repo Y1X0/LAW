@@ -5,6 +5,7 @@ namespace Modules\Legal\Services;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Concerns\RecordsAudit;
+use Modules\CustomFields\Services\CustomFieldValueService;
 use Modules\Legal\Models\CaseAssignment;
 use Modules\Legal\Models\LegalCase;
 
@@ -30,8 +31,12 @@ class CaseService
     public function create(array $data, Request $request, string $origin = 'manual'): LegalCase
     {
         $data['created_by'] = $request->user()?->id;
+        // قيم الحقول المخصّصة تُعالَج عبر خدمتها لا كأعمدة قضية؛ تُستخرج قبل الإنشاء (Phase 12).
+        $hasCustom = array_key_exists('custom_fields', $data);
+        $custom = $data['custom_fields'] ?? [];
+        unset($data['custom_fields']);
 
-        return DB::transaction(function () use ($data, $request, $origin) {
+        return DB::transaction(function () use ($data, $request, $origin, $hasCustom, $custom) {
             $case = LegalCase::create($data);
 
             // المحامي الرئيسي يُسجَّل كإسناد lead تلقائياً (أساس رؤيته للقضية).
@@ -46,13 +51,22 @@ class CaseService
                 : ['case_created', 'تم إنشاء القضية'];
             $this->timeline->recordAuto($case, $eventType, $title, $request);
 
+            // الاستيراد/المسارات القديمة لا تُرسل المفتاح ⇒ لا تُفرَض حقول إلزامية عليها.
+            if ($hasCustom) {
+                app(CustomFieldValueService::class)->write($custom, $case->customFieldEntityKey(), $case->id, LegalCase::class, $request, 'create');
+            }
+
             return $case;
         });
     }
 
     public function update(LegalCase $case, array $data, Request $request): LegalCase
     {
-        return DB::transaction(function () use ($case, $data, $request) {
+        $hasCustom = array_key_exists('custom_fields', $data);
+        $custom = $data['custom_fields'] ?? [];
+        unset($data['custom_fields']);
+
+        return DB::transaction(function () use ($case, $data, $request, $hasCustom, $custom) {
             $case->update($data);
 
             if (array_key_exists('responsible_lawyer_id', $data) && ! empty($data['responsible_lawyer_id'])) {
@@ -60,6 +74,11 @@ class CaseService
             }
 
             $this->recordAudit($request, 'case_updated', LegalCase::class, $case->id);
+
+            // تغيير قيم الحقول: يفرض edit_roles ويُدقّق كل تغيّر (Phase 12) — ذرّياً مع تحديث القضية.
+            if ($hasCustom) {
+                app(CustomFieldValueService::class)->write($custom, $case->customFieldEntityKey(), $case->id, LegalCase::class, $request, 'edit');
+            }
 
             return $case;
         });

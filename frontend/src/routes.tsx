@@ -20,6 +20,7 @@ import { AdminOnboardingPage } from '@/admin/pages/AdminOnboardingPage'
 import { AdminAuditPage } from '@/admin/pages/AdminAuditPage'
 import { AdminDataPage } from '@/admin/pages/AdminDataPage'
 import { AdminCustomFieldsPage } from '@/admin/pages/AdminCustomFieldsPage'
+import { AdminBackupPage } from '@/admin/pages/AdminBackupPage'
 import { AdminSettingsPage } from '@/admin/pages/AdminSettingsPage'
 import { HrDashboardPage } from '@/hr/pages/HrDashboardPage'
 import { HrEmployeesPage } from '@/hr/pages/HrEmployeesPage'
@@ -95,6 +96,7 @@ export const router = createBrowserRouter(
                     { path: 'admin/audit', element: <AdminAuditPage /> },
                     { path: 'admin/data', element: <AdminDataPage /> },
                     { path: 'admin/custom-fields', element: <AdminCustomFieldsPage /> },
+                    { path: 'admin/backups', element: <AdminBackupPage /> },
                     { path: 'admin/settings', element: <AdminSettingsPage /> },
                   ],
                 },

@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Backup\Contracts\DatabaseDumper;
+use Modules\Backup\Contracts\DatabaseRestorer;
 use Modules\Backup\Support\PgDumpDumper;
+use Modules\Backup\Support\PgRestoreRestorer;
 use Modules\Core\Http\Middleware\AuthenticateToken;
 use Modules\Core\Http\Middleware\EnsurePermission;
 use Modules\HR\Http\Middleware\EnsureLinkedEmployee;
@@ -31,8 +33,9 @@ class ModuleServiceProvider extends ServiceProvider
     {
         $this->modulesPath = base_path('Modules');
 
-        // مُفرِّغ قاعدة البيانات للنسخ الاحتياطية (Phase 13) — يُستبدَل بمُفرِّغ وهمي في الاختبارات.
+        // مُفرِّغ/مُستعيد قاعدة البيانات للنسخ الاحتياطية (Phase 13) — يُستبدَلان بوهميين في الاختبارات.
         $this->app->bind(DatabaseDumper::class, PgDumpDumper::class);
+        $this->app->bind(DatabaseRestorer::class, PgRestoreRestorer::class);
     }
 
     public function boot(): void

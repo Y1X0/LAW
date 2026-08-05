@@ -14,12 +14,44 @@
 | **Dashboard & Analytics** | ✅ **Production Ready (Frontend + Backend)** — تجميع مؤشّرات قراءة-فقط عبر الوحدات |
 | **Notifications / Reminders** | ✅ **Production Ready (Frontend + Backend)** — إشعارات داخل النظام + تذكيرات زمنية |
 | **Data Migration Platform** | ✅ **Production Ready (Frontend + Backend)** — استيراد/تصدير Excel عبر خدمات النطاق، منصّة موحّدة مصفّاة بالصلاحيات |
+| **Backup & Restore** | ✅ **Production Ready (Frontend + Backend)** — نسخ pg_dump إلى R2 منفصل، احتفاظ GFS، واجهة Owner، استعادة CLI مُختبَرة حيّاً |
 
 > **Phase 5 (Document Storage & Upload) — مُغلَقة رسميّاً.**
 > **Phase 6 (Financial / Invoicing) — مُغلَقة رسميّاً.**
 > **Phase 7 (Dashboard & Analytics) — مُغلَقة رسميّاً.**
 > **Phase 8 (Notifications / Reminders) — مُغلَقة رسميّاً.**
 > **Phase 10 (Data Migration — العملاء) + Phase 11 (القضايا + المنصّة الموحّدة) — مُغلَقتان رسميّاً.**
+> **Phase 13 · B1 (Backup & Restore) — مُغلَقة رسميّاً (أوّل حاصرة Go-Live).**
+
+---
+
+## Backup & Restore — إغلاق Phase 13 · B1 (Production Ready)
+
+أوّل حاصرة تسليم: نسخ احتياطي موثوق لقاعدة البيانات مستقلّ عن المزوّد وبيد Owner — يحوّل النظام
+من «برنامج يعمل» إلى «نظام شركة يمكن الاعتماد عليه». بُني على PRات صغيرة (CI أخضر، دمج بموافقة).
+
+**المحرّك:** `BackupService` يفرّغ Postgres عبر `pg_dump -Fc` → يرفع إلى **قرص `backups` (دلو R2
+منفصل عن الوثائق — عزل أمني)** → يسجّل ويدقّق → يقلّم الاحتفاظ **GFS** (يومي 30/أسبوعي 12/شهري
+12/يدوي 30). التفريغ خلف عقد `DatabaseDumper` (قابل للاختبار).
+
+**الجدولة:** خدمة Cron في Render (`law-backup`) تشغّل `backup:run` يوميّاً؛ النوع يُشتقّ من التاريخ.
+
+**واجهة Owner:** الإعدادات → النسخ الاحتياطي — آخر نسخة ناجحة + «إنشاء الآن» + جدول بالتنزيل،
+تحت `backup.manage`. **لا استعادة/حذف من الواجهة** (قرار أمان).
+
+**الاستعادة (CLI فقط):** `php artisan backup:restore <id> --force` — عملية مدمِّرة مُحصَّنة (تأكيد
+إجباري) عبر `pg_restore`، مُدقَّقة (`backup_restored`). الوثائق تبقى على R2 (لم تتأثّر).
+
+**الإثبات الحيّ (دليل التسليم):** سير عمل **Backup Restore Integration** يشغّل دورة كاملة على
+Postgres حقيقي — **نسخ → إضافة بيانات → حذف → استعادة → تأكّد عودة البيانات** — عبر
+`tests/Integration/BackupRestoreLiveTest.php`. الوحدات (`BackupServiceTest`/`BackupApiTest`/
+`BackupRestoreCommandTest`) تغطّي التنسيق والصلاحيات والتقليم والتحصين. التفاصيل التشغيلية في
+`docs/BACKUP-RUNBOOK.md`.
+
+### المؤجَّل (Backlog — ليس أخطاء)
+
+نسخ ملفات R2 كاملة (تُكتفى بدوام التخزين الكائني + Versioning)، تشفير النسخ بمفتاح إضافي (GPG)،
+وتنبيه عند فشل نسخة (يُضاف عند ربط قناة تنبيه تشغيلية). لا حاجة لها لتسليم شركة واحدة الآن.
 
 ---
 

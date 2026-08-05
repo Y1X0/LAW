@@ -1,0 +1,78 @@
+name: Backup Restore Integration
+
+# تحقّق حيّ من دورة النسخ/الاستعادة على Postgres حقيقي (Operational Validation) — خارج CI
+# الرئيسي (SQLite). دليل التسليم: backup → mutate → delete → restore → verify. لا أسرار
+# (النسخ تُخزَّن محليّاً داخل السير)؛ يعمل يدويّاً وعند تغيّر وحدة النسخ على main.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "backend/Modules/Backup/**"
+      - "backend/tests/Integration/BackupRestoreLiveTest.php"
+      - ".github/workflows/backup-restore.yml"
+
+jobs:
+  restore-live:
+    name: Live Backup → Restore Round-Trip
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lawfirm
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: lawfirm_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lawfirm"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:8Z846Zj3SMwY2v0EaXRYzJY/r6ly51V+kBDEFKgEvdc=
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: lawfirm_test
+      DB_USERNAME: lawfirm
+      DB_PASSWORD: secret
+      BACKUP_LIVE_TEST: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install postgresql-client (pg_dump / pg_restore)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: bcmath, intl, zip, pdo_pgsql
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Migrate fresh on Postgres
+        run: php artisan migrate:fresh --force
+
+      - name: Run live backup → restore test
+        run: ./vendor/bin/phpunit tests/Integration/BackupRestoreLiveTest.php

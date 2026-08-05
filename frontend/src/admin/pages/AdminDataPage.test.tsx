@@ -9,6 +9,13 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
+// سِجلّ المستوردات الذي يعلنه الخادم (مصفّى بالصلاحيات) — تبني منه الواجهة قائمة الأنواع.
+const MANIFEST = [
+  { key: 'clients', label: 'العملاء', mapping: true },
+  { key: 'cases', label: 'القضايا', mapping: true },
+  { key: 'employees', label: 'الموظفون', mapping: false },
+]
+
 const CLIENTS_PREVIEW = {
   total: 2,
   create: 1,
@@ -23,6 +30,15 @@ const CLIENTS_PREVIEW = {
   ],
   match_keys: ['national_id', 'email', 'name'],
   detected_headers: ['name', 'type', 'phone', 'national_id'],
+}
+
+/** يوجّه نداءات fetch: manifest → السِجلّ، وبقيّة المسارات حسب المُمرَّر. */
+function router(rest: (url: string) => Response) {
+  return vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input)
+    if (url.includes('import/manifest')) return json({ data: MANIFEST })
+    return rest(url)
+  })
 }
 
 beforeEach(() => {
@@ -40,14 +56,14 @@ const xlsx = () => new File(['x'], 'clients.xlsx', { type: 'application/octet-st
 
 describe('AdminDataPage', () => {
   it('يعرض أزرار التصدير للكيانات الستّة', () => {
-    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('fetch', router(() => json({ data: null })))
     renderWithProviders(<AdminDataPage />)
     expect(screen.getByRole('button', { name: 'تصدير: الموظفون' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'تصدير: القضايا' })).toBeInTheDocument()
   })
 
   it('التصدير ينادي مسار تصدير الكيان', async () => {
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response('xlsxbytes', { status: 200 }))
+    const fetchMock = router(() => new Response('xlsxbytes', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
     const user = userEvent.setup()
 
@@ -59,12 +75,35 @@ describe('AdminDataPage', () => {
     )
   })
 
+  it('تعرض أنواع الاستيراد من سِجلّ الخادم (ومنها القضايا)', async () => {
+    vi.stubGlobal('fetch', router(() => json({ data: null })))
+    renderWithProviders(<AdminDataPage />)
+
+    // خيار القضايا يظهر لأنّ الخادم أعلنه — لا تثبيت في الواجهة.
+    expect(await screen.findByRole('option', { name: 'القضايا' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'العملاء' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'الموظفون' })).toBeInTheDocument()
+  })
+
+  it('عند غياب الصلاحيات لا يعرض قائمة الأنواع بل رسالة واضحة', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) =>
+        String(input).includes('import/manifest') ? json({ data: [] }) : json({ data: null }),
+      ),
+    )
+    renderWithProviders(<AdminDataPage />)
+
+    expect(await screen.findByText('لا تملك صلاحية استيراد أيّ نوع من البيانات.')).toBeInTheDocument()
+    expect(screen.queryByLabelText('ملف الاستيراد')).not.toBeInTheDocument()
+  })
+
   it('معاينة العملاء تعرض الملخّص وواجهة مطابقة الأعمدة وتفعّل التأكيد', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => json({ data: CLIENTS_PREVIEW })))
+    vi.stubGlobal('fetch', router(() => json({ data: CLIENTS_PREVIEW })))
     const user = userEvent.setup()
 
-    renderWithProviders(<AdminDataPage />) // العملاء هو الكيان الافتراضي
-    await user.upload(screen.getByLabelText('ملف الاستيراد'), xlsx())
+    renderWithProviders(<AdminDataPage />) // العملاء هو أوّل نوع في السِجلّ ⇒ الافتراضي
+    await user.upload(await screen.findByLabelText('ملف الاستيراد'), xlsx())
     await user.click(screen.getByRole('button', { name: 'معاينة' }))
 
     // ملخّص + واجهة مطابقة (الحقل الإلزامي name يظهر بنجمة) + مفتاح مطابقة.
@@ -75,14 +114,14 @@ describe('AdminDataPage', () => {
   })
 
   it('تأكيد استيراد العملاء ينادي مسار commit', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) =>
-      String(input).includes('/commit') ? json({ data: { created: 1, updated: 1 } }) : json({ data: CLIENTS_PREVIEW }),
+    const fetchMock = router((url) =>
+      url.includes('/commit') ? json({ data: { created: 1, updated: 1 } }) : json({ data: CLIENTS_PREVIEW }),
     )
     vi.stubGlobal('fetch', fetchMock)
     const user = userEvent.setup()
 
     renderWithProviders(<AdminDataPage />)
-    await user.upload(screen.getByLabelText('ملف الاستيراد'), xlsx())
+    await user.upload(await screen.findByLabelText('ملف الاستيراد'), xlsx())
     await user.click(screen.getByRole('button', { name: 'معاينة' }))
     await screen.findByText(/إضافة:/)
     await user.click(screen.getByRole('button', { name: 'تأكيد الاستيراد' }))
@@ -95,14 +134,14 @@ describe('AdminDataPage', () => {
   it('المعاينة بأخطاء تُبقي التأكيد معطّلاً وتعرض الصفوف', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () =>
+      router(() =>
         json({ data: { total: 1, create: 0, update: 0, invalid: 1, errors: [{ row: 2, message: 'النوع غير صحيح' }], fields: CLIENTS_PREVIEW.fields, match_keys: CLIENTS_PREVIEW.match_keys, detected_headers: CLIENTS_PREVIEW.detected_headers } }),
       ),
     )
     const user = userEvent.setup()
 
     renderWithProviders(<AdminDataPage />)
-    await user.upload(screen.getByLabelText('ملف الاستيراد'), xlsx())
+    await user.upload(await screen.findByLabelText('ملف الاستيراد'), xlsx())
     await user.click(screen.getByRole('button', { name: 'معاينة' }))
 
     expect(await screen.findByText(/النوع غير صحيح/)).toBeInTheDocument()

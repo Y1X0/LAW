@@ -20,6 +20,24 @@ class DataImportController
 
     public function __construct(private readonly DataImportService $import) {}
 
+    /**
+     * سِجلّ المستوردات المتاحة للمستخدم الحالي (مصفّى بصلاحيّاته) — تبني منه الواجهة قائمة
+     * أنواع البيانات ديناميكياً. لا يكشف مستورداً لا يملك المستخدم صلاحية تنفيذه.
+     */
+    public function manifest(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $available = array_filter(
+            DataImportService::IMPORTERS,
+            fn (array $imp) => $user?->hasPermission($imp['permission']) ?? false,
+        );
+
+        return $this->ok(array_values(array_map(
+            fn (array $imp) => ['key' => $imp['key'], 'label' => $imp['label'], 'mapping' => $imp['mapping']],
+            $available,
+        )));
+    }
+
     public function previewEmployees(Request $request): JsonResponse
     {
         $rows = $this->rowsFromRequest($request);

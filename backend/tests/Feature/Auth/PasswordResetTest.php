@@ -3,8 +3,10 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Modules\Core\Models\AuthToken;
 use Tests\TestCase;
@@ -19,6 +21,27 @@ class PasswordResetTest extends TestCase
 
         $this->postJson('/api/auth/forgot-password', ['email' => 'user@firm.test'])->assertOk();
         $this->assertDatabaseHas('password_reset_tokens', ['email' => 'user@firm.test']);
+    }
+
+    public function test_forgot_password_dispatches_reset_email(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create(['email' => 'reset@firm.test']);
+
+        $this->postJson('/api/auth/forgot-password', ['email' => 'reset@firm.test'])->assertOk();
+
+        // إثبات أن بريد إعادة التعيين يُرسَل فعلاً (عبر إشعار Laravel القياسي على قناة mail).
+        Notification::assertSentTo($user, ResetPassword::class);
+    }
+
+    public function test_forgot_password_unknown_email_sends_nothing(): void
+    {
+        Notification::fake();
+
+        // بريد غير مسجّل ⇒ ردّ عامّ (منع التعداد) ولا يُرسَل أي بريد.
+        $this->postJson('/api/auth/forgot-password', ['email' => 'ghost@firm.test'])->assertOk();
+
+        Notification::assertNothingSent();
     }
 
     public function test_reset_password_updates_password_and_revokes_sessions(): void

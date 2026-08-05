@@ -56,6 +56,29 @@ describe('LegalCaseDetailPage', () => {
     expect(screen.getByText('رئيسي')).toBeInTheDocument()
   })
 
+  it('يعرض قسم الحقول المخصّصة بقيمها المرئية من الخادم', async () => {
+    tokenStorage.set({ access_token: 't', refresh_token: 'r' })
+    const withCf = {
+      ...CASE,
+      custom_fields: [
+        { key: 'contract_number', label: 'رقم العقد', type: 'text', value: 'C-777' },
+        { key: 'contract_value', label: 'قيمة العقد', type: 'currency', value: 50000 },
+      ],
+    }
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (/cases\/1$/.test(url)) return ok(withCf)
+      if (url.includes('employees')) return json({ data: EMPLOYEES, meta: EMP_META, errors: null })
+      return ok([])
+    }))
+    renderWithProviders(<LegalCaseDetailPage />, opts)
+
+    expect(await screen.findByText('الحقول المخصّصة')).toBeInTheDocument()
+    expect(screen.getByText('رقم العقد')).toBeInTheDocument()
+    expect(screen.getByText('C-777')).toBeInTheDocument()
+    expect(screen.getByText('قيمة العقد')).toBeInTheDocument()
+  })
+
   it('يُغلق القضية بتأكيد عبر POST', async () => {
     tokenStorage.set({ access_token: 't', refresh_token: 'r' })
     const fetchMock = stub()

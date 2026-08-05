@@ -211,6 +211,48 @@ class CustomFieldValuesTest extends TestCase
         $this->assertDatabaseHas('custom_field_definitions', ['id' => $def->id]); // لم يُحذَف
     }
 
+    public function test_form_schema_create_returns_editable_fields_only(): void
+    {
+        $lawyer = $this->userWithRole('lawyer', ['cases.create', 'cases.view_own']);
+        $this->defineField(['key' => 'note', 'type' => 'text', 'edit_roles' => null, 'display_in' => ['create', 'edit']]);
+        $this->defineField(['key' => 'secret', 'type' => 'text', 'edit_roles' => ['admin'], 'display_in' => ['create'], 'sort_order' => 2]);
+
+        $schema = $this->actingAsToken($lawyer)->getJson('/api/cases/custom-fields/form?context=create')->assertOk()->json('data');
+        $keys = collect($schema)->pluck('key');
+
+        $this->assertTrue($keys->contains('note'));      // قابل للتعديل ⇒ مدخل
+        $this->assertFalse($keys->contains('secret'));   // غير قابل للتعديل ⇒ لا يظهر في الإنشاء
+    }
+
+    public function test_form_schema_edit_marks_editable_and_guards_case_access(): void
+    {
+        $owner = $this->userWithRole('owner', ['custom_fields.manage', 'cases.create', 'cases.view_all']);
+        $lawyerEmp = Employee::factory()->create();
+        $lawyer = $this->userWithRole('lawyer', ['cases.view_own', 'cases.update']);
+        $lawyerEmp->update(['user_id' => $lawyer->id]);
+
+        $this->defineField(['key' => 'note', 'type' => 'text', 'edit_roles' => null, 'display_in' => ['edit', 'details']]);
+        $this->defineField(['key' => 'secret', 'type' => 'currency', 'view_roles' => null, 'edit_roles' => ['admin'], 'display_in' => ['edit', 'details'], 'sort_order' => 2]);
+        $client = $this->client();
+
+        $id = $this->actingAsToken($owner)->postJson('/api/cases', [
+            'internal_number' => 'K-20', 'title' => 'قضية', 'client_id' => $client->id,
+            'responsible_lawyer_id' => $lawyerEmp->id,
+            'custom_fields' => ['secret' => 7000],
+        ])->json('data.id');
+
+        $schema = collect($this->actingAsToken($lawyer)->getJson("/api/cases/custom-fields/form?context=edit&case={$id}")->assertOk()->json('data'))->keyBy('key');
+        $this->assertTrue($schema['note']['editable']);       // قابل للتعديل ⇒ مدخل
+        $this->assertFalse($schema['secret']['editable']);    // مرئي لكن غير قابل للتعديل ⇒ للعرض فقط
+        $this->assertSame(7000.0, (float) $schema['secret']['value']);
+
+        // محامٍ غير مسنَد (عزل القضية) ⇒ 403 حتى على المخطّط.
+        $otherEmp = Employee::factory()->create();
+        $other = $this->userWithRole('lawyer2', ['cases.view_own', 'cases.update']);
+        $otherEmp->update(['user_id' => $other->id]);
+        $this->actingAsToken($other)->getJson("/api/cases/custom-fields/form?context=edit&case={$id}")->assertStatus(403);
+    }
+
     public function test_index_batch_attaches_list_context_fields(): void
     {
         $owner = $this->userWithRole('owner', ['custom_fields.manage', 'cases.create', 'cases.view_all']);

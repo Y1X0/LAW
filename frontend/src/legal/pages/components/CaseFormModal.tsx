@@ -1,12 +1,13 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, SelectField, TextareaField } from '@/core/ui/primitives'
 import { useToast } from '@/core/ui/useToast'
 import { Modal } from '@/admin/ui/Modal'
 import { ApiError } from '@/core/api/types'
 import { type ClientRef, fetchClients } from '@/legal/api/clients'
-import { CASE_STATUSES, type CaseDetail, type CaseInput, caseStatusLabel, createCase, updateCase } from '@/legal/api/cases'
+import { CASE_STATUSES, type CaseDetail, type CaseInput, caseStatusLabel, createCase, fetchCaseCustomFieldForm, updateCase } from '@/legal/api/cases'
 import { QuickAddClientModal } from './QuickAddClientModal'
+import { CaseCustomFieldsSection } from './CaseCustomFieldsSection'
 
 /**
  * نموذج إنشاء/تعديل قضية (Phase 3 / PR-2) — POST/PUT /cases الموجودان.
@@ -32,6 +33,20 @@ export function CaseFormModal({ existing, onSaved, onClose }: { existing?: CaseD
   const [addingClient, setAddingClient] = useState(false)
   const [extraClients, setExtraClients] = useState<ClientRef[]>([])
 
+  // مخطّط الحقول المخصّصة من الخادم (Phase 12) — editable يقرّر مدخل أم للعرض فقط.
+  const cfForm = useQuery({
+    queryKey: ['legal', 'case-custom-fields', editing ? existing!.id : 'new'],
+    queryFn: () => fetchCaseCustomFieldForm(editing ? 'edit' : 'create', existing?.id),
+  })
+  const [cf, setCf] = useState<Record<string, string | boolean>>({})
+  useEffect(() => {
+    if (cfForm.data && Object.keys(cf).length === 0) {
+      const init: Record<string, string | boolean> = {}
+      for (const item of cfForm.data) init[item.key] = item.type === 'boolean' ? Boolean(item.value) : (item.value ?? '') as string
+      setCf(init)
+    }
+  }, [cfForm.data, cf])
+
   const clients = useQuery({ queryKey: ['legal', 'clients-picker'], queryFn: () => fetchClients() })
   const options = [...(clients.data ?? []), ...extraClients]
   // العميل الحالي للقضية (عند التعديل) قد لا يكون ضمن أول 100 نشِط — أضِفه للخيارات.
@@ -55,6 +70,11 @@ export function CaseFormModal({ existing, onSaved, onClose }: { existing?: CaseD
         progress: Number(f.progress) || 0,
         opened_date: f.opened_date || null,
         description: f.description.trim() || null,
+      }
+      // قيم الحقول القابلة للتعديل فقط (الخادم يرفض غيرها على أي حال).
+      const editable = (cfForm.data ?? []).filter((i) => i.editable)
+      if (editable.length > 0) {
+        payload.custom_fields = Object.fromEntries(editable.map((i) => [i.key, cf[i.key] ?? '']))
       }
       return editing ? updateCase(existing!.id, payload) : createCase(payload)
     },
@@ -106,6 +126,14 @@ export function CaseFormModal({ existing, onSaved, onClose }: { existing?: CaseD
           <Field label="التقدّم %" type="number" value={f.progress} onChange={set('progress')} min={0} max={100} />
         </div>
         <TextareaField label="الوصف" value={f.description} onChange={set('description')} rows={3} />
+
+        {cfForm.data && (
+          <CaseCustomFieldsSection
+            items={cfForm.data}
+            values={cf}
+            onChange={(key, value) => setCf((s) => ({ ...s, [key]: value }))}
+          />
+        )}
 
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} disabled={save.isPending}>إلغاء</Button>

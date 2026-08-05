@@ -6,6 +6,8 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Modules\Backup\Contracts\DatabaseDumper;
+use Modules\Backup\Support\PgDumpDumper;
 use Modules\Core\Http\Middleware\AuthenticateToken;
 use Modules\Core\Http\Middleware\EnsurePermission;
 use Modules\HR\Http\Middleware\EnsureLinkedEmployee;
@@ -28,6 +30,9 @@ class ModuleServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->modulesPath = base_path('Modules');
+
+        // مُفرِّغ قاعدة البيانات للنسخ الاحتياطية (Phase 13) — يُستبدَل بمُفرِّغ وهمي في الاختبارات.
+        $this->app->bind(DatabaseDumper::class, PgDumpDumper::class);
     }
 
     public function boot(): void

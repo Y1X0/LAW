@@ -6,7 +6,7 @@ FROM php:8.3-fpm-alpine
 # استخدام docker-compose الذي يبقى على CMD php-fpm أدناه مع nginx منفصل.
 RUN apk add --no-cache \
         bash git curl libpng-dev libjpeg-turbo-dev freetype-dev libzip-dev \
-        postgresql-dev icu-dev oniguruma-dev \
+        postgresql-dev postgresql-client icu-dev oniguruma-dev \
         nginx gettext \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \

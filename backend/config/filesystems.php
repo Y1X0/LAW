@@ -76,6 +76,20 @@ return [
             'report' => false,
         ],
 
+        // نسخ قاعدة البيانات — دلو R2 منفصل عن الوثائق (عزل: تسريب مفاتيح الوثائق ≠ النسخ الكاملة).
+        'backups' => [
+            'driver' => 's3',
+            'key' => env('R2_BACKUP_ACCESS_KEY_ID'),
+            'secret' => env('R2_BACKUP_SECRET_ACCESS_KEY'),
+            'region' => env('R2_BACKUP_DEFAULT_REGION', 'auto'),
+            'bucket' => env('R2_BACKUP_BUCKET'),
+            'endpoint' => env('R2_BACKUP_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*

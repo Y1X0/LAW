@@ -33,7 +33,7 @@ class ErrorEnvelopeTest extends TestCase
         $target = User::factory()->create();
 
         $this->actingAsToken($admin)->postJson("/api/users/{$target->id}/reset-password", [
-            'password' => 'NewPass123', 'password_confirmation' => 'mismatch',
+            'password' => 'Str0ng!Passw0rd', 'password_confirmation' => 'mismatch',
         ])->assertStatus(422)->assertJsonPath('errors.code', 'VALIDATION_ERROR');
     }
 

@@ -48,7 +48,7 @@ class RunCompanyScenarioTest extends TestCase
 
         // 4) إنشاء حساب.
         $user = $this->withToken($ownerToken)->postJson('/api/users', [
-            'name' => 'أحمد المصري', 'email' => 'ahmed@firm.test', 'password' => 'HrPass1234!',
+            'name' => 'أحمد المصري', 'email' => 'ahmed@firm.test', 'password' => 'HrPass12345!',
         ])->assertStatus(201)->json('data');
 
         // 5) ربط الحساب بالموظف (يفرض 1:1).
@@ -58,7 +58,7 @@ class RunCompanyScenarioTest extends TestCase
         $this->withToken($ownerToken)->postJson("/api/users/{$user['id']}/roles", ['role_id' => $hrRoleId])->assertSuccessful();
 
         // 7) تسجيل الدخول بالحساب الجديد.
-        $hrToken = $this->postJson('/api/auth/login', ['email' => 'ahmed@firm.test', 'password' => 'HrPass1234!'])
+        $hrToken = $this->postJson('/api/auth/login', ['email' => 'ahmed@firm.test', 'password' => 'HrPass12345!'])
             ->assertOk()->json('data.tokens.access_token');
 
         // 8) تنفيذ عملية HR فعلية: رؤية الموظفين + حالة الحساب المرتبط ظاهرة.

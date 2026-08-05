@@ -75,12 +75,12 @@ class UserManagementTest extends TestCase
         $this->actingAsToken($admin)->postJson('/api/users', [
             'name' => 'مستخدم جديد',
             'email' => 'new@law.test',
-            'password' => 'Secret123',
+            'password' => 'Str0ng!Passw0rd',
         ])->assertCreated()->assertJsonPath('data.email', 'new@law.test');
 
         $this->assertDatabaseHas('users', ['email' => 'new@law.test', 'status' => 'active']);
         $created = User::where('email', 'new@law.test')->first();
-        $this->assertNotSame('Secret123', $created->password); // مُجزّأة
+        $this->assertNotSame('Str0ng!Passw0rd', $created->password); // مُجزّأة
         $this->assertDatabaseHas('audit_logs', ['action' => 'user_created']);
     }
 
@@ -90,7 +90,7 @@ class UserManagementTest extends TestCase
         User::factory()->create(['email' => 'dup@law.test']);
 
         $this->actingAsToken($admin)->postJson('/api/users', [
-            'name' => 'x', 'email' => 'dup@law.test', 'password' => 'Secret123',
+            'name' => 'x', 'email' => 'dup@law.test', 'password' => 'Str0ng!Passw0rd',
         ])->assertStatus(422)->assertJsonPath('errors.code', 'VALIDATION_ERROR');
     }
 
@@ -100,7 +100,7 @@ class UserManagementTest extends TestCase
         $role = Role::create(['name' => 'reviewer', 'display_name' => 'مُراجِع']);
 
         $this->actingAsToken($admin)->postJson('/api/users', [
-            'name' => 'مع دور', 'email' => 'withrole@law.test', 'password' => 'Secret123',
+            'name' => 'مع دور', 'email' => 'withrole@law.test', 'password' => 'Str0ng!Passw0rd',
             'role_ids' => [$role->id],
         ])->assertCreated()->assertJsonPath('data.roles.0.name', 'reviewer');
     }
@@ -129,7 +129,7 @@ class UserManagementTest extends TestCase
 
         $this->actingAsToken($noPerm)->getJson('/api/users')->assertForbidden();
         $this->actingAsToken($noPerm)->postJson('/api/users', [
-            'name' => 'x', 'email' => 'y@law.test', 'password' => 'Secret123',
+            'name' => 'x', 'email' => 'y@law.test', 'password' => 'Str0ng!Passw0rd',
         ])->assertForbidden();
     }
 
@@ -204,7 +204,7 @@ class UserManagementTest extends TestCase
         ]);
 
         $this->actingAsToken($admin)->postJson("/api/users/{$target->id}/reset-password", [
-            'password' => 'NewPass123', 'password_confirmation' => 'NewPass123',
+            'password' => 'Str0ng!Passw0rd', 'password_confirmation' => 'Str0ng!Passw0rd',
         ])->assertOk();
 
         $this->assertNotSame($old, $target->fresh()->password);
@@ -218,7 +218,7 @@ class UserManagementTest extends TestCase
         $target = User::factory()->create();
 
         $this->actingAsToken($admin)->postJson("/api/users/{$target->id}/reset-password", [
-            'password' => 'NewPass123', 'password_confirmation' => 'mismatch',
+            'password' => 'Str0ng!Passw0rd', 'password_confirmation' => 'mismatch',
         ])->assertStatus(422);
     }
 

@@ -61,12 +61,12 @@ class PasswordResetTest extends TestCase
         $res = $this->postJson('/api/auth/reset-password', [
             'token' => $token,
             'email' => 'user@firm.test',
-            'password' => 'new-password-123',
-            'password_confirmation' => 'new-password-123',
+            'password' => 'Str0ng!Passw0rd',
+            'password_confirmation' => 'Str0ng!Passw0rd',
         ]);
 
         $res->assertOk();
-        $this->assertTrue(Hash::check('new-password-123', $user->fresh()->password));
+        $this->assertTrue(Hash::check('Str0ng!Passw0rd', $user->fresh()->password));
         $this->assertNotNull($user->fresh()->password_changed_at);
         $this->assertDatabaseHas('audit_logs', ['action' => 'password_reset']);
         // كل التوكنات النشطة أُبطلت
@@ -80,8 +80,8 @@ class PasswordResetTest extends TestCase
         $this->postJson('/api/auth/reset-password', [
             'token' => 'invalid-token',
             'email' => 'user@firm.test',
-            'password' => 'new-password-123',
-            'password_confirmation' => 'new-password-123',
+            'password' => 'Str0ng!Passw0rd',
+            'password_confirmation' => 'Str0ng!Passw0rd',
         ])->assertStatus(422)->assertJsonPath('errors.code', 'RESET_FAILED');
     }
 
@@ -93,10 +93,10 @@ class PasswordResetTest extends TestCase
         $this->postJson('/api/auth/reset-password', [
             'token' => $token,
             'email' => 'user@firm.test',
-            'password' => 'brand-new-pass-9',
-            'password_confirmation' => 'brand-new-pass-9',
+            'password' => 'Str0ng!Passw0rd',
+            'password_confirmation' => 'Str0ng!Passw0rd',
         ])->assertOk();
 
-        $this->postJson('/api/auth/login', ['email' => 'user@firm.test', 'password' => 'brand-new-pass-9'])->assertOk();
+        $this->postJson('/api/auth/login', ['email' => 'user@firm.test', 'password' => 'Str0ng!Passw0rd'])->assertOk();
     }
 }

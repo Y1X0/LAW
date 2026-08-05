@@ -126,6 +126,17 @@ class AuthService
         }
 
         $user = $token->user;
+
+        // M8: أعِد فحص حالة الحساب عند التدوير. حساب موقوف/مقفول (أو محذوف) يجب ألا يُبقي جلسته
+        // حيّة حتى 14 يوماً عبر refresh — يُبطَل التوكن المقدَّم ويُرفَض الطلب برمز عام (لا كشف حالة،
+        // ويُجبَر إعادة الدخول). يوازي فحوص login (status/locked_until).
+        $isLocked = $user && $user->locked_until && $user->locked_until->isFuture();
+        if ($user === null || $user->status !== 'active' || $isLocked) {
+            $token->forceFill(['revoked_at' => now()])->save();
+            $this->audit('token_refresh_denied', $user, $request);
+            throw AuthException::invalidToken();
+        }
+
         $token->forceFill(['revoked_at' => now()])->save(); // تدوير: إبطال القديم
 
         $tokens = $this->issueTokens($user, $request);

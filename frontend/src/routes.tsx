@@ -1,6 +1,8 @@
 import { lazy } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { LoginPage } from '@/core/auth/LoginPage'
+import { ForgotPasswordPage } from '@/core/auth/ForgotPasswordPage'
+import { ResetPasswordPage } from '@/core/auth/ResetPasswordPage'
 import { ProtectedRoute } from '@/core/auth/ProtectedRoute'
 import { CapabilitiesProvider } from '@/core/capabilities/CapabilitiesProvider'
 import { RequireAdmin } from '@/core/capabilities/RequireAdmin'
@@ -73,6 +75,8 @@ import { WorklogPage } from '@/lawyer/pages/WorklogPage'
 export const router = createBrowserRouter(
   [
     { path: '/login', element: <LoginPage /> },
+    { path: '/forgot-password', element: <ForgotPasswordPage /> },
+    { path: '/reset-password', element: <ResetPasswordPage /> },
     {
       element: <ProtectedRoute />,
       children: [

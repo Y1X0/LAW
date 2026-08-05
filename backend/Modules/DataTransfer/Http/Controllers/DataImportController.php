@@ -8,9 +8,10 @@ use Modules\Core\Concerns\RecordsAudit;
 use Modules\DataTransfer\Services\DataImportService;
 use Modules\HR\Models\Employee;
 use Modules\Legal\Models\Client;
+use Modules\Legal\Models\LegalCase;
 
 /**
- * استيراد بيانات رئيسية من Excel (الموظفون + العملاء). preview: تحقّق بلا حفظ.
+ * استيراد بيانات رئيسية من Excel (الموظفون + العملاء + القضايا). preview: تحقّق بلا حفظ.
  * commit: حفظ ذرّي (الكل-أو-لا-شيء). محميّ بصلاحية إنشاء الكيان في routes/api.php.
  */
 class DataImportController
@@ -90,6 +91,48 @@ class DataImportController
         return $this->ok(['created' => $result['created'], 'updated' => $result['updated']]);
     }
 
+    public function previewCases(Request $request): JsonResponse
+    {
+        $raw = $this->rowsFromRequest($request);
+        $detected = $raw === [] ? [] : array_keys($raw[0]);
+        $mapping = $this->caseMapping($request);
+        $rows = $mapping !== null ? $this->import->applyMapping($raw, $mapping) : $raw;
+
+        $summary = $this->import->previewCases($rows);
+
+        // بيانات وصفية لواجهة مطابقة الأعمدة: الحقول (وإلزاميّتها) ورؤوس الملف ومفتاح المطابقة الثابت.
+        return $this->ok($summary + [
+            'fields' => array_map(
+                fn (string $key) => ['key' => $key, 'required' => in_array($key, DataImportService::CASE_REQUIRED, true)],
+                DataImportService::CASE_FIELDS,
+            ),
+            'match_keys' => [DataImportService::CASE_MATCH_KEY],
+            'detected_headers' => $detected,
+        ]);
+    }
+
+    public function commitCases(Request $request): JsonResponse
+    {
+        $raw = $this->rowsFromRequest($request);
+        $mapping = $this->caseMapping($request);
+        $rows = $mapping !== null ? $this->import->applyMapping($raw, $mapping) : $raw;
+
+        $result = $this->import->commitCases($rows, $request);
+
+        if ($result['errors'] !== []) {
+            return response()->json([
+                'data' => null, 'meta' => null,
+                'errors' => ['code' => 'IMPORT_VALIDATION', 'message' => 'يوجد صفوف غير صحيحة — لم يُحفَظ شيء.', 'rows' => $result['errors']],
+            ], 422);
+        }
+
+        $this->recordAudit($request, 'cases_imported', LegalCase::class, 0, [
+            'created' => $result['created'], 'updated' => $result['updated'],
+        ]);
+
+        return $this->ok(['created' => $result['created'], 'updated' => $result['updated']]);
+    }
+
     /**
      * يتحقّق من الملف المرفوع ويحوّله إلى صفوف. التحقّق قائم على المحتوى (يحاول القراءة)
      * بدل mimes — أكثر موثوقية لملفات xlsx (تُخمَّن كـ zip). ملف غير قابل للقراءة ⇒ 422.
@@ -134,6 +177,24 @@ class DataImportController
         $key = (string) $request->input('match_key', 'national_id');
 
         return in_array($key, DataImportService::CLIENT_MATCH_KEYS, true) ? $key : 'national_id';
+    }
+
+    /** مواصفة مطابقة أعمدة القضية (field => header) — تُقبَل حقول القضية المعروفة فقط. */
+    private function caseMapping(Request $request): ?array
+    {
+        $mapping = $request->input('mapping');
+        if (! is_array($mapping)) {
+            return null;
+        }
+
+        $clean = [];
+        foreach ($mapping as $field => $header) {
+            if (in_array($field, DataImportService::CASE_FIELDS, true) && is_string($header) && $header !== '') {
+                $clean[$field] = $header;
+            }
+        }
+
+        return $clean !== [] ? $clean : null;
     }
 
     private function ok(array $data, int $status = 200): JsonResponse

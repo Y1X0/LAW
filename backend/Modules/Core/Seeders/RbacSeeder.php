@@ -35,6 +35,7 @@ class RbacSeeder extends Seeder
         'reports.hr', 'reports.finance', 'reports.cases', 'reports.marketing',
         'dashboard.view_management', // لوحة المؤشرات الإدارية الشاملة (Phase 7)
         'notifications.view_own', // إشعارات المستخدم داخل النظام (Phase 8)
+        'custom_fields.manage', // تعريف الحقول المخصّصة لكل كيان (Phase 12) — المدير افتراضياً
     ];
 
     /** الأدوار النظامية (docs/05 §3). */

@@ -37,4 +37,19 @@ export const authApi = {
   async logout(): Promise<void> {
     await api.post('auth/logout')
   },
+
+  /** طلب رابط إعادة تعيين كلمة المرور — يعيد رسالة عامة دائماً (منع تعداد الحسابات). */
+  async forgotPassword(email: string): Promise<void> {
+    await api.post('auth/forgot-password', { email })
+  },
+
+  /** تعيين كلمة مرور جديدة باستخدام الرمز من رابط البريد. */
+  async resetPassword(input: {
+    token: string
+    email: string
+    password: string
+    password_confirmation: string
+  }): Promise<void> {
+    await api.post('auth/reset-password', input)
+  },
 }

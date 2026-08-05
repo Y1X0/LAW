@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ApiError } from '@/core/api/types'
 import { useAuth } from '@/core/auth/useAuth'
 
@@ -23,7 +23,6 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [hint, setHint] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   async function onSubmit(e: FormEvent) {
@@ -112,16 +111,10 @@ export function LoginPage() {
                   <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30" />
                   تذكّرني
                 </label>
-                <button type="button" onClick={() => setHint((h) => !h)} className="font-medium text-brand-600 hover:text-brand-700">
+                <Link to="/forgot-password" className="font-medium text-brand-600 hover:text-brand-700">
                   نسيت كلمة المرور؟
-                </button>
+                </Link>
               </div>
-
-              {hint ? (
-                <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-700">
-                  لإعادة تعيين كلمة المرور، تواصل مع إدارة النظام.
-                </p>
-              ) : null}
 
               {error ? (
                 <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">

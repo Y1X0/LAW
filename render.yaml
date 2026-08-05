@@ -75,6 +75,12 @@ services:
         sync: false
       - key: FRONTEND_URL # عنوان الواجهة — يحصر CORS (اختياري لكن مُوصى به)
         sync: false
+      # أوّل مالك منصّة (B4): يُنشأ تلقائيّاً عند الإقلاع من هذين السرّين (DatabaseSeeder،
+      # idempotent). المسار الرسمي لأوّل مدير — لا حاجة لـ tinker. دوِّر كلمة المرور بعد أوّل دخول.
+      - key: INITIAL_ADMIN_EMAIL
+        sync: false
+      - key: INITIAL_ADMIN_PASSWORD
+        sync: false
       # البريد (SMTP — Phase 13 · B2). لتفعيل الإرسال الحقيقي (استعادة كلمة المرور): اضبط
       # MAIL_MAILER=smtp + الأسرار أدناه في لوحة Render. إن تُرك MAIL_MAILER فارغاً يعود
       # افتراضيّاً إلى log (لا إرسال) فلا يتعطّل شيء قبل ضبط SMTP. راجع docs/DEPLOY-RENDER.md.

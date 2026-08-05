@@ -29,6 +29,7 @@ class StoreCustomFieldRequest extends FormRequest
                 Rule::unique('custom_field_definitions', 'key')->where('entity', $this->input('entity')),
             ],
             'label' => ['required', 'string', 'max:150'],
+            'description' => ['nullable', 'string', 'max:500'],
             'type' => ['required', Rule::in(CustomFieldDefinition::TYPES)],
             'required' => ['boolean'],
             'options' => ['array', 'required_if:type,dropdown'],

@@ -17,6 +17,7 @@ const NAV: NavItem[] = [
   { to: '/finance/invoices', label: 'الفواتير', icon: 'salary', end: false },
   { to: '/admin/audit', label: 'سجلّ التدقيق', icon: 'audit' },
   { to: '/admin/data', label: 'إدارة البيانات (Excel)', icon: 'data' },
+  { to: '/admin/custom-fields', label: 'الحقول المخصّصة', icon: 'settings' },
   { to: '/admin/settings', label: 'الإعدادات', icon: 'settings' },
 ]
 

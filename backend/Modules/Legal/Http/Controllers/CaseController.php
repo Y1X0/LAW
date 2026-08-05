@@ -4,6 +4,7 @@ namespace Modules\Legal\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\CustomFields\Services\CustomFieldValueService;
 use Modules\HR\Models\Employee;
 use Modules\Legal\Concerns\AuthorizesCaseAccess;
 use Modules\Legal\Http\Requests\AssignLawyerRequest;
@@ -57,8 +58,20 @@ class CaseController
         $perPage = min((int) $request->query('per_page', 15), 100);
         $page = $query->orderByDesc('id')->paginate($perPage);
 
+        // إلحاق الحقول المخصّصة المرئية (سياق الجدول) دفعةً واحدة — بلا N+1 (Phase 12).
+        $items = $page->items();
+        $custom = app(CustomFieldValueService::class)->read(
+            LegalCase::CUSTOM_FIELD_ENTITY,
+            array_map(fn (LegalCase $c) => $c->id, $items),
+            $user,
+            'list',
+        );
+        foreach ($items as $case) {
+            $case->setAttribute('custom_fields', $custom[$case->id] ?? []);
+        }
+
         return response()->json([
-            'data' => $page->items(),
+            'data' => $items,
             'meta' => [
                 'page' => $page->currentPage(),
                 'per_page' => $page->perPage(),
@@ -76,7 +89,12 @@ class CaseController
             return $denied;
         }
 
-        return $this->ok($case->load(['client', 'responsibleLawyer:id,full_name_ar', 'assignments.employee:id,full_name_ar']));
+        $case->load(['client', 'responsibleLawyer:id,full_name_ar', 'assignments.employee:id,full_name_ar']);
+        // الحقول المخصّصة المرئية (سياق التفاصيل) — بعد اجتياز عزل القضية أعلاه (Phase 12).
+        $custom = app(CustomFieldValueService::class)->read(LegalCase::CUSTOM_FIELD_ENTITY, [$case->id], $request->user(), 'details');
+        $case->setAttribute('custom_fields', $custom[$case->id] ?? []);
+
+        return $this->ok($case);
     }
 
     /** POST /api/cases */

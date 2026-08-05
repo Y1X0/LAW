@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\CustomFields\Concerns\HasCustomFields;
 use Modules\HR\Models\Employee;
 use Modules\Legal\Factories\LegalCaseFactory;
 
@@ -18,9 +19,12 @@ use Modules\Legal\Factories\LegalCaseFactory;
  */
 class LegalCase extends Model
 {
-    use HasFactory;
+    use HasCustomFields, HasFactory;
 
     protected $table = 'cases';
+
+    /** مفتاح الكيان للحقول المخصّصة (Phase 12). */
+    public const CUSTOM_FIELD_ENTITY = 'case';
 
     public const STATUSES = ['open', 'pending', 'closed'];
 

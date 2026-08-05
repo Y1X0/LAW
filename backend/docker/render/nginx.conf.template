@@ -20,13 +20,16 @@ http {
         root /var/www/html/public;
         index index.php;
 
-        # OPS-2: رؤوس أمان (تُرسَل حتى مع الأخطاء عبر always). لا CSP هنا عمداً —
-        # يُضاف لاحقاً بعد اختبار الواجهة. HSTS آمن لأن Render يقدّم الواجهة عبر HTTPS.
-        # ملاحظة nginx: لا تُضِف add_header داخل أي location وإلا أُلغيت هذه الوراثة.
+        # رؤوس أمان (تُرسَل حتى مع الأخطاء عبر always). B5 · PR-2: أُضيف CSP صارم مناسب
+        # لواجهة JSON (هذه الخدمة تُرجع JSON وتنزيلات مرفقة فقط — لا HTML بسكربتات)، ورُفع HSTS
+        # إلى سنة مع preload. رؤوس/CSP الواجهة (SPA) على law-web في render.yaml.
+        # ملاحظة nginx: لا تُضِف add_header داخل أي location وإلا أُلغيت هذه الوراثة (فيبقى
+        # nosniff ساري المفعول على تنزيلات المستندات المارّة عبر index.php).
         add_header X-Frame-Options "DENY" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-        add_header Strict-Transport-Security "max-age=15768000; includeSubDomains" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+        add_header Content-Security-Policy "default-src 'none'; frame-ancestors 'none'; base-uri 'none'" always;
 
         location / {
             try_files $uri $uri/ /index.php?$query_string;

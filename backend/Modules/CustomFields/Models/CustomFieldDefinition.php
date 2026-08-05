@@ -26,7 +26,7 @@ class CustomFieldDefinition extends Model
     public const CONTEXTS = ['create', 'edit', 'details', 'list'];
 
     protected $fillable = [
-        'entity', 'key', 'label', 'type', 'required', 'options', 'default_value', 'validation',
+        'entity', 'key', 'label', 'description', 'type', 'required', 'options', 'default_value', 'validation',
         'display_in', 'view_roles', 'edit_roles', 'search_roles', 'export_roles',
         'sort_order', 'is_active', 'created_by', 'updated_by',
     ];

@@ -135,6 +135,41 @@ class CustomFieldDefinitionTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'custom_field_deleted']);
     }
 
+    public function test_optional_description_round_trips(): void
+    {
+        $admin = $this->userWithPermissions(['custom_fields.manage']);
+
+        $this->actingAsToken($admin)->postJson(self::BASE, $this->textFieldPayload([
+            'description' => 'رقم العقد الموقّع مع العميل',
+        ]))->assertStatus(201)->assertJsonPath('data.description', 'رقم العقد الموقّع مع العميل');
+
+        $this->assertDatabaseHas('custom_field_definitions', [
+            'key' => 'contract_number', 'description' => 'رقم العقد الموقّع مع العميل',
+        ]);
+    }
+
+    public function test_meta_is_server_driven(): void
+    {
+        $admin = $this->userWithPermissions(['custom_fields.manage']);
+
+        $res = $this->actingAsToken($admin)->getJson(self::BASE.'/meta')->assertOk();
+
+        // الأنواع/السياقات/الكيانات بعناوينها العربية، والأدوار من قاعدة البيانات (لا ثابتة بالواجهة).
+        $types = collect($res->json('data.types'));
+        $this->assertSame('قائمة منسدلة', $types->firstWhere('key', 'dropdown')['label']);
+        $this->assertSame(['create', 'edit', 'details', 'list'], collect($res->json('data.contexts'))->pluck('key')->all());
+        $this->assertSame(['case'], collect($res->json('data.entities'))->pluck('key')->all());
+        // الدور الذي أنشأه userWithPermissions يظهر ضمن الأدوار المُعادة من الخادم.
+        $roleIds = collect($res->json('data.roles'))->pluck('id');
+        $this->assertTrue($roleIds->contains(fn ($id) => str_starts_with((string) $id, 'role-')));
+    }
+
+    public function test_meta_requires_manage_permission(): void
+    {
+        $viewer = $this->userWithPermissions(['cases.view_all']);
+        $this->actingAsToken($viewer)->getJson(self::BASE.'/meta')->assertStatus(403);
+    }
+
     public function test_definition_endpoints_require_authentication(): void
     {
         $this->getJson(self::BASE)->assertStatus(401);

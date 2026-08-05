@@ -12,6 +12,7 @@ Route::middleware(['auth.token', 'permission:custom_fields.manage'])
     ->prefix('admin/custom-fields')
     ->group(function () {
         Route::get('/', [CustomFieldController::class, 'index'])->name('custom-fields.index');
+        Route::get('meta', [CustomFieldController::class, 'meta'])->name('custom-fields.meta');
         Route::post('/', [CustomFieldController::class, 'store'])->name('custom-fields.store');
         Route::get('{customField}', [CustomFieldController::class, 'show'])->name('custom-fields.show');
         Route::patch('{customField}', [CustomFieldController::class, 'update'])->name('custom-fields.update');

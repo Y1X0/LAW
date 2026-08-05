@@ -24,6 +24,7 @@ class UpdateCustomFieldRequest extends FormRequest
 
         return [
             'label' => ['sometimes', 'string', 'max:150'],
+            'description' => ['nullable', 'string', 'max:500'],
             'type' => ['sometimes', Rule::in(CustomFieldDefinition::TYPES)],
             'required' => ['boolean'],
             'options' => ['nullable', 'array'],

@@ -72,7 +72,7 @@ class CaseManagementTest extends TestCase
 
     public function test_can_update_case(): void
     {
-        $editor = $this->userWithPermissions(['cases.update']);
+        $editor = $this->userWithPermissions(['cases.update', 'cases.view_all']);
         $case = LegalCase::factory()->create(['title' => 'قديم', 'progress' => 10]);
 
         $this->actingAsToken($editor)->putJson("/api/cases/{$case->id}", ['title' => 'محدّث', 'progress' => 55])
@@ -83,9 +83,21 @@ class CaseManagementTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'case_updated']);
     }
 
+    /** L1 (B5 · PR-4): حامل cases.update بلا view_all وغير مُسنَد للقضيّة يُمنَع من تعديلها (IDOR). */
+    public function test_case_update_denied_for_unassigned_user_without_view_all(): void
+    {
+        $outsider = $this->userWithPermissions(['cases.update', 'cases.view_own']);
+        $case = LegalCase::factory()->create(['title' => 'قضيّة غير مُسنَدة']);
+
+        $this->actingAsToken($outsider)->putJson("/api/cases/{$case->id}", ['title' => 'اختراق'])
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('cases', ['id' => $case->id, 'title' => 'قضيّة غير مُسنَدة']); // لم تتغيّر
+    }
+
     public function test_can_assign_and_unassign_lawyer(): void
     {
-        $assigner = $this->userWithPermissions(['cases.assign']);
+        $assigner = $this->userWithPermissions(['cases.assign', 'cases.view_all']);
         $case = LegalCase::factory()->create();
         $lawyer = Employee::factory()->create();
 
@@ -103,7 +115,7 @@ class CaseManagementTest extends TestCase
 
     public function test_can_close_case(): void
     {
-        $closer = $this->userWithPermissions(['cases.close']);
+        $closer = $this->userWithPermissions(['cases.close', 'cases.view_all']);
         $case = LegalCase::factory()->create(['status' => 'open']);
 
         $this->actingAsToken($closer)->postJson("/api/cases/{$case->id}/close")

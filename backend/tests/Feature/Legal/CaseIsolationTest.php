@@ -86,7 +86,7 @@ class CaseIsolationTest extends TestCase
         $this->actingAsToken($user)->getJson("/api/cases/{$case->id}")->assertStatus(403);
 
         // بعد الإسناد بواسطة الإدارة → يرى القضية.
-        $assigner = $this->userWithPermissions(['cases.assign']);
+        $assigner = $this->userWithPermissions(['cases.assign', 'cases.view_all']);
         $this->actingAsToken($assigner)
             ->postJson("/api/cases/{$case->id}/assign", ['employee_id' => $employee->id, 'role' => 'support'])
             ->assertCreated();

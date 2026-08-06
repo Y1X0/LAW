@@ -33,7 +33,7 @@ class AutoTimelineTest extends TestCase
 
     public function test_assigning_lawyer_logs_lawyer_assigned(): void
     {
-        $user = $this->userWithPermissions(['cases.assign']);
+        $user = $this->userWithPermissions(['cases.assign', 'cases.view_all']);
         $case = LegalCase::factory()->create();
         $lawyer = Employee::factory()->create();
 
@@ -46,7 +46,7 @@ class AutoTimelineTest extends TestCase
 
     public function test_closing_case_logs_case_closed(): void
     {
-        $user = $this->userWithPermissions(['cases.close']);
+        $user = $this->userWithPermissions(['cases.close', 'cases.view_all']);
         $case = LegalCase::factory()->create(['status' => 'open']);
 
         $this->actingAsToken($user)->postJson("/api/cases/{$case->id}/close")->assertOk();
@@ -81,7 +81,7 @@ class AutoTimelineTest extends TestCase
 
     public function test_automatic_events_remain_append_only(): void
     {
-        $user = $this->userWithPermissions(['cases.close']);
+        $user = $this->userWithPermissions(['cases.close', 'cases.view_all']);
         $case = LegalCase::factory()->create();
         $this->actingAsToken($user)->postJson("/api/cases/{$case->id}/close")->assertOk();
 

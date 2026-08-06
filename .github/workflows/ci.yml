@@ -81,6 +81,19 @@ jobs:
       - name: Run tests with coverage
         run: php artisan test --coverage --min=0
 
+      # B5 · M7-A: يُثبت السلوك الحسّاس على PostgreSQL الحقيقي (نفس محرّك الإنتاج) — ما لا تغطّيه
+      # المجموعة الرئيسيّة (SQLite). قاعدة pgsql مُهاجَرة سلفاً في خطوة «migrate against PostgreSQL».
+      # الاختبار يتخطّى نفسه على غير pgsql؛ هنا نُجبِر الاتصال بـ Postgres فيعمل فعليّاً.
+      - name: Integration tests on PostgreSQL (audit trigger + jsonb)
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: lawfirm_test
+          DB_USERNAME: lawfirm
+          DB_PASSWORD: secret
+        run: php artisan test tests/Integration/AuditLogTriggerTest.php
+
   security:
     name: Secret Scanning
     runs-on: ubuntu-latest

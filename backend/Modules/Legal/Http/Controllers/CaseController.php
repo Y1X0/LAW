@@ -131,6 +131,12 @@ class CaseController
     /** PUT /api/cases/{case} */
     public function update(UpdateCaseRequest $request, LegalCase $case): JsonResponse
     {
+        // L1: حارس ملكيّة — من لا يملك cases.view_all لا يعدّل إلا قضيّة مُسنَدة إليه (يوازي
+        // TaskController). يُغلق IDOR: حامل cases.update بلا view_all كان يعدّل أي قضيّة بالمُعرّف.
+        if ($denied = $this->guardCaseView($request->user(), $case)) {
+            return $denied;
+        }
+
         $case = $this->service->update($case, $request->validated(), $request);
 
         return $this->ok($case);
@@ -139,6 +145,10 @@ class CaseController
     /** POST /api/cases/{case}/assign — إسناد محامٍ (lead/support). */
     public function assign(AssignLawyerRequest $request, LegalCase $case): JsonResponse
     {
+        if ($denied = $this->guardCaseView($request->user(), $case)) {
+            return $denied;
+        }
+
         $data = $request->validated();
         $assignment = $this->service->assign($case, (int) $data['employee_id'], $data['role'], $request);
 
@@ -148,6 +158,10 @@ class CaseController
     /** DELETE /api/cases/{case}/assign/{employee} — إلغاء إسناد محامٍ. */
     public function unassign(Request $request, LegalCase $case, Employee $employee): JsonResponse
     {
+        if ($denied = $this->guardCaseView($request->user(), $case)) {
+            return $denied;
+        }
+
         $this->service->unassign($case, $employee->id, $request);
 
         return $this->ok(['message' => 'تم إلغاء الإسناد.']);
@@ -156,6 +170,10 @@ class CaseController
     /** POST /api/cases/{case}/close — إغلاق القضية. */
     public function close(Request $request, LegalCase $case): JsonResponse
     {
+        if ($denied = $this->guardCaseView($request->user(), $case)) {
+            return $denied;
+        }
+
         $case = $this->service->close($case, $request);
 
         return $this->ok($case);

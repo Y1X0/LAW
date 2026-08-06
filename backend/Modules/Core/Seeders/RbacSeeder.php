@@ -15,6 +15,15 @@ use Modules\Core\Models\Role;
 class RbacSeeder extends Seeder
 {
     /** كتالوج الصلاحيات الذرّية (docs/05 §2). */
+    /*
+     | كتالوج الصلاحيات الذرّي — المصدر الوحيد. run() يقلّم أي صلاحيّة خارج هذه القائمة
+     | (whereNotIn->delete)، فبقاؤها هنا يمنع حذفها عند النشر.
+     |
+     | صلاحيات محجوزة لوحدات مستقبليّة (Reserved — مُعلَنة ولا تحرس نقطة بعد؛ **لا تُحذَف** كي لا
+     | تُقلَّم عند النشر ثم يُعاد إنشاؤها عند بناء وحدتها): العقود (contracts.*)، التسويق/العملاء
+     | المحتملون (leads.* · campaigns.manage)، وتقارير الوحدات (reports.hr/finance/cases/marketing).
+     | قرار B5 · L4: توثيق لا حذف — تفادياً لمخاطر تعديل RBAC قبل الإطلاق.
+     */
     public const PERMISSIONS = [
         'employees.view', 'employees.create', 'employees.update', 'employees.delete', 'employees.salary.view',
         'attendance.view', 'attendance.manual', 'attendance.approve', 'attendance.devices',

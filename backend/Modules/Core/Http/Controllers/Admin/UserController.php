@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\Core\Models\AuthToken;
 use Modules\Core\Models\Role;
@@ -76,7 +77,7 @@ class UserController
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:190', 'unique:users,email'],
             'username' => ['nullable', 'string', 'max:60', 'unique:users,username'],
-            'password' => ['required', 'string', 'min:8', 'max:100'],
+            'password' => ['required', 'string', PasswordRule::defaults(), 'max:100'],
             'status' => ['sometimes', Rule::in(['active', 'suspended', 'locked'])],
             'role_ids' => ['sometimes', 'array'],
             'role_ids.*' => ['integer', 'exists:roles,id'],
@@ -158,7 +159,7 @@ class UserController
     public function resetPassword(Request $request, User $user): JsonResponse
     {
         $data = $request->validate([
-            'password' => ['required', 'string', 'min:8', 'max:100', 'confirmed'],
+            'password' => ['required', 'string', PasswordRule::defaults(), 'max:100', 'confirmed'],
         ]);
 
         $user->forceFill([

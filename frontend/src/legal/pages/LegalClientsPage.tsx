@@ -57,34 +57,54 @@ export function LegalClientsPage() {
       </Card>
 
       {query.isPending ? (
-        <div className="space-y-2.5" data-testid="clients-skeleton">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}><Skeleton className="h-5 w-48" /><Skeleton className="mt-2 h-4 w-32" /></Card>
-          ))}
-        </div>
+        <Card className="p-0" data-testid="clients-skeleton">
+          <div className="space-y-px p-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-1 py-2.5">
+                <Skeleton className="h-4 flex-1" /><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </div>
+        </Card>
       ) : query.isError ? (
         <ErrorState error={query.error}><div className="mt-3"><Button onClick={() => void query.refetch()}>إعادة المحاولة</Button></div></ErrorState>
       ) : query.data.items.length === 0 ? (
         <EmptyState message="لا يوجد عملاء مطابقون." />
       ) : (
         <>
-          <ul className="space-y-2.5" aria-busy={query.isFetching}>
-            {query.data.items.map((c) => (
-              <li key={c.id}>
-                <Card className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <Link to={`/legal/clients/${c.id}`} className="font-bold text-brand-700 hover:underline">{c.name}</Link>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
-                      <span>{clientTypeLabel(c.type)}</span>
-                      {c.phone && <span className="tabular-nums text-slate-400">{c.phone}</span>}
-                      {c.email && <span className="text-slate-400">{c.email}</span>}
-                    </div>
-                  </div>
-                  <Badge tone={clientStatusTone(c.status)}>{clientStatusLabel(c.status)}</Badge>
-                </Card>
-              </li>
-            ))}
-          </ul>
+          {/* جدول مؤسسي كثيف — يتحوّل إلى بطاقات مكدّسة على الجوّال عبر .lp-table. */}
+          <Card className="overflow-hidden p-0">
+            <div className="lp-table-wrap">
+              <table className={`lp-table text-right text-sm sm:min-w-[720px] ${query.isFetching ? 'opacity-60 transition-opacity' : ''}`} aria-busy={query.isFetching}>
+                <thead>
+                  <tr>
+                    <th className="px-4 py-2.5 text-right">الموكّل</th>
+                    <th className="px-4 py-2.5 text-right">الصفة</th>
+                    <th className="px-4 py-2.5 text-right">الهاتف</th>
+                    <th className="px-4 py-2.5 text-right">البريد</th>
+                    <th className="px-4 py-2.5 text-right">الحالة</th>
+                    <th className="px-4 py-2.5 text-right"><span className="sr-only">إجراءات</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {query.data.items.map((c) => (
+                    <tr key={c.id} className="lp-row">
+                      <td data-label="الموكّل" className="px-4 py-2.5">
+                        <Link to={`/legal/clients/${c.id}`} className="font-semibold text-brand-700 hover:underline">{c.name}</Link>
+                      </td>
+                      <td data-label="الصفة" className="px-4 py-2.5 text-slate-600">{clientTypeLabel(c.type)}</td>
+                      <td data-label="الهاتف" className="whitespace-nowrap px-4 py-2.5 tabular-nums text-slate-600">{c.phone || '—'}</td>
+                      <td data-label="البريد" className="px-4 py-2.5 text-slate-600">{c.email || '—'}</td>
+                      <td data-label="الحالة" className="px-4 py-2.5"><Badge tone={clientStatusTone(c.status)}>{clientStatusLabel(c.status)}</Badge></td>
+                      <td data-label="" className="px-4 py-2.5 text-left">
+                        <Link to={`/legal/clients/${c.id}`} className="text-xs font-semibold text-brand-600 hover:underline">فتح ←</Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
 
           <Pagination page={query.data.meta.page} totalPages={query.data.meta.total_pages} onChange={setPage} />
         </>

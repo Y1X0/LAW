@@ -37,7 +37,8 @@ describe('InvoicesListPage', () => {
     renderWithProviders(<InvoicesListPage />)
     expect(await screen.findByText('INV-000001')).toBeInTheDocument()
     expect(screen.getByText('شركة الأمل')).toBeInTheDocument()
-    expect(screen.getByText('280.00 SAR')).toBeInTheDocument()
+    // الإجمالي يظهر في عمود «الإجمالي» (وقد يتكرّر في «المتبقّي» بالجدول الكثيف).
+    expect(screen.getAllByText('280.00 SAR').length).toBeGreaterThan(0)
   })
 
   it('يُظهر زر الإنشاء عند امتلاك صلاحية الإنشاء', async () => {

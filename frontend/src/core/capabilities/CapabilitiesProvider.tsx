@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Outlet } from 'react-router-dom'
 import { FullPageLoader } from '@/core/ui/states'
@@ -39,7 +40,16 @@ export function CapabilitiesProvider() {
 
   return (
     <CapabilitiesContext.Provider value={value}>
-      {isPending ? <FullPageLoader /> : <Outlet />}
+      {/* حدّ Suspense للمسارات الكسولة (lazy): بدونه يتعطّل React عند تحميل أوّل
+          صفحة كسولة على تنقّل متزامن («A component suspended…»). القدرات محسومة هنا
+          فالبوّابة أعلاه، وهذا الحدّ يلتقط تعليق أي صفحة كسولة في الشجرة كاملةً. */}
+      {isPending ? (
+        <FullPageLoader />
+      ) : (
+        <Suspense fallback={<FullPageLoader />}>
+          <Outlet />
+        </Suspense>
+      )}
     </CapabilitiesContext.Provider>
   )
 }

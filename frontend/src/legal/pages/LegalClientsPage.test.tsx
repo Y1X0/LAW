@@ -33,9 +33,9 @@ describe('LegalClientsPage', () => {
     tokenStorage.set({ access_token: 't', refresh_token: 'r' })
     stub()
     renderWithProviders(<LegalClientsPage />)
-    const activeRow = (await screen.findByText('شركة الأمل')).closest('li') as HTMLElement
+    const activeRow = (await screen.findByText('شركة الأمل')).closest('tr') as HTMLElement
     expect(within(activeRow).getByText('نشط')).toBeInTheDocument() // شارة الحالة (لا خيار الفلتر)
-    const inactiveRow = screen.getByText('خالد الحربي').closest('li') as HTMLElement
+    const inactiveRow = screen.getByText('خالد الحربي').closest('tr') as HTMLElement
     expect(within(inactiveRow).getByText('معطّل')).toBeInTheDocument()
   })
 

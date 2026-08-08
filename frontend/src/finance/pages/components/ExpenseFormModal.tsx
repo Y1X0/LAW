@@ -78,7 +78,7 @@ export function ExpenseFormModal({ onClose }: { onClose: () => void }) {
           </SelectField>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="المبلغ *" type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />
           <SelectField label="الحساب الدافع *" value={accountId} onChange={(e) => setAccountId(e.target.value)} required>
             <option value="" disabled>اختر حساباً…</option>

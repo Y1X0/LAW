@@ -29,7 +29,7 @@ export function Shell({ nav, subtitle }: { nav: NavItem[]; subtitle: string }) {
   const location = useLocation()
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen bg-[#f4f5f7] text-slate-900">
       {/* شريط جانبي كحلي فاخر (سطح المكتب) */}
       <aside className="lp-sidebar hidden w-64 shrink-0 flex-col p-4 md:flex">
         <div className="mb-7 px-1 pt-1">

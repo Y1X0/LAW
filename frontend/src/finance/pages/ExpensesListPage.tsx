@@ -60,37 +60,56 @@ export function ExpensesListPage() {
       </Card>
 
       {query.isPending ? (
-        <Skeleton className="h-24 w-full" />
+        <Card className="p-0"><div className="space-y-px p-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-1 py-2.5"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 flex-1" /><Skeleton className="h-4 w-20" /></div>
+          ))}
+        </div></Card>
       ) : query.isError ? (
         <ErrorState error={query.error}><div className="mt-3"><Button onClick={() => void query.refetch()}>إعادة المحاولة</Button></div></ErrorState>
       ) : items.length === 0 ? (
         <EmptyState message="لا توجد مصروفات مطابقة." />
       ) : (
         <>
-          <ul className="space-y-2.5" aria-busy={query.isFetching}>
-            {items.map((e) => {
-              const reversal = e.amount < 0 || e.reversal_of_id != null
-              return (
-                <li key={e.id}>
-                  <Card className="flex flex-col gap-2 p-3.5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                      <span className="font-medium text-slate-800">{e.voucher_no ?? `#${e.id}`}</span>
-                      <div className="mt-0.5 text-xs text-slate-500">
-                        {e.category?.name ?? '—'} · {formatDate(e.expense_date ?? null)} · {expenseMethodLabel(e.method)}
-                        {reversal && <Badge tone="slate">عكس</Badge>}
-                      </div>
-                    </div>
-                    <span className="flex flex-shrink-0 items-center gap-3">
-                      <span className="tabular-nums text-sm font-medium text-slate-700">{formatCurrency(e.amount, 'SAR')}</span>
-                      {canRecordExpense && isReversible(e) && (
-                        <Button variant="ghost" onClick={() => reverse.mutate(e.id)} disabled={reverse.isPending}>عكس</Button>
-                      )}
-                    </span>
-                  </Card>
-                </li>
-              )
-            })}
-          </ul>
+          {/* جدول مؤسسي كثيف — يتحوّل إلى بطاقات مكدّسة على الجوّال عبر .lp-table. */}
+          <Card className="overflow-hidden p-0">
+            <div className="lp-table-wrap">
+              <table className={`lp-table text-right text-sm sm:min-w-[760px] ${query.isFetching ? 'opacity-60 transition-opacity' : ''}`} aria-busy={query.isFetching}>
+                <thead>
+                  <tr>
+                    <th className="px-4 py-2.5 text-right">رقم السند</th>
+                    <th className="px-4 py-2.5 text-right">التصنيف</th>
+                    <th className="px-4 py-2.5 text-right">التاريخ</th>
+                    <th className="px-4 py-2.5 text-right">الطريقة</th>
+                    <th className="px-4 py-2.5 text-right">المبلغ</th>
+                    <th className="px-4 py-2.5 text-right"><span className="sr-only">إجراءات</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((e) => {
+                    const reversal = e.amount < 0 || e.reversal_of_id != null
+                    return (
+                      <tr key={e.id} className="lp-row">
+                        <td data-label="رقم السند" className="whitespace-nowrap px-4 py-2.5">
+                          <span className="font-medium text-slate-800">{e.voucher_no ?? `#${e.id}`}</span>
+                          {reversal && <Badge tone="slate">عكس</Badge>}
+                        </td>
+                        <td data-label="التصنيف" className="px-4 py-2.5 text-slate-600">{e.category?.name ?? '—'}</td>
+                        <td data-label="التاريخ" className="whitespace-nowrap px-4 py-2.5 tabular-nums text-slate-500">{formatDate(e.expense_date ?? null)}</td>
+                        <td data-label="الطريقة" className="px-4 py-2.5 text-slate-600">{expenseMethodLabel(e.method)}</td>
+                        <td data-label="المبلغ" className="whitespace-nowrap px-4 py-2.5 tabular-nums font-medium text-slate-800">{formatCurrency(e.amount, 'SAR')}</td>
+                        <td data-label="" className="px-4 py-2.5 text-left">
+                          {canRecordExpense && isReversible(e) && (
+                            <Button variant="ghost" onClick={() => reverse.mutate(e.id)} disabled={reverse.isPending}>عكس</Button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
           <Pagination page={query.data.meta.page} totalPages={query.data.meta.total_pages} onChange={setPage} />
         </>
       )}

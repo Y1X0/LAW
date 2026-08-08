@@ -89,7 +89,7 @@ export function FinanceReportsPage() {
               <SectionCard title="الحسابات">
                 {trial.data.accounts.length === 0 ? <EmptyState message="لا توجد قيود ضمن المدى." /> : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="lp-table w-full text-sm sm:min-w-[480px]">
                       <thead><tr className="text-right text-xs text-slate-500">
                         <th className="py-1.5 font-medium">الرمز</th><th className="py-1.5 font-medium">الحساب</th>
                         <th className="py-1.5 font-medium">مدين</th><th className="py-1.5 font-medium">دائن</th>
@@ -97,10 +97,10 @@ export function FinanceReportsPage() {
                       <tbody>
                         {trial.data.accounts.map((a) => (
                           <tr key={a.account_id} className="border-t border-slate-100">
-                            <td className="py-1.5 tabular-nums text-slate-500">{a.code}</td>
-                            <td className="py-1.5 text-slate-800">{a.name}</td>
-                            <td className="py-1.5 tabular-nums text-slate-700">{formatCurrency(a.debit, 'SAR')}</td>
-                            <td className="py-1.5 tabular-nums text-slate-700">{formatCurrency(a.credit, 'SAR')}</td>
+                            <td data-label="الرمز" className="py-1.5 tabular-nums text-slate-500">{a.code}</td>
+                            <td data-label="الحساب" className="py-1.5 text-slate-800">{a.name}</td>
+                            <td data-label="مدين" className="py-1.5 tabular-nums text-slate-700">{formatCurrency(a.debit, 'SAR')}</td>
+                            <td data-label="دائن" className="py-1.5 tabular-nums text-slate-700">{formatCurrency(a.credit, 'SAR')}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -123,7 +123,7 @@ export function FinanceReportsPage() {
               <SectionCard title="المستحقات حسب العميل">
                 {receivables.data.clients.length === 0 ? <EmptyState message="لا توجد مستحقات." /> : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="lp-table w-full text-sm sm:min-w-[480px]">
                       <thead><tr className="text-right text-xs text-slate-500">
                         <th className="py-1.5 font-medium">العميل</th><th className="py-1.5 font-medium">مُفوتَر</th>
                         <th className="py-1.5 font-medium">مدفوع</th><th className="py-1.5 font-medium">متبقٍّ</th>
@@ -131,10 +131,10 @@ export function FinanceReportsPage() {
                       <tbody>
                         {receivables.data.clients.map((c) => (
                           <tr key={c.client_id} className="border-t border-slate-100">
-                            <td className="py-1.5 text-slate-800">{c.client_name}</td>
-                            <td className="py-1.5 tabular-nums text-slate-700">{formatCurrency(c.invoiced, 'SAR')}</td>
-                            <td className="py-1.5 tabular-nums text-green-700">{formatCurrency(c.paid, 'SAR')}</td>
-                            <td className="py-1.5 tabular-nums font-semibold text-brand-700">{formatCurrency(c.outstanding, 'SAR')}</td>
+                            <td data-label="العميل" className="py-1.5 text-slate-800">{c.client_name}</td>
+                            <td data-label="مُفوتَر" className="py-1.5 tabular-nums text-slate-700">{formatCurrency(c.invoiced, 'SAR')}</td>
+                            <td data-label="مدفوع" className="py-1.5 tabular-nums text-green-700">{formatCurrency(c.paid, 'SAR')}</td>
+                            <td data-label="متبقٍّ" className="py-1.5 tabular-nums font-semibold text-brand-700">{formatCurrency(c.outstanding, 'SAR')}</td>
                           </tr>
                         ))}
                       </tbody>

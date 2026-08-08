@@ -113,7 +113,7 @@ export function InvoiceDetailPage() {
 
       <SectionCard title="البنود">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="lp-table w-full text-sm sm:min-w-[520px]">
             <thead>
               <tr className="text-right text-xs text-slate-500">
                 <th className="py-1.5 font-medium">الوصف</th>
@@ -126,11 +126,11 @@ export function InvoiceDetailPage() {
             <tbody>
               {(invoice.items ?? []).map((it) => (
                 <tr key={it.id} className="border-t border-slate-100">
-                  <td className="py-1.5 text-slate-800">{it.description}</td>
-                  <td className="py-1.5 tabular-nums text-slate-700">{it.quantity}</td>
-                  <td className="py-1.5 tabular-nums text-slate-700">{formatCurrency(it.unit_price, 'SAR')}</td>
-                  <td className="py-1.5 tabular-nums text-slate-700">{it.tax_rate}%</td>
-                  <td className="py-1.5 tabular-nums text-slate-700">{formatCurrency(it.line_total, 'SAR')}</td>
+                  <td data-label="الوصف" className="py-1.5 text-slate-800">{it.description}</td>
+                  <td data-label="الكمية" className="py-1.5 tabular-nums text-slate-700">{it.quantity}</td>
+                  <td data-label="سعر الوحدة" className="py-1.5 tabular-nums text-slate-700">{formatCurrency(it.unit_price, 'SAR')}</td>
+                  <td data-label="ضريبة٪" className="py-1.5 tabular-nums text-slate-700">{it.tax_rate}%</td>
+                  <td data-label="الإجمالي (قبل الضريبة)" className="py-1.5 tabular-nums text-slate-700">{formatCurrency(it.line_total, 'SAR')}</td>
                 </tr>
               ))}
             </tbody>

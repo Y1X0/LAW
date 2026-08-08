@@ -80,7 +80,7 @@ export function AdminBackupPage() {
           <EmptyState message="لا توجد نسخ احتياطية بعد." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="lp-table w-full text-sm sm:min-w-[560px]">
               <thead>
                 <tr className="text-slate-500">
                   <th className="p-2 text-right font-medium">التاريخ</th>
@@ -93,15 +93,15 @@ export function AdminBackupPage() {
               <tbody>
                 {backups.data?.map((b) => (
                   <tr key={b.id} className="border-t border-slate-100">
-                    <td className="p-2 text-slate-700">{b.created_at?.slice(0, 16).replace('T', ' ') ?? '—'}</td>
-                    <td className="p-2 text-slate-600">{backupKindLabel(b.kind)}</td>
-                    <td className="p-2 text-slate-600">{formatBytes(b.size_bytes)}</td>
-                    <td className="p-2">
+                    <td data-label="التاريخ" className="p-2 text-slate-700">{b.created_at?.slice(0, 16).replace('T', ' ') ?? '—'}</td>
+                    <td data-label="النوع" className="p-2 text-slate-600">{backupKindLabel(b.kind)}</td>
+                    <td data-label="الحجم" className="p-2 text-slate-600">{formatBytes(b.size_bytes)}</td>
+                    <td data-label="الحالة" className="p-2">
                       <Badge tone={b.status === 'completed' ? 'green' : b.status === 'failed' ? 'amber' : 'slate'}>
                         {backupStatusLabel(b.status)}
                       </Badge>
                     </td>
-                    <td className="p-2">
+                    <td data-label="إجراء" className="p-2">
                       {b.status === 'completed' && (
                         <Button
                           variant="ghost"

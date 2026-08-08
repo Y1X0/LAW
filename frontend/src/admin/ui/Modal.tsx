@@ -69,15 +69,17 @@ export function Modal({
     >
       <div
         ref={dialogRef}
-        className="lp-reveal w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+        className="lp-reveal flex max-h-[90dvh] w-full max-w-md flex-col rounded-2xl border border-slate-200 bg-white shadow-xl"
         onMouseDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
       >
-        <h2 className="mb-4 text-lg font-semibold text-brand-800">{title}</h2>
-        {children}
+        {/* العنوان ثابت؛ جسم الحوار يتمرّر عمودياً على الشاشات القصيرة (جوّال) فتبقى
+            أزرار الحفظ بالأسفل قابلة للوصول دائماً. */}
+        <h2 className="shrink-0 px-5 pb-4 pt-5 text-lg font-semibold text-brand-800">{title}</h2>
+        <div className="overflow-y-auto px-5 pb-5">{children}</div>
       </div>
     </div>
   )

@@ -41,7 +41,8 @@ describe('LegalCasesPage', () => {
     // العميل والمحامي المسؤول ظاهران (كلٌّ في span مستقلّ).
     expect(screen.getByText('شركة الأمل')).toBeInTheDocument()
     expect(screen.getByText('سارة القحطاني')).toBeInTheDocument()
-    expect(screen.getByText('التقدّم: 100%')).toBeInTheDocument()
+    // التقدّم يظهر كنسبة في عمود مخصّص (جدول كثيف) بدل نص «التقدّم: ‪…‬» القديم.
+    expect(screen.getByText('100%')).toBeInTheDocument()
   })
 
   it('يعرض حالة فارغة حين لا قضايا', async () => {

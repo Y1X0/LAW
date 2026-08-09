@@ -18,6 +18,9 @@ interface RequestOptions {
   headers?: Record<string, string>
 }
 
+/** المهلة القصوى لأي طلب قبل إلغائه (يُميَّز عن انقطاع الشبكة في المُخطِّط المركزي). */
+const REQUEST_TIMEOUT_MS = 20000
+
 function buildUrl(path: string): string {
   const base = API_BASE_URL.replace(/\/$/, '')
   return `${base}/${path.replace(/^\//, '')}`
@@ -29,7 +32,9 @@ async function parse<T>(res: Response): Promise<ApiEnvelope<T>> {
   try {
     return JSON.parse(text) as ApiEnvelope<T>
   } catch {
-    return { data: null, meta: null, errors: { code: 'INVALID_JSON', message: text } }
+    // استجابة ليست JSON (صفحة HTML خطأ من البوابة مثلاً) — لا نمرّر المحتوى الخام؛
+    // المُخطِّط المركزي يعرض رسالة آمنة لرمز INVALID_JSON.
+    return { data: null, meta: null, errors: { code: 'INVALID_JSON' } }
   }
 }
 
@@ -87,11 +92,26 @@ async function raw(path: string, options: RequestOptions): Promise<Response> {
   const token = tokenStorage.accessToken()
   if (token) headers.Authorization = `Bearer ${token}`
 
-  return fetch(buildUrl(path), {
-    method: options.method ?? 'GET',
-    headers,
-    body: isJson ? JSON.stringify(options.body) : options.rawBody,
-  })
+  // مهلة عبر AbortController: عند تجاوزها نُلغي الطلب ونُطبّع الخطأ إلى مهلة واضحة،
+  // ونُميّز انقطاع الشبكة (TypeError) عن المهلة — كلاهما ApiError برمز موحّد.
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(new DOMException('timeout', 'TimeoutError')), REQUEST_TIMEOUT_MS)
+  try {
+    return await fetch(buildUrl(path), {
+      method: options.method ?? 'GET',
+      headers,
+      body: isJson ? JSON.stringify(options.body) : options.rawBody,
+      signal: controller.signal,
+    })
+  } catch (e) {
+    if (e instanceof DOMException && (e.name === 'TimeoutError' || e.name === 'AbortError')) {
+      throw new ApiError(408, 'TIMEOUT', 'استغرق الطلب وقتاً طويلاً. تحقّق من اتصالك وحاول مرة أخرى.')
+    }
+    // فشل الشبكة (TypeError: Failed to fetch) أو انقطاع الإنترنت.
+    throw new ApiError(0, 'NETWORK_ERROR', 'تعذّر الاتصال بالخادم. تحقق من اتصال الإنترنت وحاول مرة أخرى.')
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 /** ينفّذ النداء ويجدّد التوكن مرة واحدة عند 401 (ويسجّل خروجاً إن تعذّر). */

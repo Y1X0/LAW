@@ -90,6 +90,39 @@ describe('apiRequest', () => {
     expect(tokenStorage.accessToken()).toBe('new')
   })
 
+  it('فشل الشبكة (TypeError) يُطبَّع إلى ApiError برمز NETWORK_ERROR', async () => {
+    tokenStorage.set({ access_token: 'tok', refresh_token: 'r' })
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+
+    const err = (await api.get('me/dashboard').catch((e) => e)) as ApiError
+    expect(err).toBeInstanceOf(ApiError)
+    expect(err.status).toBe(0)
+    expect(err.code).toBe('NETWORK_ERROR')
+  })
+
+  it('انتهاء المهلة (AbortError) يُطبَّع إلى ApiError برمز TIMEOUT', async () => {
+    tokenStorage.set({ access_token: 'tok', refresh_token: 'r' })
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new DOMException('timeout', 'TimeoutError')))
+
+    const err = (await api.get('me/dashboard').catch((e) => e)) as ApiError
+    expect(err).toBeInstanceOf(ApiError)
+    expect(err.status).toBe(408)
+    expect(err.code).toBe('TIMEOUT')
+  })
+
+  it('استجابة HTML بدل JSON لا تُسرّب المحتوى الخام', async () => {
+    tokenStorage.set({ access_token: 'tok', refresh_token: 'r' })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('<!DOCTYPE html><h1>502 Bad Gateway</h1>', { status: 502 })),
+    )
+
+    const err = (await api.get('me/dashboard').catch((e) => e)) as ApiError
+    expect(err).toBeInstanceOf(ApiError)
+    expect(err.code).toBe('INVALID_JSON')
+    expect(err.message).not.toContain('DOCTYPE')
+  })
+
   it('يسجّل خروجاً عند فشل التجديد على 401', async () => {
     tokenStorage.set({ access_token: 'old', refresh_token: 'r' })
     const onUnauthorized = vi.fn()

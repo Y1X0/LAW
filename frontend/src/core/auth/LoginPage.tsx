@@ -24,6 +24,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -31,10 +32,17 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       await login(email, password)
-      navigate('/', { replace: true })
+      // انتقال «صامت فخم»: طبقة فحمي + وميض ذهبي هادئ للشعار (< 0.6s) ثم اللوحة.
+      // يُحترم تقليل الحركة: انتقال فوري بلا تأخير. لا مساس بمنطق الدخول نفسه.
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      if (reduceMotion) {
+        navigate('/', { replace: true })
+        return
+      }
+      setSuccess(true)
+      window.setTimeout(() => navigate('/', { replace: true }), 520)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'تعذّر تسجيل الدخول. حاول مجدداً.')
-    } finally {
       setSubmitting(false)
     }
   }
@@ -43,22 +51,22 @@ export function LoginPage() {
     'w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10'
 
   return (
-    // خلفية فحمي عميق مسطّحة (بلا تدرّج) — كارد وسطية نظيفة. هوية مؤسسية رصينة.
-    <div className="flex min-h-screen items-center justify-center bg-[#111318] p-6" dir="rtl">
-      <div className="lp-reveal w-full max-w-sm">
-        {/* شعار الميزان بلمسة ذهبية هادئة + اسم المكتب */}
-        <div className="mb-7 flex flex-col items-center text-center">
-          <ScalesLogo className="h-14 w-14 text-gold-400" />
-          <h1 className="mt-4 text-xl font-bold tracking-tight text-white">مكتب العدالة للمحاماة</h1>
-          <p className="mt-1 text-xs font-medium text-slate-400">نظام إدارة المكتب</p>
-        </div>
+    <div className="flex min-h-screen flex-col md:flex-row" dir="rtl">
+      {/* لوحة النموذج (يمين في RTL) — خلفية أوف وايت */}
+      <div className="flex flex-1 items-center justify-center bg-[#f4f5f7] p-6">
+        <div className="lp-reveal w-full max-w-md">
+          {/* هوية مصغّرة للجوّال */}
+          <div className="mb-6 flex flex-col items-center gap-2 md:hidden">
+            <ScalesLogo className="h-12 w-12 text-gold-400" />
+            <h2 className="text-lg font-bold text-brand-800">مكتب العدالة للمحاماة</h2>
+          </div>
 
-        {/* الكارد: أبيض نظيف بحدّ شعري 1px، بلا زجاجية، ظلّ هادئ يرفعه عن الخلفية */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.6)]">
-          <h2 className="text-lg font-bold text-brand-800">تسجيل الدخول</h2>
-          <p className="mt-1 text-sm text-slate-500">أدخل بياناتك للوصول إلى النظام</p>
+          {/* الكارد: أبيض نظيف بحدّ شعري 1px، بلا زجاجية، ظلّ هادئ */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-card">
+            <h1 className="text-2xl font-bold text-brand-800">تسجيل الدخول</h1>
+            <p className="mt-1 text-sm text-slate-500">أدخل بياناتك للوصول إلى النظام</p>
 
-          <form onSubmit={onSubmit} className="mt-6 space-y-4">
+            <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="space-y-1.5">
               <label htmlFor="login-email" className="block text-sm font-medium text-slate-700">
                 البريد الإلكتروني
@@ -131,15 +139,34 @@ export function LoginPage() {
             >
               {submitting ? 'جارٍ الدخول…' : 'تسجيل الدخول'}
             </button>
-          </form>
+            </form>
 
-          <p className="mt-5 text-center text-xs text-slate-400">
-            تنبيه: إنشاء الحسابات يتم فقط من قبل الإدارة
-          </p>
+            <p className="mt-5 text-center text-xs text-slate-400">
+              تنبيه: إنشاء الحسابات يتم فقط من قبل الإدارة
+            </p>
+          </div>
         </div>
-
-        <p className="mt-6 text-center text-xs text-slate-500">”العدل أساس المُلك“</p>
       </div>
+
+      {/* لوحة الهوية (يسار في RTL) — سطح المكتب فقط. فحمي مسطّح بلا تدرّج، شعار ذهبي هادئ. */}
+      <div className="relative hidden w-[42%] flex-col items-center justify-center bg-[#111318] p-10 text-white md:flex">
+        <div className="flex flex-col items-center text-center">
+          <ScalesLogo className="h-20 w-20 text-gold-400" />
+          <h2 className="mt-5 text-3xl font-bold tracking-tight">مكتب العدالة للمحاماة</h2>
+          <p className="mt-2 text-slate-400">نظام إدارة المكتب</p>
+          <div className="mt-10 border-t border-white/10 pt-6">
+            <p className="text-lg font-semibold text-gold-400">”العدل أساس المُلك“</p>
+          </div>
+        </div>
+      </div>
+
+      {/* انتقال الدخول «الصامت الفخم»: طبقة فحمي + وميض ذهبي هادئ للشعار ثم اللوحة (< 0.6s). */}
+      {success && (
+        <div className="lp-signin-overlay fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#111318]" role="status" aria-live="polite">
+          <ScalesLogo className="lp-signin-mark h-20 w-20 text-gold-400" />
+          <p className="mt-5 text-sm font-medium text-slate-300">جارٍ الدخول…</p>
+        </div>
+      )}
     </div>
   )
 }

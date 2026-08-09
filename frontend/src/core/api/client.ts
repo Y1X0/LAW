@@ -16,9 +16,15 @@ interface RequestOptions {
   /** لا تحاول تجديد التوكن (يُستخدم داخلياً لنداء التجديد نفسه). */
   skipRefresh?: boolean
   headers?: Record<string, string>
+  /**
+   * مهلة الطلب بالملّي ثانية. الافتراضي 20s لنداءات JSON العادية.
+   * `null` = بلا مهلة عميل — لنقل الملفات (رفع/تنزيل/تصدير) التي قد تطول
+   * مشروعاً على الشبكات البطيئة، فلا تُلغى خطأً. أعطال الشبكة تبقى مُلتقَطة.
+   */
+  timeoutMs?: number | null
 }
 
-/** المهلة القصوى لأي طلب قبل إلغائه (يُميَّز عن انقطاع الشبكة في المُخطِّط المركزي). */
+/** المهلة القصوى لنداء JSON العادي قبل إلغائه (يُميَّز عن انقطاع الشبكة). */
 const REQUEST_TIMEOUT_MS = 20000
 
 function buildUrl(path: string): string {
@@ -94,14 +100,21 @@ async function raw(path: string, options: RequestOptions): Promise<Response> {
 
   // مهلة عبر AbortController: عند تجاوزها نُلغي الطلب ونُطبّع الخطأ إلى مهلة واضحة،
   // ونُميّز انقطاع الشبكة (TypeError) عن المهلة — كلاهما ApiError برمز موحّد.
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(new DOMException('timeout', 'TimeoutError')), REQUEST_TIMEOUT_MS)
+  // نقل الملفات (timeoutMs=null) بلا مهلة عميل كي لا تُلغى الطلبات الطويلة المشروعة.
+  const timeoutMs = options.timeoutMs === undefined ? REQUEST_TIMEOUT_MS : options.timeoutMs
+  let controller: AbortController | null = null
+  let timer: ReturnType<typeof setTimeout> | null = null
+  if (timeoutMs !== null) {
+    controller = new AbortController()
+    const c = controller
+    timer = setTimeout(() => c.abort(new DOMException('timeout', 'TimeoutError')), timeoutMs)
+  }
   try {
     return await fetch(buildUrl(path), {
       method: options.method ?? 'GET',
       headers,
       body: isJson ? JSON.stringify(options.body) : options.rawBody,
-      signal: controller.signal,
+      signal: controller?.signal,
     })
   } catch (e) {
     if (e instanceof DOMException && (e.name === 'TimeoutError' || e.name === 'AbortError')) {
@@ -110,7 +123,7 @@ async function raw(path: string, options: RequestOptions): Promise<Response> {
     // فشل الشبكة (TypeError: Failed to fetch) أو انقطاع الإنترنت.
     throw new ApiError(0, 'NETWORK_ERROR', 'تعذّر الاتصال بالخادم. تحقق من اتصال الإنترنت وحاول مرة أخرى.')
   } finally {
-    clearTimeout(timer)
+    if (timer) clearTimeout(timer)
   }
 }
 
@@ -150,7 +163,8 @@ export async function apiRequestEnvelope<T>(path: string, options: RequestOption
 
 /** نداء يعيد نصاً خاماً (مثل مستند HTML) بمصادقة — يرمي ApiError عند الفشل. */
 export async function apiText(path: string): Promise<string> {
-  const res = await requestWithRefresh(path, { method: 'GET', headers: { Accept: 'text/html' } })
+  // بلا مهلة عميل: قد يطول توليد/تنزيل المستند مشروعاً على الشبكات البطيئة.
+  const res = await requestWithRefresh(path, { method: 'GET', headers: { Accept: 'text/html' }, timeoutMs: null })
   if (!res.ok) {
     throw toError(res.status, await parse<unknown>(res))
   }
@@ -159,9 +173,11 @@ export async function apiText(path: string): Promise<string> {
 
 /** نداء يعيد Blob بمصادقة (لتنزيل الملفات مثل Excel) — يرمي ApiError عند الفشل. */
 export async function apiBlob(path: string): Promise<Blob> {
+  // بلا مهلة عميل: تصدير/تنزيل الملفات قد يطول مشروعاً — لا نُلغيه خطأً.
   const res = await requestWithRefresh(path, {
     method: 'GET',
     headers: { Accept: 'application/octet-stream' },
+    timeoutMs: null,
   })
   if (!res.ok) {
     throw toError(res.status, await parse<unknown>(res))
@@ -171,7 +187,8 @@ export async function apiBlob(path: string): Promise<Blob> {
 
 /** رفع ملف (FormData) بمصادقة — يعيد `data` من الغلاف، ويرمي ApiError عند الفشل. */
 export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
-  const res = await requestWithRefresh(path, { method: 'POST', rawBody: form })
+  // بلا مهلة عميل: رفع الملفات قد يطول مشروعاً على الشبكات البطيئة — لا نُلغيه خطأً.
+  const res = await requestWithRefresh(path, { method: 'POST', rawBody: form, timeoutMs: null })
   const env = await parse<T>(res)
   if (!res.ok) throw toError(res.status, env)
   return env.data as T

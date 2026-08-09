@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/core/ui/primitives'
 import { Modal } from '@/admin/ui/Modal'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { assignTask } from '@/legal/api/tasks'
 import { EmployeePicker } from './EmployeePicker'
 
@@ -14,6 +14,7 @@ import { EmployeePicker } from './EmployeePicker'
 export function AssignTaskModal({ taskId, onClose }: { taskId: number; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [selected, setSelected] = useState<{ id: number; name: string } | null>(null)
 
   const assign = useMutation({
@@ -23,7 +24,7 @@ export function AssignTaskModal({ taskId, onClose }: { taskId: number; onClose: 
       void qc.invalidateQueries({ queryKey: ['legal', 'tasks'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الإسناد', 'error'),
+    onError: formErrors.onError,
   })
 
   return (

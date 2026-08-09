@@ -6,6 +6,7 @@ import { PageHeader } from '@/core/ui/section'
 import { Tabs } from '@/core/ui/Tabs'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { formatDate } from '@/core/lib/format'
 import { taskPriorityLabel } from '@/lawyer/api/caseFile'
 import { completeTask, fetchTasks, type Task, type TaskStatus } from '@/lawyer/api/tasks'
@@ -30,6 +31,7 @@ function priorityTone(p: string): 'green' | 'amber' | 'slate' | 'navy' {
 export function TasksPage() {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [tab, setTab] = useState<TaskStatus>('open')
   const [page, setPage] = useState(1)
 
@@ -45,7 +47,7 @@ export function TasksPage() {
       show('تم إكمال المهمة')
       void qc.invalidateQueries({ queryKey: ['tasks'] })
     },
-    onError: () => show('تعذّر إكمال المهمة', 'error'),
+    onError: formErrors.onError,
   })
 
   function switchTab(next: TaskStatus) {

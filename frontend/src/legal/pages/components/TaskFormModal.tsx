@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, SelectField, TextareaField } from '@/core/ui/primitives'
 import { Modal } from '@/admin/ui/Modal'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { TASK_PRIORITIES, type Task, type TaskInput, createTask, taskPriorityLabel, updateTask } from '@/legal/api/tasks'
 import { EmployeePicker } from './EmployeePicker'
 import { CasePicker } from './CasePicker'
@@ -16,6 +16,7 @@ import { CasePicker } from './CasePicker'
 export function TaskFormModal({ existing, onClose }: { existing?: Task; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [title, setTitle] = useState(existing?.title ?? '')
   const [description, setDescription] = useState(existing?.description ?? '')
   const [priority, setPriority] = useState(existing?.priority ?? 'normal')
@@ -41,22 +42,22 @@ export function TaskFormModal({ existing, onClose }: { existing?: Task; onClose:
       void qc.invalidateQueries({ queryKey: ['legal', 'tasks'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الحفظ', 'error'),
+    onError: formErrors.onError,
   })
 
   const canSubmit = title.trim().length > 0 && (existing != null || assignee != null) && !save.isPending
-  function onSubmit(e: FormEvent) { e.preventDefault(); if (canSubmit) save.mutate() }
+  function onSubmit(e: FormEvent) { e.preventDefault(); formErrors.reset(); if (canSubmit) save.mutate() }
 
   return (
     <Modal title={existing ? 'تعديل مهمة' : 'إنشاء مهمة'} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <Field label="العنوان *" value={title} onChange={(e) => setTitle(e.target.value)} required />
-        <TextareaField label="الوصف" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+        <Field label="العنوان *" value={title} onChange={(e) => setTitle(e.target.value)} required error={formErrors.fieldError('title')} />
+        <TextareaField label="الوصف" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} error={formErrors.fieldError('description')} />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <SelectField label="الأولوية" value={priority} onChange={(e) => setPriority(e.target.value)}>
+          <SelectField label="الأولوية" value={priority} onChange={(e) => setPriority(e.target.value)} error={formErrors.fieldError('priority')}>
             {TASK_PRIORITIES.map((p) => <option key={p} value={p}>{taskPriorityLabel(p)}</option>)}
           </SelectField>
-          <Field label="تاريخ الاستحقاق" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <Field label="تاريخ الاستحقاق" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} error={formErrors.fieldError('due_date')} />
         </div>
         {!existing && (
           <EmployeePicker selected={assignee} onSelect={setAssignee} onClear={() => setAssignee(null)} disabled={save.isPending} />

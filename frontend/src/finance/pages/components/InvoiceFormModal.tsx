@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Modal } from '@/admin/ui/Modal'
-import { ApiError } from '@/core/api/types'
 import { Button, Field, SelectField, TextareaField } from '@/core/ui/primitives'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import {
   createInvoice,
   fetchClientOptions,
@@ -38,6 +38,7 @@ function seedRows(existing?: Invoice): ItemRow[] {
 export function InvoiceFormModal({ existing, onClose }: { existing?: Invoice; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const clients = useQuery({ queryKey: ['finance', 'client-options'], queryFn: fetchClientOptions })
 
   const [clientId, setClientId] = useState(existing ? String(existing.client_id) : '')
@@ -84,18 +85,19 @@ export function InvoiceFormModal({ existing, onClose }: { existing?: Invoice; on
       onClose()
       void invoice
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الحفظ', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     if (canSubmit) save.mutate()
   }
 
   return (
     <Modal title={existing ? 'تعديل مسودّة فاتورة' : 'إنشاء فاتورة'} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <SelectField label="العميل *" value={clientId} onChange={(e) => setClientId(e.target.value)} required>
+        <SelectField label="العميل *" value={clientId} onChange={(e) => setClientId(e.target.value)} required error={formErrors.fieldError('client_id')}>
           <option value="" disabled>اختر عميلاً…</option>
           {(clients.data ?? []).map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
@@ -103,8 +105,8 @@ export function InvoiceFormModal({ existing, onClose }: { existing?: Invoice; on
         </SelectField>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="تاريخ الإصدار" type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
-          <Field label="تاريخ الاستحقاق" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <Field label="تاريخ الإصدار" type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} error={formErrors.fieldError('issue_date')} />
+          <Field label="تاريخ الاستحقاق" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} error={formErrors.fieldError('due_date')} />
         </div>
 
         <div className="space-y-2">
@@ -125,8 +127,8 @@ export function InvoiceFormModal({ existing, onClose }: { existing?: Invoice; on
           ))}
         </div>
 
-        <Field label="خصم (على مستوى الفاتورة)" type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} />
-        <TextareaField label="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+        <Field label="خصم (على مستوى الفاتورة)" type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} error={formErrors.fieldError('discount')} />
+        <TextareaField label="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} error={formErrors.fieldError('notes')} />
 
         <p className="text-xs text-slate-400">تُحتسب الإجماليات (الصافي/الضريبة/الإجمالي) في الخادم وتظهر بعد الحفظ.</p>
 

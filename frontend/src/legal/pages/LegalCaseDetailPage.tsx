@@ -5,7 +5,7 @@ import { Badge, Button, Card } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { formatCurrency } from '@/core/lib/format'
 import { assignmentRoleLabel, caseStatusLabel, caseStatusTone, closeCase, fetchCase, unassignLawyer } from '@/legal/api/cases'
 import { CaseFormModal } from './components/CaseFormModal'
@@ -25,6 +25,7 @@ export function LegalCaseDetailPage() {
   const id = Number(idParam)
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [editing, setEditing] = useState(false)
   const [confirmClose, setConfirmClose] = useState(false)
   const [assigning, setAssigning] = useState(false)
@@ -39,7 +40,7 @@ export function LegalCaseDetailPage() {
       void qc.invalidateQueries({ queryKey: ['legal', 'cases'] })
       setConfirmClose(false)
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الإغلاق', 'error'),
+    onError: formErrors.onError,
   })
 
   if (query.isPending) return <Card><Skeleton className="h-40 w-full" /></Card>
@@ -127,6 +128,7 @@ export function LegalCaseDetailPage() {
 function AssignmentRow({ caseId, employeeId, name, role }: { caseId: number; employeeId: number | null; name: string; role: string }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [confirming, setConfirming] = useState(false)
 
   const remove = useMutation({
@@ -135,7 +137,7 @@ function AssignmentRow({ caseId, employeeId, name, role }: { caseId: number; emp
       show('تم إلغاء الإسناد')
       void qc.invalidateQueries({ queryKey: ['legal', 'case', caseId] })
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر إلغاء الإسناد', 'error'),
+    onError: formErrors.onError,
   })
 
   return (

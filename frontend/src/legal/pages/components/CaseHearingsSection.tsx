@@ -4,7 +4,7 @@ import { Badge, Button, Card } from '@/core/ui/primitives'
 import { SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import {
   type Hearing,
   cancelHearing,
@@ -55,6 +55,7 @@ export function CaseHearingsSection({ caseId }: { caseId: number }) {
 function HearingRow({ caseId, hearing, onEdit, onPostpone }: { caseId: number; hearing: Hearing; onEdit: () => void; onPostpone: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [confirming, setConfirming] = useState(false)
   const frozen = isHearingFrozen(hearing.status)
 
@@ -64,7 +65,7 @@ function HearingRow({ caseId, hearing, onEdit, onPostpone }: { caseId: number; h
       show('تم إلغاء الجلسة')
       void qc.invalidateQueries({ queryKey: ['legal', 'case-hearings', caseId] })
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الإلغاء', 'error'),
+    onError: formErrors.onError,
   })
 
   return (

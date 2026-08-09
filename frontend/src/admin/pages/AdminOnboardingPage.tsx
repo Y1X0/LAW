@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { Button, Card, Field, SelectField } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { mapApiError } from '@/core/api/mapApiError'
 import { fetchBranches, fetchDepartments } from '@/core/api/org'
 import { createEmployee } from '@/hr/api/employees'
 import { createUser, linkEmployee } from '@/admin/api/users'
@@ -92,7 +92,8 @@ export function AdminOnboardingPage() {
       setDone({ employeeNo: String(employee.employee_no ?? ''), email: account.email.trim(), role: roleName })
       show('اكتملت تهيئة الموظف — يمكنه تسجيل الدخول الآن')
     } catch (e) {
-      show(e instanceof ApiError ? e.message : 'تعذّرت التهيئة — راجع البيانات وحاول مجدداً', 'error')
+      // المعالج المركزي: رسالة عربية واضحة (بما فيها الشبكة/المهلة) بدل رسالة ثابتة.
+      show(mapApiError(e).formMessage, 'error')
     } finally {
       setBusy(false)
       setProgress('')

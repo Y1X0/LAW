@@ -1,12 +1,12 @@
 import { useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
-import { ApiError } from '@/core/api/types'
 import { formatCurrency, formatDate } from '@/core/lib/format'
 import { Badge, Button, Card } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { useFinanceCapabilities } from '@/finance/api/capabilities'
 import {
   approveInvoice,
@@ -43,6 +43,7 @@ export function InvoiceDetailPage() {
   const invoiceId = Number(id)
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const { canCreate, canApprove, canRecordPayment } = useFinanceCapabilities()
   const [editing, setEditing] = useState(false)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
@@ -61,12 +62,12 @@ export function InvoiceDetailPage() {
   const approve = useMutation({
     mutationFn: () => approveInvoice(invoiceId),
     onSuccess: () => { show('تم اعتماد الفاتورة وترحيل القيد'); invalidate() },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الاعتماد', 'error'),
+    onError: formErrors.onError,
   })
   const cancel = useMutation({
     mutationFn: () => cancelInvoice(invoiceId),
     onSuccess: () => { show('تم إلغاء الفاتورة'); setConfirmingCancel(false); invalidate() },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الإلغاء', 'error'),
+    onError: formErrors.onError,
   })
 
   if (query.isPending) return <Card><Skeleton className="h-40 w-full" /></Card>

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ApiError } from '@/core/api/types'
 import { formatCurrency, formatDate } from '@/core/lib/format'
 import { Badge, Button, Card } from '@/core/ui/primitives'
 import { SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { fetchInvoicePayments, type Payment, paymentMethodLabel, reversePayment } from '@/finance/api/payments'
 import { PaymentFormModal } from './PaymentFormModal'
 
@@ -24,6 +24,7 @@ export function PaymentsSection({
 }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [adding, setAdding] = useState(false)
 
   const query = useQuery({
@@ -39,7 +40,7 @@ export function PaymentsSection({
       void qc.invalidateQueries({ queryKey: ['finance', 'invoice', invoiceId] })
       void qc.invalidateQueries({ queryKey: ['finance', 'invoices'] })
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر العكس', 'error'),
+    onError: formErrors.onError,
   })
 
   const payments = query.data ?? []

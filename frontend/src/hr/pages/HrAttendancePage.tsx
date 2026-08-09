@@ -4,6 +4,7 @@ import { Badge, Button, Card, Field, SelectField } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { formatDate, formatDateTime } from '@/core/lib/format'
 import {
   ATTENDANCE_STATUSES,
@@ -26,6 +27,7 @@ const PER_PAGE = 15
 export function HrAttendancePage() {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [date, setDate] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
@@ -48,7 +50,7 @@ export function HrAttendancePage() {
       setFormOpen(false)
       invalidate()
     },
-    onError: () => show('تعذّر حفظ القيد', 'error'),
+    onError: formErrors.onError,
   })
 
   const approve = useMutation({
@@ -57,7 +59,7 @@ export function HrAttendancePage() {
       show('تم اعتماد السجل')
       invalidate()
     },
-    onError: () => show('تعذّر الاعتماد', 'error'),
+    onError: formErrors.onError,
   })
 
   function onDate(v: string) {

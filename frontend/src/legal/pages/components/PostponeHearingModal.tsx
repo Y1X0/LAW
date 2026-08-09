@@ -2,8 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, TextareaField } from '@/core/ui/primitives'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { Modal } from '@/admin/ui/Modal'
-import { ApiError } from '@/core/api/types'
 import { postponeHearing } from '@/legal/api/hearings'
 
 /**
@@ -13,6 +13,7 @@ import { postponeHearing } from '@/legal/api/hearings'
 export function PostponeHearingModal({ caseId, hearingId, onClose }: { caseId: number; hearingId: number; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [scheduledAt, setScheduledAt] = useState('')
   const [reason, setReason] = useState('')
 
@@ -23,19 +24,20 @@ export function PostponeHearingModal({ caseId, hearingId, onClose }: { caseId: n
       void qc.invalidateQueries({ queryKey: ['legal', 'case-hearings', caseId] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر التأجيل', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     save.mutate()
   }
 
   return (
     <Modal title="تأجيل الجلسة" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <Field label="الموعد الجديد *" type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} required />
-        <TextareaField label="سبب التأجيل *" value={reason} onChange={(e) => setReason(e.target.value)} rows={2} required />
+        <Field label="الموعد الجديد *" type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} required error={formErrors.fieldError('scheduled_at')} />
+        <TextareaField label="سبب التأجيل *" value={reason} onChange={(e) => setReason(e.target.value)} rows={2} required error={formErrors.fieldError('postponed_reason')} />
         <p className="text-xs text-slate-400">ستبقى الجلسة الحالية في السجلّ كـ«مؤجّلة»، وتُنشأ جلسة جديدة بالموعد أعلاه.</p>
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} disabled={save.isPending}>إلغاء</Button>

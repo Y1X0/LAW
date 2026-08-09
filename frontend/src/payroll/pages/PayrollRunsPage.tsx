@@ -4,7 +4,7 @@ import { Badge, Button, Card, SelectField } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { fetchPeriods, monthLabel, periodStatusLabel } from '@/payroll/api/payroll'
 import { createRun, fetchPeriodRuns, runStatusLabel, runStatusTone } from '@/payroll/api/payrollRuns'
 import { RunWorkflowPanel } from './components/RunWorkflowPanel'
@@ -16,6 +16,7 @@ import { RunWorkflowPanel } from './components/RunWorkflowPanel'
 export function PayrollRunsPage() {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [periodId, setPeriodId] = useState<number | ''>('')
   const [runId, setRunId] = useState<number | null>(null)
 
@@ -33,7 +34,7 @@ export function PayrollRunsPage() {
       void qc.invalidateQueries({ queryKey: ['payroll', 'period-runs', periodId] })
       setRunId(run.id)
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر إنشاء المسير', 'error'),
+    onError: formErrors.onError,
   })
 
   return (

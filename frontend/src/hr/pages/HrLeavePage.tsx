@@ -5,6 +5,7 @@ import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { Tabs } from '@/core/ui/Tabs'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { formatDate } from '@/core/lib/format'
 import {
   LEAVE_TABS,
@@ -28,6 +29,7 @@ const TABS = LEAVE_TABS.map((key) => ({ key, label: TAB_LABEL[key] }))
 export function HrLeavePage() {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [tab, setTab] = useState<LeaveTab>('pending')
   const [page, setPage] = useState(1)
   const [nameFilter, setNameFilter] = useState('')
@@ -50,7 +52,7 @@ export function HrLeavePage() {
       show('تمت الموافقة على الطلب')
       invalidate()
     },
-    onError: () => show('تعذّر تنفيذ العملية', 'error'),
+    onError: formErrors.onError,
   })
 
   const reject = useMutation({
@@ -61,7 +63,7 @@ export function HrLeavePage() {
       setReason('')
       invalidate()
     },
-    onError: () => show('تعذّر تنفيذ العملية', 'error'),
+    onError: formErrors.onError,
   })
 
   function switchTab(next: LeaveTab) {
@@ -130,15 +132,17 @@ export function HrLeavePage() {
                     tab={tab}
                     rejecting={rejectingId === r.id}
                     reason={reason}
+                    reasonError={rejectingId === r.id ? formErrors.fieldError('reason') : undefined}
                     busy={approve.isPending || reject.isPending}
-                    onApprove={() => approve.mutate(r.id)}
+                    onApprove={() => { formErrors.reset(); approve.mutate(r.id) }}
                     onAskReject={() => {
+                      formErrors.reset()
                       setRejectingId(r.id)
                       setReason('')
                     }}
                     onReasonChange={setReason}
                     onCancelReject={() => setRejectingId(null)}
-                    onConfirmReject={() => reject.mutate({ id: r.id, reason: reason.trim() })}
+                    onConfirmReject={() => { formErrors.reset(); reject.mutate({ id: r.id, reason: reason.trim() }) }}
                   />
                 ))}
               </tbody>
@@ -173,6 +177,7 @@ function LeaveRow({
   tab,
   rejecting,
   reason,
+  reasonError,
   busy,
   onApprove,
   onAskReject,
@@ -184,6 +189,7 @@ function LeaveRow({
   tab: LeaveTab
   rejecting: boolean
   reason: string
+  reasonError: string | undefined
   busy: boolean
   onApprove: () => void
   onAskReject: () => void
@@ -234,6 +240,7 @@ function LeaveRow({
                   value={reason}
                   onChange={(e) => onReasonChange(e.target.value)}
                   placeholder="اكتب سبب الرفض…"
+                  error={reasonError}
                 />
               </div>
               <div className="flex gap-2">

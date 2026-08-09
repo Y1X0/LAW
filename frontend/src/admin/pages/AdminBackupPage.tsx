@@ -3,7 +3,7 @@ import { Badge, Button, Card } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import {
   type Backup,
   backupKindLabel,
@@ -21,6 +21,7 @@ import {
 export function AdminBackupPage() {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const backups = useQuery({ queryKey: ['admin', 'backups'], queryFn: fetchBackups })
 
   const lastSuccess = backups.data?.find((b) => b.status === 'completed')
@@ -31,12 +32,12 @@ export function AdminBackupPage() {
       show(b.status === 'completed' ? 'تمّ إنشاء نسخة احتياطية' : 'بدأ إنشاء النسخة')
       void qc.invalidateQueries({ queryKey: ['admin', 'backups'] })
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر إنشاء النسخة', 'error'),
+    onError: formErrors.onError,
   })
 
   const download = useMutation({
     mutationFn: (b: Backup) => downloadBackup(b),
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر التنزيل', 'error'),
+    onError: formErrors.onError,
   })
 
   return (

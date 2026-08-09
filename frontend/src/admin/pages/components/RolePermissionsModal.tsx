@@ -5,7 +5,7 @@ import { ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
 import { Modal } from '@/admin/ui/Modal'
 import { fetchPermissions, groupByModule, syncRolePermissions, type Role } from '@/admin/api/roles'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 
 /**
  * مصفوفة صلاحيات الدور (ADMIN-3): كل الصلاحيات مجمّعة حسب الوحدة مع تحديد
@@ -14,6 +14,7 @@ import { ApiError } from '@/core/api/types'
 export function RolePermissionsModal({ role, onClose }: { role: Role; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [selected, setSelected] = useState<Set<number>>(new Set(role.permissions.map((p) => p.id)))
 
   const perms = useQuery({ queryKey: ['admin', 'permissions'], queryFn: fetchPermissions })
@@ -27,7 +28,7 @@ export function RolePermissionsModal({ role, onClose }: { role: Role; onClose: (
       void qc.invalidateQueries({ queryKey: ['admin', 'roles'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر حفظ الصلاحيات', 'error'),
+    onError: formErrors.onError,
   })
 
   function toggle(id: number) {

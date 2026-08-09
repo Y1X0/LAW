@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ApiError } from '@/core/api/types'
+import { mapApiError } from '@/core/api/mapApiError'
 import { useAuth } from '@/core/auth/useAuth'
 
 /** شعار ميزان العدالة (SVG داخلي، ذهبي). */
@@ -51,7 +51,7 @@ export function LoginPage() {
       // 3) بعد أن يتوسّط الشعار ويثبت متوهّجاً (هالة ذهبية واضحة)، نفتح اللوحة.
       window.setTimeout(() => navigate('/', { replace: true }), 1500)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'تعذّر تسجيل الدخول. حاول مجدداً.')
+      setError(mapApiError(err).formMessage)
       setSubmitting(false)
     }
   }

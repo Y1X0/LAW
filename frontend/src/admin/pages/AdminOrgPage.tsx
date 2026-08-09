@@ -5,7 +5,7 @@ import { PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
 import { Modal } from '@/admin/ui/Modal'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import {
   type Branch,
   type Department,
@@ -48,6 +48,7 @@ export function AdminOrgPage() {
 function BranchesSection({ onPickBranch }: { onPickBranch: (id: number) => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [editing, setEditing] = useState<Branch | null | 'new'>(null)
 
   const branches = useQuery({ queryKey: ['admin', 'branches'], queryFn: fetchBranches })
@@ -58,7 +59,7 @@ function BranchesSection({ onPickBranch }: { onPickBranch: (id: number) => void 
       show('تم حذف الفرع')
       void qc.invalidateQueries({ queryKey: ['admin', 'branches'] })
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر حذف الفرع', 'error'),
+    onError: formErrors.onError,
   })
 
   return (
@@ -118,6 +119,7 @@ function BranchesSection({ onPickBranch }: { onPickBranch: (id: number) => void 
 function BranchModal({ branch, onClose }: { branch: Branch | null; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [name, setName] = useState(branch?.name ?? '')
   const [code, setCode] = useState(branch?.code ?? '')
   const [city, setCity] = useState(branch?.city ?? '')
@@ -134,21 +136,22 @@ function BranchModal({ branch, onClose }: { branch: Branch | null; onClose: () =
       void qc.invalidateQueries({ queryKey: ['admin', 'branches'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت العملية', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     save.mutate()
   }
 
   return (
     <Modal title={branch ? `تعديل الفرع — ${branch.name}` : 'إضافة فرع'} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <Field label="اسم الفرع" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Field label="الرمز (فريد)" value={code} onChange={(e) => setCode(e.target.value)} required />
-        <Field label="المدينة (اختياري)" value={city} onChange={(e) => setCity(e.target.value)} />
-        <Field label="الهاتف (اختياري)" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Field label="اسم الفرع" value={name} onChange={(e) => setName(e.target.value)} required error={formErrors.fieldError('name')} />
+        <Field label="الرمز (فريد)" value={code} onChange={(e) => setCode(e.target.value)} required error={formErrors.fieldError('code')} />
+        <Field label="المدينة (اختياري)" value={city} onChange={(e) => setCity(e.target.value)} error={formErrors.fieldError('city')} />
+        <Field label="الهاتف (اختياري)" value={phone} onChange={(e) => setPhone(e.target.value)} error={formErrors.fieldError('phone')} />
         <label className="flex items-center gap-2 text-sm text-slate-600">
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-4 w-4 rounded border-slate-300" />
           فرع نشط
@@ -167,6 +170,7 @@ function BranchModal({ branch, onClose }: { branch: Branch | null; onClose: () =
 function DepartmentsSection({ branchFilter, setBranchFilter }: { branchFilter: number | ''; setBranchFilter: (v: number | '') => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [editing, setEditing] = useState<Department | null | 'new'>(null)
 
   const branches = useQuery({ queryKey: ['admin', 'branches'], queryFn: fetchBranches })
@@ -187,7 +191,7 @@ function DepartmentsSection({ branchFilter, setBranchFilter }: { branchFilter: n
       void qc.invalidateQueries({ queryKey: ['admin', 'departments'] })
       void qc.invalidateQueries({ queryKey: ['admin', 'branches'] })
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر حذف القسم', 'error'),
+    onError: formErrors.onError,
   })
 
   const canAdd = (branches.data?.length ?? 0) > 0
@@ -268,6 +272,7 @@ function DepartmentModal({
 }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [branchId, setBranchId] = useState<number>(department?.branch_id ?? defaultBranchId)
   const [name, setName] = useState(department?.name ?? '')
   const [active, setActive] = useState(department?.is_active ?? true)
@@ -283,21 +288,22 @@ function DepartmentModal({
       void qc.invalidateQueries({ queryKey: ['admin', 'branches'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت العملية', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     save.mutate()
   }
 
   return (
     <Modal title={department ? `تعديل القسم — ${department.name}` : 'إضافة قسم'} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <SelectField label="الفرع" value={String(branchId)} onChange={(e) => setBranchId(Number(e.target.value))}>
+        <SelectField label="الفرع" value={String(branchId)} onChange={(e) => setBranchId(Number(e.target.value))} error={formErrors.fieldError('branch_id')}>
           {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </SelectField>
-        <Field label="اسم القسم" value={name} onChange={(e) => setName(e.target.value)} required />
+        <Field label="اسم القسم" value={name} onChange={(e) => setName(e.target.value)} required error={formErrors.fieldError('name')} />
         <label className="flex items-center gap-2 text-sm text-slate-600">
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-4 w-4 rounded border-slate-300" />
           قسم نشط
@@ -316,6 +322,7 @@ function DepartmentModal({
 function PositionsSection() {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [editing, setEditing] = useState<Position | null | 'new'>(null)
   const [branchFilter, setBranchFilter] = useState<number | ''>('')
 
@@ -336,7 +343,7 @@ function PositionsSection() {
       show('تم حذف المنصب')
       void qc.invalidateQueries({ queryKey: ['admin', 'positions'] })
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر حذف المنصب', 'error'),
+    onError: formErrors.onError,
   })
 
   return (
@@ -415,6 +422,7 @@ function PositionModal({
 }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [branchId, setBranchId] = useState<number | ''>(position?.branch_id ?? '')
   const [title, setTitle] = useState(position?.title ?? '')
   const [description, setDescription] = useState(position?.description ?? '')
@@ -433,21 +441,22 @@ function PositionModal({
       void qc.invalidateQueries({ queryKey: ['admin', 'positions'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت العملية', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     save.mutate()
   }
 
   return (
     <Modal title={position ? `تعديل المنصب — ${position.title}` : 'إضافة منصب'} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <Field label="المسمّى الوظيفي" value={title} onChange={(e) => setTitle(e.target.value)} required />
-        <Field label="الوصف (اختياري)" value={description} onChange={(e) => setDescription(e.target.value)} />
+        <Field label="المسمّى الوظيفي" value={title} onChange={(e) => setTitle(e.target.value)} required error={formErrors.fieldError('title')} />
+        <Field label="الوصف (اختياري)" value={description} onChange={(e) => setDescription(e.target.value)} error={formErrors.fieldError('description')} />
         {position === null && (
-          <SelectField label="الفرع (اختياري)" value={branchId === '' ? '' : String(branchId)} onChange={(e) => setBranchId(e.target.value === '' ? '' : Number(e.target.value))}>
+          <SelectField label="الفرع (اختياري)" value={branchId === '' ? '' : String(branchId)} onChange={(e) => setBranchId(e.target.value === '' ? '' : Number(e.target.value))} error={formErrors.fieldError('branch_id')}>
             <option value="">عام (بلا فرع)</option>
             {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </SelectField>

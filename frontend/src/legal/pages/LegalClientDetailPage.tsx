@@ -5,7 +5,7 @@ import { Badge, Button, Card } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { formatCurrency } from '@/core/lib/format'
 import { useFinanceCapabilities } from '@/finance/api/capabilities'
 import { fetchClientFinanceSummary } from '@/finance/api/clients'
@@ -23,6 +23,7 @@ export function LegalClientDetailPage() {
   const id = Number(idParam)
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [editing, setEditing] = useState(false)
   const [confirmToggle, setConfirmToggle] = useState(false)
 
@@ -36,7 +37,7 @@ export function LegalClientDetailPage() {
       void qc.invalidateQueries({ queryKey: ['legal', 'clients'] })
       setConfirmToggle(false)
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر تغيير الحالة', 'error'),
+    onError: formErrors.onError,
   })
 
   if (query.isPending) return <Card><Skeleton className="h-40 w-full" /></Card>

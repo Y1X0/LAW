@@ -6,7 +6,7 @@ import { useToast } from '@/core/ui/useToast'
 import { Modal } from '@/admin/ui/Modal'
 import { linkEmployee, unlinkEmployee, type AdminUser } from '@/admin/api/users'
 import { fetchEmployees } from '@/hr/api/employees'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 
 /**
  * ربط/فكّ ربط موظف بحساب المستخدم (يعيد استخدام خدمة الهوية 1:1 في الخادم).
@@ -15,6 +15,7 @@ import { ApiError } from '@/core/api/types'
 export function LinkEmployeeModal({ user, onClose }: { user: AdminUser; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
 
@@ -33,7 +34,7 @@ export function LinkEmployeeModal({ user, onClose }: { user: AdminUser; onClose:
       void invalidate()
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر ربط الموظف', 'error'),
+    onError: formErrors.onError,
   })
 
   const unlink = useMutation({
@@ -43,7 +44,7 @@ export function LinkEmployeeModal({ user, onClose }: { user: AdminUser; onClose:
       void invalidate()
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر فكّ الربط', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSearch(e: FormEvent) {

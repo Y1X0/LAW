@@ -1,8 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
-import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { EXPORT_ENTITIES, type ExportEntity, downloadExport } from '@/admin/api/data'
 import { ImportCenter } from '@/admin/pages/components/ImportCenter'
 
@@ -11,11 +10,11 @@ import { ImportCenter } from '@/admin/pages/components/ImportCenter'
  * أعمدة → تأكيد). قاعدة البيانات هي المرجع؛ Excel للهجرة الأوّلية والتقارير فقط.
  */
 export function AdminDataPage() {
-  const { show } = useToast()
+  const formErrors = useFormErrors()
 
   const exportMut = useMutation({
     mutationFn: (entity: ExportEntity) => downloadExport(entity),
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر التصدير', 'error'),
+    onError: formErrors.onError,
   })
 
   return (

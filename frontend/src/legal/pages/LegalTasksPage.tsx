@@ -5,7 +5,7 @@ import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { Pagination } from './components/Pagination'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import {
   TASK_PRIORITIES,
   TASK_STATUSES,
@@ -82,6 +82,7 @@ export function LegalTasksPage() {
 function TaskRow({ task }: { task: Task }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [editing, setEditing] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const done = task.status === 'done'
@@ -89,7 +90,7 @@ function TaskRow({ task }: { task: Task }) {
   const complete = useMutation({
     mutationFn: () => completeTask(task.id),
     onSuccess: () => { show('تم إكمال المهمة'); void qc.invalidateQueries({ queryKey: ['legal', 'tasks'] }) },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الإكمال', 'error'),
+    onError: formErrors.onError,
   })
 
   return (

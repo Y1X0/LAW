@@ -4,7 +4,7 @@ import { Badge, Button, Card, SelectField } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import {
   type CustomField,
   deleteCustomField,
@@ -20,6 +20,7 @@ import { CustomFieldFormModal } from '@/admin/pages/components/CustomFieldFormMo
 export function AdminCustomFieldsPage() {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [entity, setEntity] = useState<string>('')
   const [editing, setEditing] = useState<CustomField | null | 'new'>(null)
 
@@ -43,7 +44,7 @@ export function AdminCustomFieldsPage() {
       show('تم حذف الحقل')
       void qc.invalidateQueries({ queryKey: ['admin', 'custom-fields'] })
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الحذف', 'error'),
+    onError: formErrors.onError,
   })
 
   const typeLabel = (key: string) => meta.data?.types.find((t) => t.key === key)?.label ?? key

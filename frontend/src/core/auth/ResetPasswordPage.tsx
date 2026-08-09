@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ApiError } from '@/core/api/types'
+import { mapApiError } from '@/core/api/mapApiError'
 import { authApi } from '@/core/api/auth'
 
 /**
@@ -35,7 +35,7 @@ export function ResetPasswordPage() {
       await authApi.resetPassword({ token, email, password, password_confirmation: confirm })
       navigate('/login', { replace: true, state: { reset: true } })
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'تعذّر تعيين كلمة المرور. قد يكون الرابط منتهياً.')
+      setError(mapApiError(err).formMessage)
     } finally {
       setSubmitting(false)
     }

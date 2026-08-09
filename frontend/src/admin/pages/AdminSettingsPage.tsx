@@ -5,7 +5,7 @@ import { PageHeader, SectionCard } from '@/core/ui/section'
 import { ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
 import { SETTINGS_GROUPS, fetchSettings, settingsValues, updateSettings } from '@/admin/api/settings'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 
 /**
  * إعدادات المنصّة (ADMIN-5) — تحرير أقسام الإعدادات المُعرَّفة في SETTINGS_GROUPS عبر
@@ -15,6 +15,7 @@ import { ApiError } from '@/core/api/types'
 export function AdminSettingsPage() {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [values, setValues] = useState<Record<string, string>>({})
 
   const { data, isPending, isError, error, refetch } = useQuery({
@@ -41,11 +42,12 @@ export function AdminSettingsPage() {
       show('تم حفظ الإعدادات')
       void qc.invalidateQueries({ queryKey: ['admin', 'settings'] })
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر حفظ الإعدادات', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     save.mutate()
   }
 

@@ -52,13 +52,16 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row" dir="rtl">
-      {/* لوحة النموذج (يمين في RTL) — خلفية أوف وايت */}
-      <div className="flex flex-1 items-center justify-center bg-[#f4f5f7] p-6">
+      {/* لوحة النموذج (يمين في RTL) — على التلفون: خلفية فحمي بنفس هوية اللوحة الجانبية
+          (الشعار/المقولة فوق)؛ على سطح المكتب: أوف وايت بجانب لوحة الهوية. */}
+      <div className="flex flex-1 items-center justify-center bg-[#111318] p-6 md:bg-[#f4f5f7]">
         <div className="lp-reveal w-full max-w-md">
-          {/* هوية مصغّرة للجوّال */}
-          <div className="mb-6 flex flex-col items-center gap-2 md:hidden">
-            <ScalesLogo className="h-12 w-12 text-gold-400" />
-            <h2 className="text-lg font-bold text-brand-800">مكتب العدالة للمحاماة</h2>
+          {/* هوية الجوّال — فحمي: شعار ذهبي + اسم + مقولة (تُخفى على سطح المكتب) */}
+          <div className="mb-7 flex flex-col items-center gap-1.5 text-center md:hidden">
+            <ScalesLogo className="h-16 w-16 text-gold-400" />
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-white">مكتب العدالة للمحاماة</h2>
+            <p className="text-xs font-medium text-slate-400">نظام إدارة المكتب</p>
+            <p className="mt-1 text-sm font-semibold text-gold-400">”العدل أساس المُلك“</p>
           </div>
 
           {/* الكارد: أبيض نظيف بحدّ شعري 1px، بلا زجاجية، ظلّ هادئ */}

@@ -48,8 +48,8 @@ export function LoginPage() {
       setSuccess(true)
       // 2) بعد رسم النسخة الثابتة في مكانها تماماً، نبدّلها إلى المركز فتنساب بنعومة.
       requestAnimationFrame(() => requestAnimationFrame(() => setCentered(true)))
-      // 3) بعد أن يتوسّط الشعار ويثبت متوهّجاً، نفتح اللوحة.
-      window.setTimeout(() => navigate('/', { replace: true }), 1150)
+      // 3) بعد أن يتوسّط الشعار ويثبت متوهّجاً (هالة ذهبية واضحة)، نفتح اللوحة.
+      window.setTimeout(() => navigate('/', { replace: true }), 1500)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'تعذّر تسجيل الدخول. حاول مجدداً.')
       setSubmitting(false)
@@ -175,8 +175,11 @@ export function LoginPage() {
                   width: 132,
                   height: 132,
                   transform: 'translate(-50%, -50%)',
-                  transition: 'top 800ms cubic-bezier(.16,1,.3,1), left 800ms cubic-bezier(.16,1,.3,1), width 800ms cubic-bezier(.16,1,.3,1), height 800ms cubic-bezier(.16,1,.3,1), filter 800ms ease',
-                  filter: 'drop-shadow(0 0 30px rgba(197,160,89,0.8))',
+                  transition:
+                    'top 800ms cubic-bezier(.16,1,.3,1), left 800ms cubic-bezier(.16,1,.3,1), width 800ms cubic-bezier(.16,1,.3,1), height 800ms cubic-bezier(.16,1,.3,1), box-shadow 700ms ease, border-color 700ms ease',
+                  // هالة ذهبية واضحة حول الميزان + حدّ ذهبي أوضح
+                  boxShadow: '0 0 70px 12px rgba(197,160,89,0.5), inset 0 0 22px rgba(197,160,89,0.18)',
+                  borderColor: 'rgba(197,160,89,0.85)',
                 }
               : { top: flip.top, left: flip.left, width: flip.width, height: flip.height }
           }

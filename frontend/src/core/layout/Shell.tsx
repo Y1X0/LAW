@@ -11,6 +11,8 @@ export interface NavItem {
   icon: IconName
   /** يطابق المسارات الفرعية (end=false) — مثل ملف القضية تحت «قضاياي». */
   end?: boolean
+  /** عنوان قسم اختياري: يظهر كترويسة صغيرة هادئة قبل أوّل عنصر في القسم (سطح المكتب فقط). */
+  group?: string
 }
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -36,19 +38,30 @@ export function Shell({ nav, subtitle }: { nav: NavItem[]; subtitle: string }) {
           <Brand subtitle={subtitle} onDark />
         </div>
         <nav className="space-y-1.5">
-          {nav.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.end ?? true} className={linkClass}>
-              {({ isActive }) => (
-                <>
-                  <Icon
-                    name={item.icon}
-                    className={`h-5 w-5 transition ${isActive ? 'text-gold-400' : 'text-slate-400 group-hover:text-white'}`}
-                  />
-                  <span>{item.label}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
+          {nav.map((item, i) => {
+            // ترويسة قسم هادئة قبل أوّل عنصر بمجموعة جديدة — تنظيم مؤسسي صامت.
+            const showGroup = item.group && item.group !== nav[i - 1]?.group
+            return (
+              <div key={item.to}>
+                {showGroup && (
+                  <div className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    {item.group}
+                  </div>
+                )}
+                <NavLink to={item.to} end={item.end ?? true} className={linkClass}>
+                  {({ isActive }) => (
+                    <>
+                      <Icon
+                        name={item.icon}
+                        className={`h-5 w-5 transition ${isActive ? 'text-gold-400' : 'text-slate-400 group-hover:text-white'}`}
+                      />
+                      <span>{item.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              </div>
+            )
+          })}
         </nav>
         <div className="mt-auto border-t border-white/10 pt-3">
           <button

@@ -24,7 +24,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [success, setSuccess] = useState(false)
+  const [leaving, setLeaving] = useState(false)
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -32,15 +32,14 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       await login(email, password)
-      // انتقال «صامت فخم»: طبقة فحمي + وميض ذهبي هادئ للشعار (< 0.6s) ثم اللوحة.
-      // يُحترم تقليل الحركة: انتقال فوري بلا تأخير. لا مساس بمنطق الدخول نفسه.
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      if (reduceMotion) {
+      // انتقال ناعم: تلاشي الشاشة كاملةً (fade-out + تصغير خفيف) خلال 400ms ثم اللوحة —
+      // سريع ومريح بلا إزعاج. يُحترم تقليل الحركة (انتقال فوري). لا مساس بمنطق الدخول/الـAPI.
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         navigate('/', { replace: true })
         return
       }
-      setSuccess(true)
-      window.setTimeout(() => navigate('/', { replace: true }), 520)
+      setLeaving(true)
+      window.setTimeout(() => navigate('/', { replace: true }), 400)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'تعذّر تسجيل الدخول. حاول مجدداً.')
       setSubmitting(false)
@@ -48,128 +47,99 @@ export function LoginPage() {
   }
 
   const inputClass =
-    'w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10'
+    'w-full rounded-md border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-800 focus:ring-2 focus:ring-slate-900/10'
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row" dir="rtl">
-      {/* لوحة النموذج (يمين في RTL) — على التلفون: خلفية فحمي بنفس هوية اللوحة الجانبية
-          (الشعار/المقولة فوق)؛ على سطح المكتب: أوف وايت بجانب لوحة الهوية. */}
-      <div className="flex flex-1 items-center justify-center bg-[#111318] p-6 md:bg-[#f4f5f7]">
-        <div className="lp-reveal w-full max-w-md">
-          {/* هوية الجوّال — فحمي: شعار ذهبي + اسم + مقولة (تُخفى على سطح المكتب) */}
-          <div className="mb-7 flex flex-col items-center gap-1.5 text-center md:hidden">
-            <ScalesLogo className="h-16 w-16 text-gold-400" />
-            <h2 className="mt-1 text-xl font-bold tracking-tight text-white">مكتب العدالة للمحاماة</h2>
-            <p className="text-xs font-medium text-slate-400">نظام إدارة المكتب</p>
-            <p className="mt-1 text-sm font-semibold text-gold-400">”العدل أساس المُلك“</p>
+    // خلفية فحمي عميق + كارد وسطية. عند الإرسال تتلاشى الشاشة كاملةً (fade-out) خلال 400ms.
+    <div
+      dir="rtl"
+      className={`flex min-h-screen items-center justify-center bg-[#111318] px-4 py-8 transition-[opacity,transform] duration-[400ms] ease-in-out ${leaving ? 'scale-[.98] opacity-0' : 'scale-100 opacity-100'}`}
+    >
+      <div className="lp-reveal w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.6)]">
+        {/* شعار الميزان داخل دائرة بحدّ ذهبي مطفأ — لمسة كلاسيكية نظيفة */}
+        <div className="mb-6 flex flex-col items-center text-center">
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-gold-400/40 bg-[#111318]">
+            <ScalesLogo className="h-7 w-7 text-gold-400" />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-brand-800">مكتب العدالة للمحاماة</h1>
+          <p className="mt-1 text-xs text-slate-500">المنصّة المؤسسية الآمنة</p>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="login-email" className="block text-sm font-medium text-slate-700">
+              البريد الإلكتروني
+            </label>
+            <input
+              id="login-email"
+              type="email"
+              autoComplete="email"
+              className={inputClass}
+              placeholder="name@lawfirm.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
 
-          {/* الكارد: أبيض نظيف بحدّ شعري 1px، بلا زجاجية، ظلّ هادئ */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-card">
-            <h1 className="text-2xl font-bold text-brand-800">تسجيل الدخول</h1>
-            <p className="mt-1 text-sm text-slate-500">أدخل بياناتك للوصول إلى النظام</p>
-
-            <form onSubmit={onSubmit} className="mt-6 space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor="login-email" className="block text-sm font-medium text-slate-700">
-                البريد الإلكتروني
-              </label>
+          <div className="space-y-1.5">
+            <label htmlFor="login-password" className="block text-sm font-medium text-slate-700">
+              كلمة المرور
+            </label>
+            <div className="relative">
               <input
-                id="login-email"
-                type="email"
-                autoComplete="email"
-                className={inputClass}
-                placeholder="أدخل بريدك الإلكتروني"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                className={`${inputClass} pl-11`}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                aria-label={showPassword ? 'إخفاء كلمة السر' : 'إظهار كلمة السر'}
+                className="absolute inset-y-0 left-0 flex items-center px-3 text-slate-400 hover:text-slate-600"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  {showPassword ? (
+                    <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 4.2A9.8 9.8 0 0 1 12 4c5 0 9 4.5 9 8a12 12 0 0 1-2.2 3.2M6.1 6.1A12.6 12.6 0 0 0 3 12c0 3.5 4 8 9 8 1.4 0 2.7-.3 3.9-.9" />
+                  ) : (
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                  )}
+                </svg>
+              </button>
             </div>
+          </div>
 
-            <div className="space-y-1.5">
-              <label htmlFor="login-password" className="block text-sm font-medium text-slate-700">
-                كلمة المرور
-              </label>
-              <div className="relative">
-                <input
-                  id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  className={`${inputClass} pl-11`}
-                  placeholder="أدخل كلمة المرور"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  aria-label={showPassword ? 'إخفاء كلمة السر' : 'إظهار كلمة السر'}
-                  className="absolute inset-y-0 left-0 flex items-center px-3 text-slate-400 hover:text-slate-600"
-                >
-                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    {showPassword ? (
-                      <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 4.2A9.8 9.8 0 0 1 12 4c5 0 9 4.5 9 8a12 12 0 0 1-2.2 3.2M6.1 6.1A12.6 12.6 0 0 0 3 12c0 3.5 4 8 9 8 1.4 0 2.7-.3 3.9-.9" />
-                    ) : (
-                      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
-                    )}
-                  </svg>
-                </button>
-              </div>
-            </div>
+          <div className="flex justify-start text-sm">
+            <Link to="/forgot-password" className="font-medium text-slate-500 hover:text-brand-800">
+              نسيت كلمة المرور؟
+            </Link>
+          </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 text-slate-600">
-                <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-slate-900/20" />
-                تذكّرني
-              </label>
-              <Link to="/forgot-password" className="font-medium text-slate-600 hover:text-brand-800">
-                نسيت كلمة المرور؟
-              </Link>
-            </div>
-
-            {error ? (
-              <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-                {error}
-              </p>
-            ) : null}
-
-            {/* زر فحمي داكن بحدّ ذهبي رفيع — اللمسة الذهبية الوحيدة على الزر */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="lp-press w-full rounded-lg border border-gold-400/70 bg-brand-800 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting ? 'جارٍ الدخول…' : 'تسجيل الدخول'}
-            </button>
-            </form>
-
-            <p className="mt-5 text-center text-xs text-slate-400">
-              تنبيه: إنشاء الحسابات يتم فقط من قبل الإدارة
+          {error ? (
+            <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
             </p>
-          </div>
-        </div>
-      </div>
+          ) : null}
 
-      {/* لوحة الهوية (يسار في RTL) — سطح المكتب فقط. فحمي مسطّح بلا تدرّج، شعار ذهبي هادئ. */}
-      <div className="relative hidden w-[42%] flex-col items-center justify-center bg-[#111318] p-10 text-white md:flex">
-        <div className="flex flex-col items-center text-center">
-          <ScalesLogo className="h-20 w-20 text-gold-400" />
-          <h2 className="mt-5 text-3xl font-bold tracking-tight">مكتب العدالة للمحاماة</h2>
-          <p className="mt-2 text-slate-400">نظام إدارة المكتب</p>
-          <div className="mt-10 border-t border-white/10 pt-6">
-            <p className="text-lg font-semibold text-gold-400">”العدل أساس المُلك“</p>
-          </div>
-        </div>
-      </div>
+          {/* زر فحمي داكن بحدّ ذهبي مطفأ */}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="lp-press flex w-full items-center justify-center rounded-md border border-gold-400/60 bg-[#111318] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {submitting ? 'جارٍ الدخول…' : 'تسجيل الدخول'}
+          </button>
+        </form>
 
-      {/* انتقال الدخول «الصامت الفخم»: طبقة فحمي + وميض ذهبي هادئ للشعار ثم اللوحة (< 0.6s). */}
-      {success && (
-        <div className="lp-signin-overlay fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#111318]" role="status" aria-live="polite">
-          <ScalesLogo className="lp-signin-mark h-20 w-20 text-gold-400" />
-          <p className="mt-5 text-sm font-medium text-slate-300">جارٍ الدخول…</p>
-        </div>
-      )}
+        <p className="mt-6 text-center text-xs text-slate-400">
+          تنبيه: إنشاء الحسابات يتم فقط من قبل الإدارة
+        </p>
+      </div>
     </div>
   )
 }

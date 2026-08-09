@@ -333,6 +333,39 @@ body {
   animation: lp-page-in var(--dur) var(--ease-out-soft) both;
 }
 
+/* ---- انتقال الدخول «الصامت الفخم» ---- طبقة فحمي تظهر بنعومة (fade-in)، وشعار
+   الميزان يضيء بلمسة ذهبية هادئة أقل من 0.6s ثم يُنتقل مباشرةً للوحة. بلا إبطاء. */
+.lp-signin-overlay {
+  animation: lp-fade-in 200ms var(--ease-premium) both;
+}
+.lp-signin-mark {
+  animation: lp-mark-glow 560ms var(--ease-out-soft) both;
+}
+@keyframes lp-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes lp-mark-glow {
+  0% {
+    opacity: 0.35;
+    transform: scale(0.92);
+    filter: drop-shadow(0 0 0 rgba(197, 160, 89, 0));
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 18px rgba(197, 160, 89, 0.7));
+  }
+}
+
 /* احترام تفضيل تقليل الحركة. */
 @media (prefers-reduced-motion: reduce) {
   html {

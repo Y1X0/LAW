@@ -24,7 +24,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [leaving, setLeaving] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -32,14 +32,14 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       await login(email, password)
-      // انتقال ناعم: تلاشي الشاشة كاملةً (fade-out + تصغير خفيف) خلال 400ms ثم اللوحة —
-      // سريع ومريح بلا إزعاج. يُحترم تقليل الحركة (انتقال فوري). لا مساس بمنطق الدخول/الـAPI.
+      // انتقال «صامت فخم»: طبقة فحمي تظهر بنعومة وشعار الميزان يضيء بذهبي هادئ
+      // (< 0.6s) ثم اللوحة مباشرةً. يُحترم تقليل الحركة (انتقال فوري). لا مساس بمنطق الدخول/الـAPI.
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         navigate('/', { replace: true })
         return
       }
-      setLeaving(true)
-      window.setTimeout(() => navigate('/', { replace: true }), 400)
+      setSuccess(true)
+      window.setTimeout(() => navigate('/', { replace: true }), 560)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'تعذّر تسجيل الدخول. حاول مجدداً.')
       setSubmitting(false)
@@ -50,11 +50,8 @@ export function LoginPage() {
     'w-full rounded-md border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-800 focus:ring-2 focus:ring-slate-900/10'
 
   return (
-    // خلفية فحمي عميق + كارد وسطية. عند الإرسال تتلاشى الشاشة كاملةً (fade-out) خلال 400ms.
-    <div
-      dir="rtl"
-      className={`flex min-h-screen items-center justify-center bg-[#111318] px-4 py-8 transition-[opacity,transform] duration-[400ms] ease-in-out ${leaving ? 'scale-[.98] opacity-0' : 'scale-100 opacity-100'}`}
-    >
+    // خلفية فحمي عميق + كارد وسطية. عند الإرسال تظهر طبقة الانتقال «الصامت الفخم».
+    <div dir="rtl" className="flex min-h-screen items-center justify-center bg-[#111318] px-4 py-8">
       <div className="lp-reveal w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.6)]">
         {/* شعار الميزان داخل دائرة بحدّ ذهبي مطفأ — لمسة كلاسيكية نظيفة */}
         <div className="mb-6 flex flex-col items-center text-center">
@@ -140,6 +137,14 @@ export function LoginPage() {
           تنبيه: إنشاء الحسابات يتم فقط من قبل الإدارة
         </p>
       </div>
+
+      {/* الانتقال «الصامت الفخم»: طبقة فحمي تظهر بنعومة + شعار الميزان يضيء ذهبياً (< 0.6s) ثم اللوحة. */}
+      {success && (
+        <div className="lp-signin-overlay fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#111318]" role="status" aria-live="polite">
+          <ScalesLogo className="lp-signin-mark h-20 w-20 text-gold-400" />
+          <p className="mt-5 text-sm font-medium text-slate-300">جارٍ الدخول…</p>
+        </div>
+      )}
     </div>
   )
 }

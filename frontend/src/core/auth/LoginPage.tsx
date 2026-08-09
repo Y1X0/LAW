@@ -39,7 +39,7 @@ export function LoginPage() {
         return
       }
       setSuccess(true)
-      window.setTimeout(() => navigate('/', { replace: true }), 820)
+      window.setTimeout(() => navigate('/', { replace: true }), 1050)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'تعذّر تسجيل الدخول. حاول مجدداً.')
       setSubmitting(false)
@@ -138,11 +138,12 @@ export function LoginPage() {
         </p>
       </div>
 
-      {/* الانتقال «الصامت الفخم»: طبقة فحمي تظهر بنعومة + شعار الميزان يضيء ذهبياً (< 0.6s) ثم اللوحة. */}
+      {/* الانتقال السينمائي: الكارد يتلاشى خلفها بينما شعار الميزان يكبر ويتوسّط
+          الشاشة ويثبت متوهّجاً ذهبياً (لا يختفي) ثم تُفتح اللوحة. */}
       {success && (
-        <div className="lp-signin-overlay fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#111318]" role="status" aria-live="polite">
-          <ScalesLogo className="lp-signin-mark h-20 w-20 text-gold-400" />
-          <p className="mt-5 text-sm font-medium text-slate-300">جارٍ الدخول…</p>
+        <div className="lp-signin-overlay fixed inset-0 z-50 flex items-center justify-center bg-[#111318]" role="status" aria-live="polite">
+          <span className="sr-only">جارٍ الدخول…</span>
+          <ScalesLogo className="lp-signin-mark h-28 w-28 text-gold-400" />
         </div>
       )}
     </div>

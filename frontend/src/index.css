@@ -333,13 +333,15 @@ body {
   animation: lp-page-in var(--dur) var(--ease-out-soft) both;
 }
 
-/* ---- انتقال الدخول «الصامت الفخم» ---- طبقة فحمي تظهر بنعومة (fade-in)، وشعار
-   الميزان يضيء بلمسة ذهبية هادئة أقل من 0.6s ثم يُنتقل مباشرةً للوحة. بلا إبطاء. */
+/* ---- انتقال الدخول «الصامت الفخم» — حركة عنصر واحد (الميزان) ---- الكارد يتلاشى
+   بينما شعار الميزان يكبر تدريجياً ويتوسّط الشاشة ويثبت متوهّجاً ذهبياً ثم تُفتح اللوحة.
+   الميزان لا يختفي — هو بطل الانتقال. حركة سينمائية راقية بلا إبطاء مبالغ. */
 .lp-signin-overlay {
-  animation: lp-fade-in 520ms ease-in-out both;
+  animation: lp-fade-in 600ms ease-in-out both;
 }
 .lp-signin-mark {
-  animation: lp-mark-glow 720ms var(--ease-out-soft) both;
+  /* يكبر ويثبت ويتوهّج، ويبقى متوهّجاً حتى فتح اللوحة (لا يتلاشى). */
+  animation: lp-mark-rise 900ms var(--ease-out-soft) both;
 }
 @keyframes lp-fade-in {
   from {
@@ -349,20 +351,20 @@ body {
     opacity: 1;
   }
 }
-@keyframes lp-mark-glow {
+@keyframes lp-mark-rise {
   0% {
-    opacity: 0.35;
-    transform: scale(0.92);
+    opacity: 0.4;
+    transform: scale(0.5);
     filter: drop-shadow(0 0 0 rgba(197, 160, 89, 0));
   }
-  50% {
+  60% {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1.08);
   }
   100% {
     opacity: 1;
     transform: scale(1);
-    filter: drop-shadow(0 0 18px rgba(197, 160, 89, 0.7));
+    filter: drop-shadow(0 0 30px rgba(197, 160, 89, 0.8));
   }
 }
 

@@ -336,10 +336,10 @@ body {
 /* ---- انتقال الدخول «الصامت الفخم» ---- طبقة فحمي تظهر بنعومة (fade-in)، وشعار
    الميزان يضيء بلمسة ذهبية هادئة أقل من 0.6s ثم يُنتقل مباشرةً للوحة. بلا إبطاء. */
 .lp-signin-overlay {
-  animation: lp-fade-in 200ms var(--ease-premium) both;
+  animation: lp-fade-in 520ms ease-in-out both;
 }
 .lp-signin-mark {
-  animation: lp-mark-glow 560ms var(--ease-out-soft) both;
+  animation: lp-mark-glow 720ms var(--ease-out-soft) both;
 }
 @keyframes lp-fade-in {
   from {

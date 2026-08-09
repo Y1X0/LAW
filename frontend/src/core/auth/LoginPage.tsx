@@ -39,7 +39,7 @@ export function LoginPage() {
         return
       }
       setSuccess(true)
-      window.setTimeout(() => navigate('/', { replace: true }), 560)
+      window.setTimeout(() => navigate('/', { replace: true }), 820)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'تعذّر تسجيل الدخول. حاول مجدداً.')
       setSubmitting(false)
@@ -52,7 +52,7 @@ export function LoginPage() {
   return (
     // خلفية فحمي عميق + كارد وسطية. عند الإرسال تظهر طبقة الانتقال «الصامت الفخم».
     <div dir="rtl" className="flex min-h-screen items-center justify-center bg-[#111318] px-4 py-8">
-      <div className="lp-reveal w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.6)]">
+      <div className={`lp-reveal w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.6)] transition-opacity duration-500 ease-in-out ${success ? 'opacity-0' : 'opacity-100'}`}>
         {/* شعار الميزان داخل دائرة بحدّ ذهبي مطفأ — لمسة كلاسيكية نظيفة */}
         <div className="mb-6 flex flex-col items-center text-center">
           <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-gold-400/40 bg-[#111318]">

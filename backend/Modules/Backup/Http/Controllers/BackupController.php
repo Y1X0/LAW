@@ -31,7 +31,22 @@ class BackupController
     /** ينشئ نسخة يدوية الآن (Owner). التفريغ الفعلي عبر BackupService (تدقيق + تقليم). */
     public function store(Request $request): JsonResponse
     {
-        $backup = $this->service->run('manual', 'manual', $request->user()?->id, $request);
+        try {
+            $backup = $this->service->run('manual', 'manual', $request->user()?->id, $request);
+        } catch (\Throwable $e) {
+            // فشل التفريغ/الرفع سُجِّل بالفعل (صفّ failed + تدقيق) مع تفاصيله التقنية.
+            // نُعيد للواجهة رسالة عربية واضحة بلا تسريب أوامر pg_dump أو بيانات التخزين.
+            report($e);
+
+            return response()->json([
+                'data' => null,
+                'meta' => null,
+                'errors' => [
+                    'code' => 'BACKUP_FAILED',
+                    'message' => 'تعذّر إنشاء النسخة الاحتياطية. تم تسجيل العطل — يرجى المحاولة لاحقاً أو مراجعة سجلّات النظام.',
+                ],
+            ], 500);
+        }
 
         return $this->ok($this->present($backup), 201);
     }

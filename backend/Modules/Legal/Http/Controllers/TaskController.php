@@ -123,7 +123,15 @@ class TaskController
 
     private function forbidden(string $code): JsonResponse
     {
-        return response()->json(['data' => null, 'meta' => null, 'errors' => ['code' => $code]], 403);
+        // رسالة عربية واضحة مطابقة لبقيّة النظام — لا رفض صامت بلا سبب.
+        $message = $code === 'NO_LINKED_EMPLOYEE'
+            ? 'هذا الحساب غير مرتبط بسجلّ موظف.'
+            : 'لا تملك صلاحية الوصول إلى هذه المهمّة.';
+
+        return response()->json(
+            ['data' => null, 'meta' => null, 'errors' => ['code' => $code, 'message' => $message]],
+            403,
+        );
     }
 
     private function ok($data, int $status = 200): JsonResponse

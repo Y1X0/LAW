@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ApiError } from '@/core/api/types'
 import { useAuth } from '@/core/auth/useAuth'
@@ -25,6 +25,11 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
+  // حركة العنصر المشترك (FLIP): نفس شعار الميزان يسافر من مكانه في الكارد إلى مركز
+  // الشاشة ويكبر — بلا «قطع» ولا شعار بديل. نقيس موضعه الأصلي ثم ننقله.
+  const badgeRef = useRef<HTMLDivElement>(null)
+  const [flip, setFlip] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
+  const [centered, setCentered] = useState(false)
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -32,14 +37,19 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       await login(email, password)
-      // انتقال «صامت فخم»: طبقة فحمي تظهر بنعومة وشعار الميزان يضيء بذهبي هادئ
-      // (< 0.6s) ثم اللوحة مباشرةً. يُحترم تقليل الحركة (انتقال فوري). لا مساس بمنطق الدخول/الـAPI.
+      // يُحترم تقليل الحركة: انتقال فوري بلا حركة. لا مساس بمنطق الدخول/الـAPI.
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         navigate('/', { replace: true })
         return
       }
+      // 1) نلتقط موضع الشعار الحالي (نفس العنصر) قبل تحريكه — أساس FLIP بلا قفزة.
+      const r = badgeRef.current?.getBoundingClientRect()
+      if (r) setFlip({ top: r.top, left: r.left, width: r.width, height: r.height })
       setSuccess(true)
-      window.setTimeout(() => navigate('/', { replace: true }), 1050)
+      // 2) بعد رسم النسخة الثابتة في مكانها تماماً، نبدّلها إلى المركز فتنساب بنعومة.
+      requestAnimationFrame(() => requestAnimationFrame(() => setCentered(true)))
+      // 3) بعد أن يتوسّط الشعار ويثبت متوهّجاً، نفتح اللوحة.
+      window.setTimeout(() => navigate('/', { replace: true }), 1150)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'تعذّر تسجيل الدخول. حاول مجدداً.')
       setSubmitting(false)
@@ -53,9 +63,14 @@ export function LoginPage() {
     // خلفية فحمي عميق + كارد وسطية. عند الإرسال تظهر طبقة الانتقال «الصامت الفخم».
     <div dir="rtl" className="flex min-h-screen items-center justify-center bg-[#111318] px-4 py-8">
       <div className={`lp-reveal w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.6)] transition-opacity duration-500 ease-in-out ${success ? 'opacity-0' : 'opacity-100'}`}>
-        {/* شعار الميزان داخل دائرة بحدّ ذهبي مطفأ — لمسة كلاسيكية نظيفة */}
+        {/* شعار الميزان داخل دائرة بحدّ ذهبي مطفأ — لمسة كلاسيكية نظيفة.
+            عند الدخول يُخفى الأصل وتحلّ محلّه نسخة ثابتة تنساب للمركز (نفس الشعار). */}
         <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-gold-400/40 bg-[#111318]">
+          <div
+            ref={badgeRef}
+            className="mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-gold-400/40 bg-[#111318]"
+            style={{ visibility: success ? 'hidden' : 'visible' }}
+          >
             <ScalesLogo className="h-7 w-7 text-gold-400" />
           </div>
           <h1 className="text-xl font-bold tracking-tight text-brand-800">مكتب العدالة للمحاماة</h1>
@@ -138,12 +153,36 @@ export function LoginPage() {
         </p>
       </div>
 
-      {/* الانتقال السينمائي: الكارد يتلاشى خلفها بينما شعار الميزان يكبر ويتوسّط
-          الشاشة ويثبت متوهّجاً ذهبياً (لا يختفي) ثم تُفتح اللوحة. */}
+      {/* حركة العنصر المشترك: طبقة فحمي تظهر بنعومة خلف الشعار، ونسخة ثابتة من نفس
+          شعار الميزان تنطلق من موضعه في الكارد إلى مركز الشاشة وتكبر وتثبت متوهّجة
+          (لا تختفي ولا قطع) ثم تُفتح اللوحة. */}
       {success && (
-        <div className="lp-signin-overlay fixed inset-0 z-50 flex items-center justify-center bg-[#111318]" role="status" aria-live="polite">
+        <div
+          aria-hidden="true"
+          className={`fixed inset-0 z-40 bg-[#111318] transition-opacity duration-700 ease-in-out ${centered ? 'opacity-100' : 'opacity-0'}`}
+        />
+      )}
+      {success && flip && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed z-50 flex items-center justify-center rounded-full border border-gold-400/40 bg-[#111318]"
+          style={
+            centered
+              ? {
+                  top: '50%',
+                  left: '50%',
+                  width: 132,
+                  height: 132,
+                  transform: 'translate(-50%, -50%)',
+                  transition: 'top 800ms cubic-bezier(.16,1,.3,1), left 800ms cubic-bezier(.16,1,.3,1), width 800ms cubic-bezier(.16,1,.3,1), height 800ms cubic-bezier(.16,1,.3,1), filter 800ms ease',
+                  filter: 'drop-shadow(0 0 30px rgba(197,160,89,0.8))',
+                }
+              : { top: flip.top, left: flip.left, width: flip.width, height: flip.height }
+          }
+        >
           <span className="sr-only">جارٍ الدخول…</span>
-          <ScalesLogo className="lp-signin-mark h-28 w-28 text-gold-400" />
+          <ScalesLogo className="h-1/2 w-1/2 text-gold-400" />
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 import { lazy } from 'react'
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
+import { RouteErrorBoundary } from '@/core/observability/RouteErrorBoundary'
 import { LoginPage } from '@/core/auth/LoginPage'
 import { ForgotPasswordPage } from '@/core/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/core/auth/ResetPasswordPage'
@@ -74,7 +75,14 @@ import { WorklogPage } from '@/lawyer/pages/WorklogPage'
 */
 export const router = createBrowserRouter(
   [
-    { path: '/login', element: <LoginPage /> },
+    // جذر توجيه بلا مسار: يوفّر errorElement موحّداً يلتقط أخطاء عرض المسارات
+    // (وأخطاء loaders/actions وفشل تحميل chunk كسول) ويعرض واجهة التعافي العربية
+    // بدل شاشة الراوتر الافتراضية. شفّاف على المسار السعيد (<Outlet/> فقط).
+    {
+      element: <Outlet />,
+      errorElement: <RouteErrorBoundary />,
+      children: [
+        { path: '/login', element: <LoginPage /> },
     { path: '/forgot-password', element: <ForgotPasswordPage /> },
     { path: '/reset-password', element: <ResetPasswordPage /> },
     {
@@ -201,7 +209,9 @@ export const router = createBrowserRouter(
         },
       ],
     },
-    { path: '*', element: <Navigate to="/" replace /> },
+        { path: '*', element: <Navigate to="/" replace /> },
+      ],
+    },
   ],
   { future: { v7_relativeSplatPath: true } },
 )

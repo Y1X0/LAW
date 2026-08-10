@@ -43,5 +43,15 @@
 ## ما تبقّى (خارج نطاق هذا العمل)
 
 - تفعيل CSP (حالياً Report-Only) — بند منفصل.
-- نقطة `/api/health` أعمق مربوطة بفحص Render + بصمة الإصدار — بند منفصل.
 - فحص سلامة ما بعد الاستعادة (backup/restore drill) — بند منفصل.
+
+## الجاهزية وهويّة الإصدار (Health + Release Identity)
+
+- **`GET /api/health`** — فحص حقيقي: يتحقّق من إقلاع التطبيق واتصال قاعدة البيانات
+  (التبعية الحرجة). متاحة ⇒ `200` `status:ok`؛ غير متاحة ⇒ `503` `status:error` كي يرصد
+  Render/المراقبة العطل. يعرض `app/environment/version/commit/checks.database/timestamp`
+  برسائل آمنة فقط (بلا SQL/أثر/مسار/اعتماد). لا يفحص تبعيات اختيارية (R2/Redis).
+- **`GET /api/version`** — هويّة إصدار خفيفة بلا اتصال قاعدة بيانات: `app/version/commit/environment/laravel`.
+- **بصمة الـcommit**: مصدرها الوحيد `RENDER_GIT_COMMIT` (يحقنه Render وقت النشر)، تُقرأ عبر
+  `config('app.commit')`؛ إن غابت تُعاد `null` (بلا بديل مضلّل).
+- **Render**: `healthCheckPath` يشير إلى `/api/health` (الفحص الحقيقي)؛ و`/up` يبقى فحص إقلاع سطحي.

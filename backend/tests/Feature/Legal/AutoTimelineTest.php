@@ -56,7 +56,7 @@ class AutoTimelineTest extends TestCase
 
     public function test_adding_hearing_logs_hearing_scheduled(): void
     {
-        $user = $this->userWithPermissions(['hearings.manage']);
+        $user = $this->userWithPermissions(['hearings.manage', 'cases.view_all']);
         $case = LegalCase::factory()->create();
 
         $this->actingAsToken($user)
@@ -68,7 +68,7 @@ class AutoTimelineTest extends TestCase
 
     public function test_postponing_hearing_logs_hearing_postponed(): void
     {
-        $user = $this->userWithPermissions(['hearings.manage']);
+        $user = $this->userWithPermissions(['hearings.manage', 'cases.view_all']);
         $case = LegalCase::factory()->create();
         $hearing = Hearing::factory()->create(['case_id' => $case->id, 'scheduled_at' => now()->addDays(2)]);
 

@@ -22,7 +22,7 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     dockerCommand: sh docker/render/start.sh # يخدم HTTP على $PORT (nginx+fpm)
-    healthCheckPath: /up
+    healthCheckPath: /api/health # فحص حقيقي (يشمل اتصال قاعدة البيانات) — يفشل النشر إن كانت DB غير متاحة. (‏/up يبقى متاحاً كفحص إقلاع سطحي.)
     # الهجرات + بذر الأدوار تُنفَّذ عند إقلاع الحاوية داخل start.sh (idempotent)، لأن
     # الخطة المجانية في Render لا تدعم preDeployCommand. عند الترقية لخطة مدفوعة يمكن
     # نقلها إلى preDeployCommand لتشغيلها مرّة قبل تبديل الإصدار بدل كل إقلاع.

@@ -10,6 +10,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Sentry\Laravel\Integration;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -24,6 +25,10 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        // مراقبة الإنتاج: يُبلِّغ Sentry عن الاستثناءات غير المتوقّعة (خامل ما لم يُضبط الـDSN،
+        // ويتجاهل استثناءات المصادقة/التحقّق/الصلاحيات وفق config/sentry.php). لا يغيّر أي ردّ.
+        Integration::handles($exceptions);
+
         // توحيد أخطاء التحقق على مخطط الاستجابة الموحّد {data, meta, errors} (docs/09).
         $exceptions->render(function (ValidationException $e, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {

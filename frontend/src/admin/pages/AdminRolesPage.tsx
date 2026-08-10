@@ -6,7 +6,7 @@ import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
 import { Modal } from '@/admin/ui/Modal'
 import { deleteRole, fetchRoles, updateRole, type Role } from '@/admin/api/roles'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { RoleFormModal } from './components/RoleFormModal'
 import { RolePermissionsModal } from './components/RolePermissionsModal'
 
@@ -17,6 +17,7 @@ import { RolePermissionsModal } from './components/RolePermissionsModal'
 export function AdminRolesPage() {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [creating, setCreating] = useState(false)
   const [copying, setCopying] = useState<Role | null>(null)
   const [editingPerms, setEditingPerms] = useState<Role | null>(null)
@@ -35,7 +36,7 @@ export function AdminRolesPage() {
       show('تم حذف الدور')
       void qc.invalidateQueries({ queryKey: ['admin', 'roles'] })
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر حذف الدور', 'error'),
+    onError: formErrors.onError,
   })
 
   return (
@@ -132,6 +133,7 @@ export function AdminRolesPage() {
 function RenameRoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [displayName, setDisplayName] = useState(role.display_name || '')
 
   const save = useMutation({
@@ -141,18 +143,19 @@ function RenameRoleModal({ role, onClose }: { role: Role; onClose: () => void })
       void qc.invalidateQueries({ queryKey: ['admin', 'roles'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر تحديث الدور', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     save.mutate()
   }
 
   return (
     <Modal title={`تعديل الدور — ${role.name}`} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <Field label="الاسم الظاهر" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+        <Field label="الاسم الظاهر" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required error={formErrors.fieldError('display_name')} />
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} disabled={save.isPending}>
             إلغاء

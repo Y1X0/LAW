@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, SelectField, TextareaField } from '@/core/ui/primitives'
 import { Modal } from '@/admin/ui/Modal'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import {
   ROLE_ACTIONS,
   type CustomField,
@@ -43,6 +43,7 @@ export function CustomFieldFormModal({
 }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const editing = field !== null
 
   const [label, setLabel] = useState(field?.label ?? '')
@@ -95,18 +96,19 @@ export function CustomFieldFormModal({
       void qc.invalidateQueries({ queryKey: ['admin', 'custom-fields'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت العملية', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     save.mutate()
   }
 
   return (
     <Modal title={editing ? `تعديل الحقل — ${field.label}` : 'إضافة حقل مخصّص'} onClose={onClose}>
       <form onSubmit={onSubmit} className="max-h-[70vh] space-y-3 overflow-y-auto pl-1">
-        <Field label="اسم الحقل" value={label} onChange={(e) => setLabel(e.target.value)} required />
+        <Field label="اسم الحقل" value={label} onChange={(e) => setLabel(e.target.value)} required error={formErrors.fieldError('label')} />
 
         {editing ? (
           <Field label="المُعرّف التقني" value={key} disabled />
@@ -117,12 +119,13 @@ export function CustomFieldFormModal({
             onChange={(e) => setKey(e.target.value)}
             placeholder="contract_number"
             required
+            error={formErrors.fieldError('key')}
           />
         )}
 
-        <Field label="الوصف (اختياري)" value={description} onChange={(e) => setDescription(e.target.value)} />
+        <Field label="الوصف (اختياري)" value={description} onChange={(e) => setDescription(e.target.value)} error={formErrors.fieldError('description')} />
 
-        <SelectField label="النوع" value={type} onChange={(e) => setType(e.target.value)}>
+        <SelectField label="النوع" value={type} onChange={(e) => setType(e.target.value)} error={formErrors.fieldError('type')}>
           {meta.types.map((t) => (
             <option key={t.key} value={t.key}>{t.label}</option>
           ))}
@@ -134,6 +137,7 @@ export function CustomFieldFormModal({
             rows={3}
             value={optionsText}
             onChange={(e) => setOptionsText(e.target.value)}
+            error={formErrors.fieldError('options')}
           />
         )}
 

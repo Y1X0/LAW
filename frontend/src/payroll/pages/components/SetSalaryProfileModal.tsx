@@ -2,8 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, SelectField } from '@/core/ui/primitives'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { Modal } from '@/admin/ui/Modal'
-import { ApiError } from '@/core/api/types'
 import { PAYMENT_METHODS, paymentMethodLabel, setSalaryProfile } from '@/payroll/api/employeeSalary'
 
 /**
@@ -13,6 +13,7 @@ import { PAYMENT_METHODS, paymentMethodLabel, setSalaryProfile } from '@/payroll
 export function SetSalaryProfileModal({ employeeId, onClose }: { employeeId: number; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [basic, setBasic] = useState('')
   const [currency, setCurrency] = useState('SAR')
   const [method, setMethod] = useState('bank')
@@ -31,25 +32,26 @@ export function SetSalaryProfileModal({ employeeId, onClose }: { employeeId: num
       void qc.invalidateQueries({ queryKey: ['payroll', 'salary-profiles', employeeId] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر حفظ ملف الراتب', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     save.mutate()
   }
 
   return (
     <Modal title="تحديث الراتب الأساسي" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <Field label="الراتب الأساسي *" type="number" value={basic} onChange={(e) => setBasic(e.target.value)} min={0} step="0.01" required />
+        <Field label="الراتب الأساسي *" type="number" value={basic} onChange={(e) => setBasic(e.target.value)} min={0} step="0.01" required error={formErrors.fieldError('basic_salary')} />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="العملة" value={currency} onChange={(e) => setCurrency(e.target.value)} maxLength={3} />
-          <SelectField label="طريقة الدفع" value={method} onChange={(e) => setMethod(e.target.value)}>
+          <Field label="العملة" value={currency} onChange={(e) => setCurrency(e.target.value)} maxLength={3} error={formErrors.fieldError('currency')} />
+          <SelectField label="طريقة الدفع" value={method} onChange={(e) => setMethod(e.target.value)} error={formErrors.fieldError('payment_method')}>
             {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{paymentMethodLabel(m)}</option>)}
           </SelectField>
         </div>
-        <Field label="ساري من (اختياري)" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        <Field label="ساري من (اختياري)" type="date" value={from} onChange={(e) => setFrom(e.target.value)} error={formErrors.fieldError('effective_from')} />
         <p className="text-xs text-slate-400">حفظ ملف جديد يؤرشف الملف السابق ويصبح هو النشط.</p>
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} disabled={save.isPending}>إلغاء</Button>

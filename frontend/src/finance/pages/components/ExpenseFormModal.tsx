@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Modal } from '@/admin/ui/Modal'
-import { ApiError } from '@/core/api/types'
 import { Button, Field, SelectField, TextareaField } from '@/core/ui/primitives'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import {
   createExpense,
   EXPENSE_METHODS,
@@ -19,6 +19,7 @@ import { fetchFinancialAccounts } from '@/finance/api/payments'
 export function ExpenseFormModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const categories = useQuery({ queryKey: ['finance', 'expense-categories'], queryFn: fetchExpenseCategories })
   const accounts = useQuery({ queryKey: ['finance', 'accounts'], queryFn: fetchFinancialAccounts })
   const cases = useQuery({ queryKey: ['finance', 'case-options'], queryFn: fetchCaseOptions })
@@ -49,11 +50,12 @@ export function ExpenseFormModal({ onClose }: { onClose: () => void }) {
       void qc.invalidateQueries({ queryKey: ['finance', 'expenses'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر تسجيل المصروف', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     if (canSubmit) save.mutate()
   }
 
@@ -62,7 +64,7 @@ export function ExpenseFormModal({ onClose }: { onClose: () => void }) {
   return (
     <Modal title="تسجيل مصروف" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <SelectField label="التصنيف *" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} required>
+        <SelectField label="التصنيف *" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} required error={formErrors.fieldError('category_id')}>
           <option value="" disabled>اختر تصنيفاً…</option>
           {(categories.data ?? []).map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
@@ -70,7 +72,7 @@ export function ExpenseFormModal({ onClose }: { onClose: () => void }) {
         </SelectField>
 
         {caseOptions.length > 0 && (
-          <SelectField label="القضية (اختياري)" value={caseId} onChange={(e) => setCaseId(e.target.value)}>
+          <SelectField label="القضية (اختياري)" value={caseId} onChange={(e) => setCaseId(e.target.value)} error={formErrors.fieldError('case_id')}>
             <option value="">بلا قضية</option>
             {caseOptions.map((c) => (
               <option key={c.id} value={c.id}>{c.title}</option>
@@ -79,8 +81,8 @@ export function ExpenseFormModal({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="المبلغ *" type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />
-          <SelectField label="الحساب الدافع *" value={accountId} onChange={(e) => setAccountId(e.target.value)} required>
+          <Field label="المبلغ *" type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required error={formErrors.fieldError('amount')} />
+          <SelectField label="الحساب الدافع *" value={accountId} onChange={(e) => setAccountId(e.target.value)} required error={formErrors.fieldError('account_id')}>
             <option value="" disabled>اختر حساباً…</option>
             {(accounts.data ?? []).map((a) => (
               <option key={a.id} value={a.id}>{a.name}</option>
@@ -88,13 +90,13 @@ export function ExpenseFormModal({ onClose }: { onClose: () => void }) {
           </SelectField>
         </div>
 
-        <SelectField label="طريقة الصرف *" value={method} onChange={(e) => setMethod(e.target.value)}>
+        <SelectField label="طريقة الصرف *" value={method} onChange={(e) => setMethod(e.target.value)} error={formErrors.fieldError('method')}>
           {EXPENSE_METHODS.map((m) => (
             <option key={m.value} value={m.value}>{m.label}</option>
           ))}
         </SelectField>
-        <Field label="المستفيد" value={beneficiary} onChange={(e) => setBeneficiary(e.target.value)} />
-        <TextareaField label="الوصف" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+        <Field label="المستفيد" value={beneficiary} onChange={(e) => setBeneficiary(e.target.value)} error={formErrors.fieldError('beneficiary')} />
+        <TextareaField label="الوصف" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} error={formErrors.fieldError('description')} />
 
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} disabled={save.isPending}>إلغاء</Button>

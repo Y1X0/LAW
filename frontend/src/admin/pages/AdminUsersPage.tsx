@@ -13,7 +13,7 @@ import {
   userStatusTone,
   type AdminUser,
 } from '@/admin/api/users'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { CreateUserModal } from './components/CreateUserModal'
 import { ResetPasswordModal } from './components/ResetPasswordModal'
 import { LinkEmployeeModal } from './components/LinkEmployeeModal'
@@ -29,6 +29,7 @@ const PER_PAGE = 15
 export function AdminUsersPage() {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
@@ -53,7 +54,7 @@ export function AdminUsersPage() {
       show(updated.status === 'active' ? 'تم تفعيل المستخدم' : 'تم تعطيل المستخدم')
       void invalidate()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت العملية', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSearch(e: FormEvent) {

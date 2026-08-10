@@ -2,8 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, SelectField, TextareaField } from '@/core/ui/primitives'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { Modal } from '@/admin/ui/Modal'
-import { ApiError } from '@/core/api/types'
 import { type ClientRef, fetchClients } from '@/legal/api/clients'
 import { CASE_STATUSES, type CaseDetail, type CaseInput, caseStatusLabel, createCase, fetchCaseCustomFieldForm, updateCase } from '@/legal/api/cases'
 import { QuickAddClientModal } from './QuickAddClientModal'
@@ -16,6 +16,7 @@ import { CaseCustomFieldsSection } from './CaseCustomFieldsSection'
 export function CaseFormModal({ existing, onSaved, onClose }: { existing?: CaseDetail; onSaved: (c: CaseDetail) => void; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const editing = !!existing
   const [f, setF] = useState({
     internal_number: existing?.internal_number ?? '',
@@ -85,11 +86,12 @@ export function CaseFormModal({ existing, onSaved, onClose }: { existing?: CaseD
       onSaved(c)
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر حفظ القضية', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     if (clientId === '') { show('اختر عميلاً', 'error'); return }
     save.mutate()
   }
@@ -98,15 +100,15 @@ export function CaseFormModal({ existing, onSaved, onClose }: { existing?: CaseD
     <Modal title={editing ? 'تعديل القضية' : 'إنشاء قضية'} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="الرقم الداخلي *" value={f.internal_number} onChange={set('internal_number')} required />
-          <Field label="رقم القضية بالمحكمة" value={f.court_case_number} onChange={set('court_case_number')} />
+          <Field label="الرقم الداخلي *" value={f.internal_number} onChange={set('internal_number')} required error={formErrors.fieldError('internal_number')} />
+          <Field label="رقم القضية بالمحكمة" value={f.court_case_number} onChange={set('court_case_number')} error={formErrors.fieldError('court_case_number')} />
         </div>
-        <Field label="العنوان *" value={f.title} onChange={set('title')} required />
+        <Field label="العنوان *" value={f.title} onChange={set('title')} required error={formErrors.fieldError('title')} />
 
         <div>
           <div className="flex items-end gap-2">
             <div className="flex-1">
-              <SelectField label="العميل *" value={clientId === '' ? '' : String(clientId)} onChange={(e) => setClientId(e.target.value ? Number(e.target.value) : '')}>
+              <SelectField label="العميل *" value={clientId === '' ? '' : String(clientId)} onChange={(e) => setClientId(e.target.value ? Number(e.target.value) : '')} error={formErrors.fieldError('client_id')}>
                 <option value="">— اختر عميلاً —</option>
                 {options.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </SelectField>
@@ -116,16 +118,16 @@ export function CaseFormModal({ existing, onSaved, onClose }: { existing?: CaseD
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="المحكمة" value={f.court_name} onChange={set('court_name')} />
-          <Field label="نوع القضية" value={f.case_type} onChange={set('case_type')} />
-          <Field label="القيمة" type="number" value={f.value} onChange={set('value')} min={0} step="0.01" />
-          <Field label="تاريخ الفتح" type="date" value={f.opened_date} onChange={set('opened_date')} />
-          <SelectField label="الحالة" value={f.status} onChange={set('status')}>
+          <Field label="المحكمة" value={f.court_name} onChange={set('court_name')} error={formErrors.fieldError('court_name')} />
+          <Field label="نوع القضية" value={f.case_type} onChange={set('case_type')} error={formErrors.fieldError('case_type')} />
+          <Field label="القيمة" type="number" value={f.value} onChange={set('value')} min={0} step="0.01" error={formErrors.fieldError('value')} />
+          <Field label="تاريخ الفتح" type="date" value={f.opened_date} onChange={set('opened_date')} error={formErrors.fieldError('opened_date')} />
+          <SelectField label="الحالة" value={f.status} onChange={set('status')} error={formErrors.fieldError('status')}>
             {CASE_STATUSES.map((s) => <option key={s} value={s}>{caseStatusLabel(s)}</option>)}
           </SelectField>
-          <Field label="التقدّم %" type="number" value={f.progress} onChange={set('progress')} min={0} max={100} />
+          <Field label="التقدّم %" type="number" value={f.progress} onChange={set('progress')} min={0} max={100} error={formErrors.fieldError('progress')} />
         </div>
-        <TextareaField label="الوصف" value={f.description} onChange={set('description')} rows={3} />
+        <TextareaField label="الوصف" value={f.description} onChange={set('description')} rows={3} error={formErrors.fieldError('description')} />
 
         {cfForm.data && (
           <CaseCustomFieldsSection

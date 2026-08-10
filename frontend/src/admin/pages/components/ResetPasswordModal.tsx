@@ -4,11 +4,12 @@ import { Button, Field } from '@/core/ui/primitives'
 import { useToast } from '@/core/ui/useToast'
 import { Modal } from '@/admin/ui/Modal'
 import { resetUserPassword, type AdminUser } from '@/admin/api/users'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 
 /** إعادة تعيين كلمة مرور مستخدم إدارياً (تُبطِل جلساته). */
 export function ResetPasswordModal({ user, onClose }: { user: AdminUser; onClose: () => void }) {
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
 
@@ -18,7 +19,7 @@ export function ResetPasswordModal({ user, onClose }: { user: AdminUser; onClose
       show('تم تعيين كلمة مرور جديدة')
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر تعيين كلمة المرور', 'error'),
+    onError: formErrors.onError,
   })
 
   const mismatch = confirm.length > 0 && password !== confirm
@@ -26,6 +27,7 @@ export function ResetPasswordModal({ user, onClose }: { user: AdminUser; onClose
   function onSubmit(e: FormEvent) {
     e.preventDefault()
     if (mismatch) return
+    formErrors.reset()
     reset.mutate()
   }
 
@@ -39,6 +41,7 @@ export function ResetPasswordModal({ user, onClose }: { user: AdminUser; onClose
           onChange={(e) => setPassword(e.target.value)}
           minLength={8}
           required
+          error={formErrors.fieldError('password')}
         />
         <Field
           label="تأكيد كلمة المرور"

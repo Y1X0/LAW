@@ -4,7 +4,7 @@ import { Badge, Button, Card } from '@/core/ui/primitives'
 import { PageHeader, SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { formatCurrency } from '@/core/lib/format'
 import { fetchEmployees, type EmployeeListItem } from '@/hr/api/employees'
 import { componentTypeLabel, componentTypeTone } from '@/payroll/api/salaryComponents'
@@ -151,6 +151,7 @@ function EmployeeSalaryPanel({ employee, onChange }: { employee: Selected; onCha
 function AssignmentRow({ assignment, employeeId }: { assignment: EmployeeComponent; employeeId: number }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [confirming, setConfirming] = useState(false)
   const isPct = assignment.component?.value_type === 'percentage'
 
@@ -160,7 +161,7 @@ function AssignmentRow({ assignment, employeeId }: { assignment: EmployeeCompone
       show('تم إيقاف الإسناد')
       void qc.invalidateQueries({ queryKey: ['payroll', 'employee-components', employeeId] })
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الإيقاف', 'error'),
+    onError: formErrors.onError,
   })
 
   return (

@@ -4,8 +4,8 @@ import { Button, Card, Field, TextareaField } from '@/core/ui/primitives'
 import { SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { Modal } from '@/admin/ui/Modal'
-import { ApiError } from '@/core/api/types'
 import {
   type ArchiveInput,
   type ArchiveLocation,
@@ -40,12 +40,13 @@ export function CaseArchiveSection({ caseId }: { caseId: number }) {
 function ArchiveRow({ caseId, loc }: { caseId: number; loc: ArchiveLocation }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [editing, setEditing] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const del = useMutation({
     mutationFn: () => deleteArchive(loc.id),
     onSuccess: () => { show('تم حذف الموقع'); void qc.invalidateQueries({ queryKey: ['legal', 'case-archive', caseId] }) },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الحذف', 'error'),
+    onError: formErrors.onError,
   })
   const parts = [loc.archive_room, loc.cabinet, loc.shelf, loc.drawer].filter(Boolean).join(' · ')
   return (
@@ -75,6 +76,7 @@ function ArchiveRow({ caseId, loc }: { caseId: number; loc: ArchiveLocation }) {
 function ArchiveFormModal({ caseId, existing, onClose }: { caseId: number; existing?: ArchiveLocation; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [fileTitle, setFileTitle] = useState(existing?.file_title ?? '')
   const [room, setRoom] = useState(existing?.archive_room ?? '')
   const [cabinet, setCabinet] = useState(existing?.cabinet ?? '')
@@ -101,21 +103,21 @@ function ArchiveFormModal({ caseId, existing, onClose }: { caseId: number; exist
       void qc.invalidateQueries({ queryKey: ['legal', 'case-archive', caseId] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الحفظ', 'error'),
+    onError: formErrors.onError,
   })
-  function onSubmit(e: FormEvent) { e.preventDefault(); save.mutate() }
+  function onSubmit(e: FormEvent) { e.preventDefault(); formErrors.reset(); save.mutate() }
   return (
     <Modal title={existing ? 'تعديل موقع الأرشيف' : 'إضافة موقع أرشيف'} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <Field label="عنوان الملف *" value={fileTitle} onChange={(e) => setFileTitle(e.target.value)} required />
+        <Field label="عنوان الملف *" value={fileTitle} onChange={(e) => setFileTitle(e.target.value)} required error={formErrors.fieldError('file_title')} />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="الغرفة" value={room} onChange={(e) => setRoom(e.target.value)} />
-          <Field label="الخزانة" value={cabinet} onChange={(e) => setCabinet(e.target.value)} />
-          <Field label="الرف" value={shelf} onChange={(e) => setShelf(e.target.value)} />
-          <Field label="الدرج" value={drawer} onChange={(e) => setDrawer(e.target.value)} />
-          <Field label="رقم الملف" value={fileNumber} onChange={(e) => setFileNumber(e.target.value)} />
+          <Field label="الغرفة" value={room} onChange={(e) => setRoom(e.target.value)} error={formErrors.fieldError('archive_room')} />
+          <Field label="الخزانة" value={cabinet} onChange={(e) => setCabinet(e.target.value)} error={formErrors.fieldError('cabinet')} />
+          <Field label="الرف" value={shelf} onChange={(e) => setShelf(e.target.value)} error={formErrors.fieldError('shelf')} />
+          <Field label="الدرج" value={drawer} onChange={(e) => setDrawer(e.target.value)} error={formErrors.fieldError('drawer')} />
+          <Field label="رقم الملف" value={fileNumber} onChange={(e) => setFileNumber(e.target.value)} error={formErrors.fieldError('file_number')} />
         </div>
-        <TextareaField label="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+        <TextareaField label="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} error={formErrors.fieldError('notes')} />
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} disabled={save.isPending}>إلغاء</Button>
           <Button type="submit" disabled={save.isPending}>{save.isPending ? 'جارٍ…' : existing ? 'حفظ' : 'إضافة'}</Button>

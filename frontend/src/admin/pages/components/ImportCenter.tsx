@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Button, SelectField } from '@/core/ui/primitives'
 import { SectionCard } from '@/core/ui/section'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { type ImportPreview, commitImport, fetchImportManifest, previewImport } from '@/admin/api/data'
 
 /**
@@ -14,6 +14,7 @@ import { type ImportPreview, commitImport, fetchImportManifest, previewImport } 
  */
 export function ImportCenter() {
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [entityKey, setEntityKey] = useState<string>('')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<ImportPreview | null>(null)
@@ -55,7 +56,7 @@ export function ImportCenter() {
       }
       if (data.match_keys && matchKey === '') setMatchKey(data.match_keys[0] ?? '')
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت المعاينة', 'error'),
+    onError: formErrors.onError,
   })
 
   const commitMut = useMutation({
@@ -64,7 +65,7 @@ export function ImportCenter() {
       show(`تمّ الاستيراد: ${r.created} جديد، ${r.updated} محدّث`)
       resetImport()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الاستيراد', 'error'),
+    onError: formErrors.onError,
   })
 
   function onEntity(e: ChangeEvent<HTMLSelectElement>) {

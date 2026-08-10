@@ -4,8 +4,8 @@ import { Badge, Button, Card, Field, SelectField, TextareaField } from '@/core/u
 import { SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { Modal } from '@/admin/ui/Modal'
-import { ApiError } from '@/core/api/types'
 import { PARTY_TYPES, createParty, fetchParties, partyTypeLabel } from '@/legal/api/content'
 
 /**
@@ -43,6 +43,7 @@ export function CasePartiesSection({ caseId }: { caseId: number }) {
 function AddPartyModal({ caseId, onClose }: { caseId: number; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [name, setName] = useState('')
   const [type, setType] = useState('plaintiff')
   const [phone, setPhone] = useState('')
@@ -50,20 +51,20 @@ function AddPartyModal({ caseId, onClose }: { caseId: number; onClose: () => voi
   const save = useMutation({
     mutationFn: () => createParty(caseId, { name: name.trim(), type, phone: phone.trim() || null, notes: notes.trim() || null }),
     onSuccess: () => { show('تمت إضافة الطرف'); void qc.invalidateQueries({ queryKey: ['legal', 'case-parties', caseId] }); onClose() },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت الإضافة', 'error'),
+    onError: formErrors.onError,
   })
-  function onSubmit(e: FormEvent) { e.preventDefault(); save.mutate() }
+  function onSubmit(e: FormEvent) { e.preventDefault(); formErrors.reset(); save.mutate() }
   return (
     <Modal title="إضافة طرف" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <Field label="الاسم *" value={name} onChange={(e) => setName(e.target.value)} required />
+        <Field label="الاسم *" value={name} onChange={(e) => setName(e.target.value)} required error={formErrors.fieldError('name')} />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <SelectField label="الصفة *" value={type} onChange={(e) => setType(e.target.value)}>
+          <SelectField label="الصفة *" value={type} onChange={(e) => setType(e.target.value)} error={formErrors.fieldError('type')}>
             {PARTY_TYPES.map((t) => <option key={t} value={t}>{partyTypeLabel(t)}</option>)}
           </SelectField>
-          <Field label="الهاتف" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <Field label="الهاتف" value={phone} onChange={(e) => setPhone(e.target.value)} error={formErrors.fieldError('phone')} />
         </div>
-        <TextareaField label="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+        <TextareaField label="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} error={formErrors.fieldError('notes')} />
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} disabled={save.isPending}>إلغاء</Button>
           <Button type="submit" disabled={save.isPending}>{save.isPending ? 'جارٍ…' : 'إضافة'}</Button>

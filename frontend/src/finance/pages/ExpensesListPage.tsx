@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ApiError } from '@/core/api/types'
 import { formatCurrency, formatDate } from '@/core/lib/format'
 import { Badge, Button, Card, SelectField } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { useFinanceCapabilities } from '@/finance/api/capabilities'
 import {
   type Expense,
@@ -22,6 +22,7 @@ export function ExpensesListPage() {
   const { canRecordExpense } = useFinanceCapabilities()
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [categoryId, setCategoryId] = useState('')
   const [page, setPage] = useState(1)
   const [creating, setCreating] = useState(false)
@@ -35,7 +36,7 @@ export function ExpensesListPage() {
   const reverse = useMutation({
     mutationFn: (id: number) => reverseExpense(id),
     onSuccess: () => { show('تم عكس السند'); void qc.invalidateQueries({ queryKey: ['finance', 'expenses'] }) },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر العكس', 'error'),
+    onError: formErrors.onError,
   })
 
   const items = query.data?.items ?? []

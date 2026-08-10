@@ -5,7 +5,7 @@ import { useToast } from '@/core/ui/useToast'
 import { Modal } from '@/admin/ui/Modal'
 import { assignUserRole, fetchRoles, fetchUserRoles, removeUserRole } from '@/admin/api/roles'
 import { type AdminUser } from '@/admin/api/users'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 
 /**
  * إسناد/إزالة أدوار مستخدم (ADMIN-3) — تعيد استخدام نقاط `/users/{id}/roles` القائمة.
@@ -14,6 +14,7 @@ import { ApiError } from '@/core/api/types'
 export function ManageUserRolesModal({ user, onClose }: { user: AdminUser; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
 
   const allRoles = useQuery({ queryKey: ['admin', 'roles'], queryFn: fetchRoles })
   const userRoles = useQuery({ queryKey: ['admin', 'user-roles', user.id], queryFn: () => fetchUserRoles(user.id) })
@@ -32,7 +33,7 @@ export function ManageUserRolesModal({ user, onClose }: { user: AdminUser; onClo
       show(v.assigned ? 'تمت إزالة الدور' : 'تم إسناد الدور')
       invalidate()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت العملية', 'error'),
+    onError: formErrors.onError,
   })
 
   const loading = allRoles.isPending || userRoles.isPending

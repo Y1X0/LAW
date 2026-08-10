@@ -4,7 +4,7 @@ import { Button, Field } from '@/core/ui/primitives'
 import { useToast } from '@/core/ui/useToast'
 import { Modal } from '@/admin/ui/Modal'
 import { copyRole, createRole, type Role } from '@/admin/api/roles'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 
 /**
  * إنشاء دور جديد، أو نسخ دور قائم مع صلاحياته (عند تمرير `copyFrom`).
@@ -13,6 +13,7 @@ import { ApiError } from '@/core/api/types'
 export function RoleFormModal({ copyFrom, onClose }: { copyFrom?: Role; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [name, setName] = useState('')
   const [displayName, setDisplayName] = useState(copyFrom ? `${copyFrom.display_name || copyFrom.name} (نسخة)` : '')
 
@@ -26,11 +27,12 @@ export function RoleFormModal({ copyFrom, onClose }: { copyFrom?: Role; onClose:
       void qc.invalidateQueries({ queryKey: ['admin', 'roles'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت العملية', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     submit.mutate()
   }
 
@@ -43,12 +45,14 @@ export function RoleFormModal({ copyFrom, onClose }: { copyFrom?: Role; onClose:
           onChange={(e) => setName(e.target.value)}
           placeholder="مثال: auditor"
           required
+          error={formErrors.fieldError('name')}
         />
         <Field
           label="الاسم الظاهر"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           required
+          error={formErrors.fieldError('display_name')}
         />
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} disabled={submit.isPending}>

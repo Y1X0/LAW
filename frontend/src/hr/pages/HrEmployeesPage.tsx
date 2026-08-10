@@ -5,6 +5,7 @@ import { Badge, Button, Card, Field, SelectField } from '@/core/ui/primitives'
 import { PageHeader } from '@/core/ui/section'
 import { EmptyState, ErrorState, LoadingState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { fetchBranches, fetchDepartments } from '@/core/api/org'
 import { EmployeeFormModal } from '@/hr/pages/components/EmployeeFormModal'
 import {
@@ -28,6 +29,7 @@ const PER_PAGE = 15
 export function HrEmployeesPage() {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
@@ -66,7 +68,7 @@ export function HrEmployeesPage() {
       show('تم تعطيل الموظف')
       void qc.invalidateQueries({ queryKey: ['hr', 'employees'] })
     },
-    onError: () => show('تعذّر تعطيل الموظف', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSearch(e: FormEvent) {

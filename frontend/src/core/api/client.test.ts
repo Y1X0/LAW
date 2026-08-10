@@ -90,6 +90,56 @@ describe('apiRequest', () => {
     expect(tokenStorage.accessToken()).toBe('new')
   })
 
+  it('فشل الشبكة (TypeError) يُطبَّع إلى ApiError برمز NETWORK_ERROR', async () => {
+    tokenStorage.set({ access_token: 'tok', refresh_token: 'r' })
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+
+    const err = (await api.get('me/dashboard').catch((e) => e)) as ApiError
+    expect(err).toBeInstanceOf(ApiError)
+    expect(err.status).toBe(0)
+    expect(err.code).toBe('NETWORK_ERROR')
+  })
+
+  it('انتهاء المهلة (AbortError) يُطبَّع إلى ApiError برمز TIMEOUT', async () => {
+    tokenStorage.set({ access_token: 'tok', refresh_token: 'r' })
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new DOMException('timeout', 'TimeoutError')))
+
+    const err = (await api.get('me/dashboard').catch((e) => e)) as ApiError
+    expect(err).toBeInstanceOf(ApiError)
+    expect(err.status).toBe(408)
+    expect(err.code).toBe('TIMEOUT')
+  })
+
+  it('استجابة HTML بدل JSON لا تُسرّب المحتوى الخام', async () => {
+    tokenStorage.set({ access_token: 'tok', refresh_token: 'r' })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('<!DOCTYPE html><h1>502 Bad Gateway</h1>', { status: 502 })),
+    )
+
+    const err = (await api.get('me/dashboard').catch((e) => e)) as ApiError
+    expect(err).toBeInstanceOf(ApiError)
+    expect(err.code).toBe('INVALID_JSON')
+    expect(err.message).not.toContain('DOCTYPE')
+  })
+
+  it('نداء JSON العادي يُرفَق بمهلة (signal)، بينما نقل الملفات (blob/upload) بلا مهلة', async () => {
+    tokenStorage.set({ access_token: 'tok', refresh_token: 'r' })
+    const fetchMock = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      // blob يحتاج جسماً ثنائياً؛ JSON يحتاج غلافاً.
+      const accept = (init?.headers as Record<string, string>)?.Accept
+      if (accept === 'application/octet-stream') return new Response(new Blob(['x']), { status: 200 })
+      return jsonResponse({ data: { ok: true }, meta: null, errors: null })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await api.get('me/dashboard')
+    expect(fetchMock.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal) // JSON: مهلة 20s
+
+    await api.blob('exports/cases.xlsx')
+    expect(fetchMock.mock.calls[1][1]?.signal).toBeUndefined() // ملف: بلا مهلة عميل
+  })
+
   it('يسجّل خروجاً عند فشل التجديد على 401', async () => {
     tokenStorage.set({ access_token: 'old', refresh_token: 'r' })
     const onUnauthorized = vi.fn()

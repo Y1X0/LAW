@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useLeaveBalance, useLeaveRequests, useSubmitLeave, type LeaveBalance } from '@/employee/api/leave'
 import { ApiError } from '@/core/api/types'
+import { mapApiError } from '@/core/api/mapApiError'
 import { Button, Field, SelectField, TextareaField } from '@/core/ui/primitives'
 import { InfoRow, PageHeader, SectionCard, Stat } from '@/core/ui/section'
 import { EmptyState, ErrorState, LoadingState } from '@/core/ui/states'
@@ -126,7 +127,7 @@ function SubmitCard({ balance }: { balance: LeaveBalance }) {
 
           {submit.isError && !fieldErrors ? (
             <p role="alert" className="text-sm text-red-600">
-              {submit.error instanceof ApiError ? submit.error.message : 'تعذّر تقديم الطلب.'}
+              {mapApiError(submit.error).formMessage}
             </p>
           ) : null}
           {submit.isSuccess ? <p className="text-sm text-green-600">تم تقديم طلبك بنجاح (قيد المراجعة).</p> : null}

@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Modal } from '@/admin/ui/Modal'
-import { ApiError } from '@/core/api/types'
 import { Button, Field, SelectField, TextareaField } from '@/core/ui/primitives'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import {
   fetchFinancialAccounts,
   newIdempotencyKey,
@@ -19,6 +19,7 @@ import {
 export function PaymentFormModal({ invoiceId, onClose }: { invoiceId: number; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const accounts = useQuery({ queryKey: ['finance', 'accounts'], queryFn: fetchFinancialAccounts })
 
   const [idempotencyKey] = useState(() => newIdempotencyKey())
@@ -51,31 +52,32 @@ export function PaymentFormModal({ invoiceId, onClose }: { invoiceId: number; on
       void qc.invalidateQueries({ queryKey: ['finance', 'client-summary'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر تسجيل الدفعة', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     if (canSubmit) save.mutate()
   }
 
   return (
     <Modal title="تسجيل دفعة" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <Field label="المبلغ *" type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />
-        <SelectField label="الحساب المستلِم *" value={accountId} onChange={(e) => setAccountId(e.target.value)} required>
+        <Field label="المبلغ *" type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required error={formErrors.fieldError('amount')} />
+        <SelectField label="الحساب المستلِم *" value={accountId} onChange={(e) => setAccountId(e.target.value)} required error={formErrors.fieldError('account_id')}>
           <option value="" disabled>اختر حساباً…</option>
           {(accounts.data ?? []).map((a) => (
             <option key={a.id} value={a.id}>{a.name}</option>
           ))}
         </SelectField>
-        <SelectField label="طريقة الدفع *" value={method} onChange={(e) => setMethod(e.target.value)}>
+        <SelectField label="طريقة الدفع *" value={method} onChange={(e) => setMethod(e.target.value)} error={formErrors.fieldError('method')}>
           {PAYMENT_METHODS.map((m) => (
             <option key={m.value} value={m.value}>{m.label}</option>
           ))}
         </SelectField>
-        <Field label="مرجع (رقم شيك/تحويل)" value={reference} onChange={(e) => setReference(e.target.value)} />
-        <TextareaField label="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+        <Field label="مرجع (رقم شيك/تحويل)" value={reference} onChange={(e) => setReference(e.target.value)} error={formErrors.fieldError('reference')} />
+        <TextareaField label="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} error={formErrors.fieldError('notes')} />
 
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} disabled={save.isPending}>إلغاء</Button>

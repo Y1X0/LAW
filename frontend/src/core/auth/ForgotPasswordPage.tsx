@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ApiError } from '@/core/api/types'
+import { mapApiError } from '@/core/api/mapApiError'
 import { authApi } from '@/core/api/auth'
 
 /**
@@ -24,7 +24,7 @@ export function ForgotPasswordPage() {
       await authApi.forgotPassword(email)
       setSent(true)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'تعذّر إرسال الطلب. حاول مجدداً.')
+      setError(mapApiError(err).formMessage)
     } finally {
       setSubmitting(false)
     }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useProfile, useUpdateProfile, type Profile } from '@/employee/api/profile'
 import { ApiError } from '@/core/api/types'
+import { mapApiError } from '@/core/api/mapApiError'
 import { Button, Field, TextareaField } from '@/core/ui/primitives'
 import { InfoRow, PageHeader, SectionCard } from '@/core/ui/section'
 import { ErrorState, LoadingState } from '@/core/ui/states'
@@ -91,7 +92,7 @@ function EditCard({ profile }: { profile: Profile }) {
 
         {update.isError ? (
           <p role="alert" className="text-sm text-red-600">
-            {update.error instanceof ApiError ? update.error.message : 'تعذّر الحفظ.'}
+            {mapApiError(update.error).formMessage}
           </p>
         ) : null}
         {update.isSuccess ? <p className="text-sm text-green-600">تم حفظ بياناتك بنجاح.</p> : null}

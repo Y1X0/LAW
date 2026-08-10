@@ -2,8 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, SelectField } from '@/core/ui/primitives'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { Modal } from '@/admin/ui/Modal'
-import { ApiError } from '@/core/api/types'
 import {
   COMPONENT_TYPES,
   VALUE_TYPES,
@@ -21,6 +21,7 @@ import {
 export function SalaryComponentModal({ component, onClose }: { component?: SalaryComponent; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const editing = !!component
   const [name, setName] = useState(component?.name ?? '')
   const [code, setCode] = useState(component?.code ?? '')
@@ -38,24 +39,25 @@ export function SalaryComponentModal({ component, onClose }: { component?: Salar
       void qc.invalidateQueries({ queryKey: ['payroll', 'components'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر حفظ المكوّن', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     save.mutate()
   }
 
   return (
     <Modal title={editing ? 'تعديل مكوّن راتب' : 'إنشاء مكوّن راتب'} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <Field label="الاسم *" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Field label="الرمز *" value={code} onChange={(e) => setCode(e.target.value)} required placeholder="مثال: HOUSING" />
+        <Field label="الاسم *" value={name} onChange={(e) => setName(e.target.value)} required error={formErrors.fieldError('name')} />
+        <Field label="الرمز *" value={code} onChange={(e) => setCode(e.target.value)} required placeholder="مثال: HOUSING" error={formErrors.fieldError('code')} />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <SelectField label="النوع *" value={type} onChange={(e) => setType(e.target.value)}>
+          <SelectField label="النوع *" value={type} onChange={(e) => setType(e.target.value)} error={formErrors.fieldError('type')}>
             {COMPONENT_TYPES.map((t) => <option key={t} value={t}>{componentTypeLabel(t)}</option>)}
           </SelectField>
-          <SelectField label="نوع القيمة" value={valueType} onChange={(e) => setValueType(e.target.value)}>
+          <SelectField label="نوع القيمة" value={valueType} onChange={(e) => setValueType(e.target.value)} error={formErrors.fieldError('value_type')}>
             {VALUE_TYPES.map((v) => <option key={v} value={v}>{valueTypeLabel(v)}</option>)}
           </SelectField>
         </div>

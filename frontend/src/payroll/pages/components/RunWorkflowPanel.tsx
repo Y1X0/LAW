@@ -5,7 +5,7 @@ import { Badge, Button, Card } from '@/core/ui/primitives'
 import { SectionCard } from '@/core/ui/section'
 import { ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
-import { ApiError } from '@/core/api/types'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import {
   approveRun,
   calculateRun,
@@ -32,6 +32,7 @@ type ConfirmState = { title: string; message: React.ReactNode; label: string; ru
 export function RunWorkflowPanel({ runId, onBack }: { runId: number; onBack: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [confirm, setConfirm] = useState<ConfirmState>(null)
 
   const run = useQuery({ queryKey: ['payroll', 'run', runId], queryFn: () => fetchRun(runId) })
@@ -46,7 +47,7 @@ export function RunWorkflowPanel({ runId, onBack }: { runId: number; onBack: () 
       void qc.invalidateQueries({ queryKey: ['payroll'] })
       setConfirm(null)
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت العملية', 'error'),
+    onError: formErrors.onError,
   })
 
   if (run.isPending || att.isPending || leave.isPending || items.isPending) {

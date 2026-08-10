@@ -4,8 +4,8 @@ import { Button, Card, Field, TextareaField } from '@/core/ui/primitives'
 import { SectionCard } from '@/core/ui/section'
 import { EmptyState, ErrorState, Skeleton } from '@/core/ui/states'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { Modal } from '@/admin/ui/Modal'
-import { ApiError } from '@/core/api/types'
 import {
   DOCUMENT_ACCEPT,
   DOCUMENT_MAX_MB,
@@ -42,15 +42,16 @@ export function CaseDocumentsSection({ caseId }: { caseId: number }) {
 function DocRow({ caseId, doc }: { caseId: number; doc: CaseDocument }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [confirming, setConfirming] = useState(false)
   const del = useMutation({
     mutationFn: () => deleteDocument(doc.id),
     onSuccess: () => { show('تم حذف الوثيقة'); void qc.invalidateQueries({ queryKey: ['legal', 'case-docs', caseId] }) },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر الحذف', 'error'),
+    onError: formErrors.onError,
   })
   const download = useMutation({
     mutationFn: () => downloadDocument(doc),
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّر التنزيل', 'error'),
+    onError: formErrors.onError,
   })
   const meta = [doc.document_type, formatFileSize(doc.size_bytes), doc.created_at ? `رُفع ${doc.created_at.slice(0, 10)}` : null].filter(Boolean).join(' · ')
   return (
@@ -79,6 +80,7 @@ function DocRow({ caseId, doc }: { caseId: number; doc: CaseDocument }) {
 function AddDocModal({ caseId, onClose }: { caseId: number; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const [title, setTitle] = useState('')
   const [type, setType] = useState('')
   const [description, setDescription] = useState('')
@@ -86,15 +88,15 @@ function AddDocModal({ caseId, onClose }: { caseId: number; onClose: () => void 
   const save = useMutation({
     mutationFn: () => createDocument(caseId, { title: title.trim(), document_type: type.trim() || null, description: description.trim() || null, file: file! }),
     onSuccess: () => { show('تمت إضافة الوثيقة'); void qc.invalidateQueries({ queryKey: ['legal', 'case-docs', caseId] }); onClose() },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت الإضافة', 'error'),
+    onError: formErrors.onError,
   })
   const canSubmit = title.trim().length > 0 && file != null && !save.isPending
-  function onSubmit(e: FormEvent) { e.preventDefault(); if (canSubmit) save.mutate() }
+  function onSubmit(e: FormEvent) { e.preventDefault(); formErrors.reset(); if (canSubmit) save.mutate() }
   return (
     <Modal title="إضافة وثيقة" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
-        <Field label="العنوان *" value={title} onChange={(e) => setTitle(e.target.value)} required />
-        <Field label="النوع" value={type} onChange={(e) => setType(e.target.value)} placeholder="مذكرة · لائحة · عقد · حكم · وكالة" />
+        <Field label="العنوان *" value={title} onChange={(e) => setTitle(e.target.value)} required error={formErrors.fieldError('title')} />
+        <Field label="النوع" value={type} onChange={(e) => setType(e.target.value)} placeholder="مذكرة · لائحة · عقد · حكم · وكالة" error={formErrors.fieldError('document_type')} />
         <label className="block text-sm font-medium text-slate-700">
           الملف *
           <input
@@ -106,7 +108,7 @@ function AddDocModal({ caseId, onClose }: { caseId: number; onClose: () => void 
           />
         </label>
         <p className="text-xs text-slate-400">المسموح: PDF · صورة (JPG/PNG) · Word (DOC/DOCX). الحد الأقصى {DOCUMENT_MAX_MB} ميغابايت.</p>
-        <TextareaField label="الوصف" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+        <TextareaField label="الوصف" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} error={formErrors.fieldError('description')} />
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} disabled={save.isPending}>إلغاء</Button>
           <Button type="submit" disabled={!canSubmit}>{save.isPending ? 'جارٍ الرفع…' : 'رفع'}</Button>

@@ -2,8 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, SelectField } from '@/core/ui/primitives'
 import { useToast } from '@/core/ui/useToast'
+import { useFormErrors } from '@/core/api/useFormErrors'
 import { Modal } from '@/admin/ui/Modal'
-import { ApiError } from '@/core/api/types'
 import { fetchBranches, fetchDepartments } from '@/core/api/org'
 import {
   EMPLOYEE_STATUSES,
@@ -22,6 +22,7 @@ import {
 export function EmployeeFormModal({ employee, onClose }: { employee: EmployeeDetail | null; onClose: () => void }) {
   const qc = useQueryClient()
   const { show } = useToast()
+  const formErrors = useFormErrors()
   const isEdit = employee !== null
 
   const [branchId, setBranchId] = useState<number | ''>(employee?.branch_id ?? '')
@@ -85,11 +86,12 @@ export function EmployeeFormModal({ employee, onClose }: { employee: EmployeeDet
       void qc.invalidateQueries({ queryKey: ['hr', 'employees'] })
       onClose()
     },
-    onError: (e) => show(e instanceof ApiError ? e.message : 'تعذّرت العملية', 'error'),
+    onError: formErrors.onError,
   })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    formErrors.reset()
     if (branchId === '' || departmentId === '') {
       show('اختر الفرع والقسم', 'error')
       return
@@ -104,7 +106,7 @@ export function EmployeeFormModal({ employee, onClose }: { employee: EmployeeDet
     <Modal title={isEdit ? `تعديل الموظف — ${employee.full_name_ar}` : 'إضافة موظف'} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <SelectField label="الفرع *" value={branchId === '' ? '' : String(branchId)} onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : '')} required>
+          <SelectField label="الفرع *" value={branchId === '' ? '' : String(branchId)} onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : '')} required error={formErrors.fieldError('branch_id')}>
             <option value="">— اختر الفرع —</option>
             {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </SelectField>
@@ -114,6 +116,7 @@ export function EmployeeFormModal({ employee, onClose }: { employee: EmployeeDet
             onChange={(e) => setDepartmentId(e.target.value ? Number(e.target.value) : '')}
             disabled={branchId === ''}
             required
+            error={formErrors.fieldError('department_id')}
           >
             <option value="">{branchId === '' ? 'اختر الفرع أولاً' : '— اختر القسم —'}</option>
             {(departments.data ?? []).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -124,26 +127,27 @@ export function EmployeeFormModal({ employee, onClose }: { employee: EmployeeDet
             value={form.employee_no}
             onChange={set('employee_no')}
             placeholder="يُولّد تلقائياً إن تُرك فارغاً"
+            error={formErrors.fieldError('employee_no')}
           />
-          <Field label="الرقم الوطني *" value={form.national_id} onChange={set('national_id')} required />
-          <Field label="الاسم بالعربية *" value={form.full_name_ar} onChange={set('full_name_ar')} required />
-          <Field label="الاسم بالإنجليزية" value={form.full_name_en} onChange={set('full_name_en')} />
-          <Field label="البريد الإلكتروني" type="email" value={form.email} onChange={set('email')} />
-          <Field label="الهاتف" value={form.phone} onChange={set('phone')} />
-          <Field label="المسمّى الوظيفي" value={form.job_title} onChange={set('job_title')} />
-          <Field label="تاريخ التعيين" type="date" value={form.hire_date} onChange={set('hire_date')} />
-          <SelectField label="الحالة" value={form.status} onChange={set('status')}>
+          <Field label="الرقم الوطني *" value={form.national_id} onChange={set('national_id')} required error={formErrors.fieldError('national_id')} />
+          <Field label="الاسم بالعربية *" value={form.full_name_ar} onChange={set('full_name_ar')} required error={formErrors.fieldError('full_name_ar')} />
+          <Field label="الاسم بالإنجليزية" value={form.full_name_en} onChange={set('full_name_en')} error={formErrors.fieldError('full_name_en')} />
+          <Field label="البريد الإلكتروني" type="email" value={form.email} onChange={set('email')} error={formErrors.fieldError('email')} />
+          <Field label="الهاتف" value={form.phone} onChange={set('phone')} error={formErrors.fieldError('phone')} />
+          <Field label="المسمّى الوظيفي" value={form.job_title} onChange={set('job_title')} error={formErrors.fieldError('job_title')} />
+          <Field label="تاريخ التعيين" type="date" value={form.hire_date} onChange={set('hire_date')} error={formErrors.fieldError('hire_date')} />
+          <SelectField label="الحالة" value={form.status} onChange={set('status')} error={formErrors.fieldError('status')}>
             {EMPLOYEE_STATUSES.map((s) => <option key={s} value={s}>{employeeStatusLabel(s)}</option>)}
           </SelectField>
-          <SelectField label="المدير المباشر" value={form.manager_id} onChange={set('manager_id')}>
+          <SelectField label="المدير المباشر" value={form.manager_id} onChange={set('manager_id')} error={formErrors.fieldError('manager_id')}>
             <option value="">— بدون —</option>
             {managerOptions.map((m) => <option key={m.id} value={m.id}>{m.full_name_ar}</option>)}
           </SelectField>
 
           {form.status === 'terminated' && (
             <>
-              <Field label="تاريخ إنهاء الخدمة" type="date" value={form.termination_date} onChange={set('termination_date')} />
-              <Field label="سبب إنهاء الخدمة" value={form.termination_reason} onChange={set('termination_reason')} />
+              <Field label="تاريخ إنهاء الخدمة" type="date" value={form.termination_date} onChange={set('termination_date')} error={formErrors.fieldError('termination_date')} />
+              <Field label="سبب إنهاء الخدمة" value={form.termination_reason} onChange={set('termination_reason')} error={formErrors.fieldError('termination_reason')} />
             </>
           )}
         </div>

@@ -39,6 +39,14 @@ services:
         value: stderr # سجلّات إلى تيار Render (القرص مؤقّت)
       - key: LOG_LEVEL
         value: warning
+      # مراقبة الأخطاء (Sentry). خاملة ما لم يُضبط الـDSN (كنمط MAIL_MAILER). الإصدار يُلتقَط
+      # تلقائياً من RENDER_GIT_COMMIT. راجع docs/OBSERVABILITY.md.
+      - key: SENTRY_LARAVEL_DSN
+        sync: false
+      - key: SENTRY_ENVIRONMENT
+        value: production
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0" # تتبّع الأداء مُطفأ افتراضياً (ارفعه بحذر عند الحاجة)
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST
@@ -131,6 +139,11 @@ services:
         value: stderr
       - key: LOG_LEVEL
         value: warning
+      # مراقبة أخطاء المُجدوِل (Sentry). خاملة ما لم يُضبط الـDSN. راجع docs/OBSERVABILITY.md.
+      - key: SENTRY_LARAVEL_DSN
+        sync: false
+      - key: SENTRY_ENVIRONMENT
+        value: production
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST
@@ -212,3 +225,11 @@ services:
     envVars:
       - key: VITE_API_URL # وقت البناء: https://<law-api-domain>/api
         sync: false
+      # مراقبة أخطاء الواجهة (Sentry) — وقت البناء، خاملة ما لم يُضبط الـDSN. أعد البناء بعد
+      # ضبطها. ملاحظة CSP: عند تفعيل Sentry أضِف نطاق ingest إلى connect-src. راجع docs/OBSERVABILITY.md.
+      - key: VITE_SENTRY_DSN
+        sync: false
+      - key: VITE_SENTRY_ENVIRONMENT
+        value: production
+      - key: VITE_SENTRY_TRACES_SAMPLE_RATE
+        value: "0"

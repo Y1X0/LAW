@@ -10,6 +10,15 @@ on:
     paths:
       - "backend/Modules/Backup/**"
       - "backend/tests/Integration/BackupRestoreLiveTest.php"
+      - "backend/tests/Integration/BackupRestoreDrillTest.php"
+      - ".github/workflows/backup-restore.yml"
+  # يعمل أيضاً على الطلبات المفتوحة نحو main كي يكون التمرين جزءاً من بوّابة الـPR الخضراء.
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/Modules/Backup/**"
+      - "backend/tests/Integration/BackupRestoreLiveTest.php"
+      - "backend/tests/Integration/BackupRestoreDrillTest.php"
       - ".github/workflows/backup-restore.yml"
 
 jobs:
@@ -74,5 +83,5 @@ jobs:
       - name: Migrate fresh on Postgres
         run: php artisan migrate:fresh --force
 
-      - name: Run live backup → restore test
-        run: ./vendor/bin/phpunit tests/Integration/BackupRestoreLiveTest.php
+      - name: Run live backup → restore + drill tests
+        run: ./vendor/bin/phpunit tests/Integration/BackupRestoreLiveTest.php tests/Integration/BackupRestoreDrillTest.php

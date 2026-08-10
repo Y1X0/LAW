@@ -3,9 +3,12 @@
 namespace Modules\Backup\Services;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Modules\Backup\Contracts\DatabaseDumper;
 use Modules\Backup\Contracts\DatabaseRestorer;
+use Modules\Backup\Exceptions\RestoreVerificationException;
 use Modules\Backup\Models\Backup;
 use Modules\Core\Concerns\RecordsAudit;
 use Modules\Core\Models\AuditLog;
@@ -94,7 +97,42 @@ class BackupService
             @unlink($tmp);
         }
 
+        // تحقّق ما بعد الاستعادة (M4): نجاح العملية وحده لا يكفي — نتأكّد أنّ المخطّط الأساسي
+        // موجود فعلاً كي لا نُبلّغ عن «نجاح كاذب» عند استعادة ناقصة. يُرمى استثناء عند الفشل
+        // فلا يُكتب تدقيق backup_restored ولا يُعتبر الأمر ناجحاً.
+        $this->verifyRestore();
+
         $this->audit($request, 'backup_restored', $backup->id, ['filename' => $backup->filename]);
+    }
+
+    /** الجداول الأساسية التي يجب أن تكون موجودة بعد أي استعادة صحيحة (العمود الفقري العلائقي). */
+    private const CRITICAL_TABLES = [
+        'users', 'clients', 'cases', 'employees', 'invoices', 'payments', 'audit_logs', 'migrations',
+    ];
+
+    /**
+     * تحقّق خفيف ما بعد الاستعادة: كل جدول أساسي موجود، وجدول الهجرات غير فارغ (المخطّط
+     * محمّل فعلاً). لا يفحص منطق العمل ولا يغيّر البيانات — بوّابة سلامة فقط.
+     */
+    private function verifyRestore(): void
+    {
+        // بعد استعادة Postgres يُعاد إنشاء الجداول؛ نُعيد الاتصال لتفادي مخزون OID قديم.
+        // (على SQLite في الاختبارات لا نُعيد الاتصال كي لا تُمحى قاعدة :memory:.)
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::reconnect();
+        }
+
+        foreach (self::CRITICAL_TABLES as $table) {
+            if (! Schema::hasTable($table)) {
+                throw new RestoreVerificationException(
+                    'الاستعادة غير مكتملة: جدول أساسي مفقود بعد الاستعادة ('.$table.').',
+                );
+            }
+        }
+
+        if (DB::table('migrations')->count() < 1) {
+            throw new RestoreVerificationException('الاستعادة غير مكتملة: جدول الهجرات فارغ بعد الاستعادة.');
+        }
     }
 
     /** يقلّم النسخ المكتملة الزائدة عن حدّ الاحتفاظ لكل نوع (الأقدم أولاً) — ملفاً وصفّاً. */

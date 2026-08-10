@@ -6,6 +6,8 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Modules\Backup\Contracts\DatabaseDumper;
+use Modules\Backup\Contracts\DatabaseValidator;
+use Modules\Backup\Exceptions\BackupValidationException;
 use Modules\Backup\Models\Backup;
 use Modules\Backup\Services\BackupService;
 use Tests\TestCase;
@@ -31,10 +33,27 @@ class BackupServiceTest extends TestCase
         });
     }
 
+    /** مُدقّق وهمي: يمرّ افتراضياً (لا pg_restore حقيقي في اختبارات الوحدة)، أو يرمي عند $reject. */
+    private function fakeValidator(bool $reject = false): void
+    {
+        $this->app->instance(DatabaseValidator::class, new class($reject) implements DatabaseValidator
+        {
+            public function __construct(private bool $reject) {}
+
+            public function validate(string $path): void
+            {
+                if ($this->reject) {
+                    throw new BackupValidationException('أرشيف تالف (وهمي).');
+                }
+            }
+        });
+    }
+
     public function test_run_creates_uploads_records_and_audits(): void
     {
         Storage::fake('backups');
         $this->fakeDumper('HELLO-DUMP');
+        $this->fakeValidator();
         $owner = User::factory()->create();
 
         $backup = app(BackupService::class)->run('manual', 'manual', $owner->id);
@@ -94,6 +113,7 @@ class BackupServiceTest extends TestCase
     {
         Storage::fake('backups');
         $this->fakeDumper();
+        $this->fakeValidator();
 
         // املأ الحدّ اليومي (30) ثم أنشئ واحدة جديدة ⇒ تبقى 30 (حُذفت الأقدم).
         for ($i = 1; $i <= 30; $i++) {
@@ -105,5 +125,47 @@ class BackupServiceTest extends TestCase
 
         $this->assertSame(30, Backup::where('kind', 'daily')->where('status', 'completed')->count());
         Storage::disk('backups')->assertMissing('db/old-1.dump');
+    }
+
+    /**
+     * F3: تفريغ يُنتِج أرشيفاً تالفاً (المُدقّق يرفضه) → لا يُوسَم مكتملاً بل failed، ولا يُرفع
+     * أي ملف. يمنع «نسخة ناجحة» غير قابلة للاستعادة.
+     */
+    public function test_run_marks_failed_when_validator_rejects_artifact(): void
+    {
+        Storage::fake('backups');
+        $this->fakeDumper('CORRUPT-ARCHIVE');
+        $this->fakeValidator(reject: true);
+
+        try {
+            app(BackupService::class)->run('manual', 'manual');
+            $this->fail('كان يجب أن يُرمى استثناء التحقّق.');
+        } catch (BackupValidationException) {
+            // متوقّع
+        }
+
+        $backup = Backup::latest('id')->first();
+        $this->assertSame('failed', $backup->status);
+        $this->assertNull($backup->path); // لم يُرفع شيء
+        $this->assertEmpty(Storage::disk('backups')->allFiles(), 'يجب ألّا يُرفع أي ملف عند فشل التحقّق.');
+        $this->assertDatabaseHas('audit_logs', ['action' => 'backup_failed']);
+    }
+
+    /** F3: تفريغ فارغ (0 بايت) → يُرفض قبل الرفع ويُسجَّل failed. */
+    public function test_run_marks_failed_when_dump_is_empty(): void
+    {
+        Storage::fake('backups');
+        $this->fakeDumper(''); // ملف فارغ
+        $this->fakeValidator(); // لن يُبلَغ — فحص الحجم يسبقه
+
+        try {
+            app(BackupService::class)->run('manual', 'manual');
+            $this->fail('كان يجب أن يُرمى استثناء التحقّق على التفريغ الفارغ.');
+        } catch (BackupValidationException) {
+            // متوقّع
+        }
+
+        $this->assertSame('failed', Backup::latest('id')->first()->status);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'backup_failed']);
     }
 }

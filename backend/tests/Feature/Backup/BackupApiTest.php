@@ -5,6 +5,7 @@ namespace Tests\Feature\Backup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Modules\Backup\Contracts\DatabaseDumper;
+use Modules\Backup\Contracts\DatabaseValidator;
 use Modules\Backup\Models\Backup;
 use Tests\Concerns\AuthenticatesApi;
 use Tests\TestCase;
@@ -25,6 +26,12 @@ class BackupApiTest extends TestCase
             {
                 file_put_contents($targetPath, 'DUMP-BYTES');
             }
+        });
+
+        // مُدقّق وهمي يمرّ — لا pg_restore حقيقي في اختبارات API (المُدقّق الحقيقي يُغطّى حيّاً).
+        $this->app->instance(DatabaseValidator::class, new class implements DatabaseValidator
+        {
+            public function validate(string $path): void {}
         });
     }
 

@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Modules\Backup\Contracts\DatabaseDumper;
 use Modules\Backup\Contracts\DatabaseRestorer;
+use Modules\Backup\Contracts\DatabaseValidator;
+use Modules\Backup\Exceptions\BackupValidationException;
 use Modules\Backup\Exceptions\RestoreVerificationException;
 use Modules\Backup\Models\Backup;
 use Modules\Core\Concerns\RecordsAudit;
@@ -31,6 +33,7 @@ class BackupService
     public function __construct(
         private readonly DatabaseDumper $dumper,
         private readonly DatabaseRestorer $restorer,
+        private readonly DatabaseValidator $validator,
     ) {}
 
     /**
@@ -48,6 +51,15 @@ class BackupService
             $tmp = tempnam(sys_get_temp_dir(), 'lawbk').'.dump';
             $this->dumper->dump($tmp);
             $size = filesize($tmp) ?: 0;
+
+            // تحقّق ما قبل الرفع (F3): خروج pg_dump بنجاح لا يكفي — نتأكّد أنّ الأرتيفاكت غير
+            // فارغ وأرشيف ‎-Fc‎ صالح بنيويّاً (pg_restore --list) قبل رفعه ووسمه «مكتملاً»،
+            // فلا نُبلّغ عن نسخة ناجحة غير قابلة للاستعادة. الفشل يرمي فيُسجَّل الصفّ «failed»
+            // (كنمط fail-loud في الاستعادة) ولا يُرفع شيء.
+            if ($size <= 0) {
+                throw new BackupValidationException('التفريغ فارغ (0 بايت) — النسخة غير صالحة.');
+            }
+            $this->validator->validate($tmp);
 
             $filename = 'law-backup-'.now()->format('Ymd-His').'-'.$kind.'.dump';
             $path = 'db/'.$filename;

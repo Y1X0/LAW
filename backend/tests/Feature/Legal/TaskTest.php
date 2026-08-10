@@ -142,7 +142,7 @@ class TaskTest extends TestCase
 
     public function test_can_reassign_task(): void
     {
-        $assigner = $this->userWithPermissions(['tasks.assign']);
+        $assigner = $this->userWithPermissions(['tasks.assign', 'tasks.view_all']);
         $task = CaseTask::factory()->create();
         $newLawyer = Employee::factory()->create();
 
@@ -150,6 +150,62 @@ class TaskTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.assigned_to', $newLawyer->id);
         $this->assertDatabaseHas('audit_logs', ['action' => 'task_reassigned']);
+    }
+
+    /**
+     * M2: أغلق IDOR على إعادة الإسناد — حامل tasks.assign + view_own مرتبط بموظف لا يعيد
+     * إسناد مهمة مُسنَدة لغيره (ولا يمنح نفسه رؤيتها بالإسناد للذات)؛ ولا يتغيّر المُسنَد إليه.
+     */
+    public function test_non_assignee_cannot_assign_task(): void
+    {
+        [, , $taskA] = $this->lawyerWithTask(); // مهمة مُسنَدة لمحامٍ آخر
+        $attacker = $this->userWithPermissions(['tasks.view_own', 'tasks.assign']);
+        Employee::factory()->create(['user_id' => $attacker->id]);
+        $newLawyer = Employee::factory()->create();
+
+        $this->actingAsToken($attacker)
+            ->patchJson("/api/tasks/{$taskA->id}/assign", ['employee_id' => $newLawyer->id])
+            ->assertStatus(403)
+            ->assertJsonPath('errors.code', 'FORBIDDEN');
+
+        $this->assertDatabaseHas('case_tasks', ['id' => $taskA->id, 'assigned_to' => $taskA->assigned_to]);
+    }
+
+    /** M2 (عدم انحدار): المُسنَد إليه (tasks.assign) يعيد إسناد مهمته. */
+    public function test_assignee_can_assign_own_task(): void
+    {
+        [$userA, , $taskA] = $this->lawyerWithTask(['tasks.assign']);
+        $newLawyer = Employee::factory()->create();
+
+        $this->actingAsToken($userA)
+            ->patchJson("/api/tasks/{$taskA->id}/assign", ['employee_id' => $newLawyer->id])
+            ->assertOk()
+            ->assertJsonPath('data.assigned_to', $newLawyer->id);
+    }
+
+    /** M2: assign بلا موظف مرتبط (وبلا view_all) → NO_LINKED_EMPLOYEE. */
+    public function test_assign_without_linked_employee_is_forbidden(): void
+    {
+        $orphan = $this->userWithPermissions(['tasks.assign']);
+        $task = CaseTask::factory()->create();
+        $newLawyer = Employee::factory()->create();
+
+        $this->actingAsToken($orphan)
+            ->patchJson("/api/tasks/{$task->id}/assign", ['employee_id' => $newLawyer->id])
+            ->assertStatus(403)
+            ->assertJsonPath('errors.code', 'NO_LINKED_EMPLOYEE');
+    }
+
+    /** M2 (middleware): بلا tasks.assign → 403 قبل بلوغ المتحكّم (حتى مع view_all). */
+    public function test_assign_requires_permission(): void
+    {
+        $user = $this->userWithPermissions(['tasks.view_all']);
+        $task = CaseTask::factory()->create();
+        $newLawyer = Employee::factory()->create();
+
+        $this->actingAsToken($user)
+            ->patchJson("/api/tasks/{$task->id}/assign", ['employee_id' => $newLawyer->id])
+            ->assertStatus(403);
     }
 
     public function test_create_requires_permission_and_validates(): void

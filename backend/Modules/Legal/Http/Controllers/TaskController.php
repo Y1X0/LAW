@@ -87,9 +87,16 @@ class TaskController
         return $this->ok($task);
     }
 
-    /** PATCH /api/tasks/{task}/assign — إعادة إسناد (tasks.assign). */
+    /** PATCH /api/tasks/{task}/assign — إعادة إسناد (tasks.assign) — نفس عزل show/update/complete. */
     public function assign(Request $request, CaseTask $task): JsonResponse
     {
+        // أغلق IDOR: من لا يملك tasks.view_all لا يعيد إسناد إلا مهمة مُسنَدة إليه، تماماً كـ
+        // update()/complete(). بلا هذا الحارس كان حامل tasks.assign يعيد إسناد أي مهمة بالمُعرّف
+        // (ويمنح نفسه رؤيتها عبر الإسناد للذات).
+        if ($denied = $this->guardTaskAccess($request->user(), $task)) {
+            return $denied;
+        }
+
         $data = $request->validate(['employee_id' => ['required', 'integer', 'exists:employees,id']]);
         $task = $this->service->assign($task, (int) $data['employee_id'], $request);
 

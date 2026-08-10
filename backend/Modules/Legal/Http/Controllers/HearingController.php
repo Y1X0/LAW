@@ -85,6 +85,10 @@ class HearingController
     /** POST /api/cases/{case}/hearings */
     public function store(StoreHearingRequest $request, LegalCase $case): JsonResponse
     {
+        if ($denied = $this->guardCaseView($request->user(), $case)) {
+            return $denied;
+        }
+
         $hearing = $this->service->create($case, $request->validated(), $request);
 
         return $this->ok($hearing, 201);
@@ -93,6 +97,10 @@ class HearingController
     /** PUT /api/hearings/{hearing} */
     public function update(UpdateHearingRequest $request, Hearing $hearing): JsonResponse
     {
+        if ($denied = $this->guardCaseView($request->user(), $hearing->case)) {
+            return $denied;
+        }
+
         $hearing = $this->service->update($hearing, $request->validated(), $request);
 
         return $this->ok($hearing);
@@ -101,6 +109,10 @@ class HearingController
     /** POST /api/hearings/{hearing}/postpone — يحفظ القديمة وينشئ جديدة. */
     public function postpone(PostponeHearingRequest $request, Hearing $hearing): JsonResponse
     {
+        if ($denied = $this->guardCaseView($request->user(), $hearing->case)) {
+            return $denied;
+        }
+
         $data = $request->validated();
         [$old, $new] = $this->service->postpone($hearing, $data['scheduled_at'], $data['postponed_reason'], $request);
 
@@ -110,6 +122,10 @@ class HearingController
     /** POST /api/hearings/{hearing}/cancel */
     public function cancel(Request $request, Hearing $hearing): JsonResponse
     {
+        if ($denied = $this->guardCaseView($request->user(), $hearing->case)) {
+            return $denied;
+        }
+
         $hearing = $this->service->cancel($hearing, $request);
 
         return $this->ok($hearing);

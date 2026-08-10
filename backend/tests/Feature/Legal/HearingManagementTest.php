@@ -14,7 +14,7 @@ class HearingManagementTest extends TestCase
 
     public function test_can_create_hearing(): void
     {
-        $manager = $this->userWithPermissions(['hearings.manage']);
+        $manager = $this->userWithPermissions(['hearings.manage', 'cases.view_all']);
         $case = LegalCase::factory()->create();
 
         $this->actingAsToken($manager)
@@ -33,7 +33,7 @@ class HearingManagementTest extends TestCase
 
     public function test_can_update_scheduled_hearing(): void
     {
-        $manager = $this->userWithPermissions(['hearings.manage']);
+        $manager = $this->userWithPermissions(['hearings.manage', 'cases.view_all']);
         $hearing = Hearing::factory()->create(['location' => 'قديم']);
 
         $this->actingAsToken($manager)->putJson("/api/hearings/{$hearing->id}", ['location' => 'قاعة 5'])
@@ -45,7 +45,7 @@ class HearingManagementTest extends TestCase
 
     public function test_cannot_modify_held_hearing(): void
     {
-        $manager = $this->userWithPermissions(['hearings.manage']);
+        $manager = $this->userWithPermissions(['hearings.manage', 'cases.view_all']);
         $hearing = Hearing::factory()->past()->create(); // status = held
 
         $this->actingAsToken($manager)->putJson("/api/hearings/{$hearing->id}", ['location' => 'محاولة'])
@@ -55,7 +55,7 @@ class HearingManagementTest extends TestCase
 
     public function test_postpone_preserves_old_and_creates_new(): void
     {
-        $manager = $this->userWithPermissions(['hearings.manage']);
+        $manager = $this->userWithPermissions(['hearings.manage', 'cases.view_all']);
         $case = LegalCase::factory()->create();
         $hearing = Hearing::factory()->create(['case_id' => $case->id, 'scheduled_at' => now()->addDays(5)]);
         $newDate = now()->addDays(20)->toDateTimeString();
@@ -74,7 +74,7 @@ class HearingManagementTest extends TestCase
 
     public function test_cannot_postpone_held_hearing(): void
     {
-        $manager = $this->userWithPermissions(['hearings.manage']);
+        $manager = $this->userWithPermissions(['hearings.manage', 'cases.view_all']);
         $hearing = Hearing::factory()->past()->create();
 
         $this->actingAsToken($manager)
@@ -84,7 +84,7 @@ class HearingManagementTest extends TestCase
 
     public function test_can_cancel_hearing(): void
     {
-        $manager = $this->userWithPermissions(['hearings.manage']);
+        $manager = $this->userWithPermissions(['hearings.manage', 'cases.view_all']);
         $hearing = Hearing::factory()->create();
 
         $this->actingAsToken($manager)->postJson("/api/hearings/{$hearing->id}/cancel")
@@ -108,7 +108,7 @@ class HearingManagementTest extends TestCase
 
     public function test_create_validates_input(): void
     {
-        $manager = $this->userWithPermissions(['hearings.manage']);
+        $manager = $this->userWithPermissions(['hearings.manage', 'cases.view_all']);
         $case = LegalCase::factory()->create();
 
         $this->actingAsToken($manager)

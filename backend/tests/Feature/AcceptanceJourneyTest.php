@@ -8,6 +8,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Modules\Backup\Contracts\DatabaseDumper;
+use Modules\Backup\Contracts\DatabaseValidator;
 use Modules\Backup\Models\Backup;
 use Modules\Core\Models\Role;
 use Modules\Core\Seeders\RbacSeeder;
@@ -58,13 +59,17 @@ class AcceptanceJourneyTest extends TestCase
         Storage::fake('r2');
         Storage::fake('backups');
         Mail::fake();
-        // نسخة احتياطيّة تعمل على SQLite عبر مُفرِّغ مزيّف (بلا pg_dump حقيقي).
+        // نسخة احتياطيّة تعمل على SQLite عبر مُفرِّغ + مُدقّق مزيّفين (بلا pg_dump/pg_restore حقيقي).
         $this->app->instance(DatabaseDumper::class, new class implements DatabaseDumper
         {
             public function dump(string $targetPath): void
             {
                 file_put_contents($targetPath, 'DUMP-BYTES');
             }
+        });
+        $this->app->instance(DatabaseValidator::class, new class implements DatabaseValidator
+        {
+            public function validate(string $path): void {}
         });
 
         // ===== 1) المالك: إنشاء الحساب وتسجيل الدخول =====

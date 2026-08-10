@@ -4,7 +4,10 @@ namespace Tests\Integration;
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Modules\Backup\Contracts\DatabaseValidator;
+use Modules\Backup\Exceptions\BackupValidationException;
 use Modules\Backup\Models\Backup;
+use Modules\Backup\Support\PgDumpDumper;
 use Modules\Legal\Models\Client;
 use Tests\TestCase;
 
@@ -54,5 +57,34 @@ class BackupRestoreLiveTest extends TestCase
         // 4) الدليل: العلامة السابقة عادت، وما أُضيف بعد النسخ اختفى.
         $this->assertDatabaseHas('clients', ['name' => $marker]);
         $this->assertDatabaseMissing('clients', ['name' => $after]);
+    }
+
+    /**
+     * F3: المُدقّق الحقيقي (pg_restore --list) يقبل نسخة حقيقية صالحة ويرفض أرشيفاً تالفاً —
+     * على Postgres/pg_restore حقيقيّين. (النسخة الصالحة تمرّ ضمن backup:run أعلاه؛ هنا نثبت
+     * التمييز الصريح بين الصالح والتالف.)
+     */
+    public function test_validator_accepts_valid_dump_and_rejects_corrupt(): void
+    {
+        $validator = app(DatabaseValidator::class);
+
+        // نسخة حقيقية صالحة (pg_dump -Fc) — يجب أن تمرّ التحقّق.
+        $this->assertSame(0, Artisan::call('backup:run', ['--kind' => 'manual']), Artisan::output());
+        $good = tempnam(sys_get_temp_dir(), 'goodbk').'.dump';
+        (new PgDumpDumper)->dump($good);
+        $validator->validate($good); // لا يرمي
+        @unlink($good);
+
+        // أرشيف تالف/غير صالح — يجب أن يُرفَض.
+        $bad = tempnam(sys_get_temp_dir(), 'badbk').'.dump';
+        file_put_contents($bad, 'this-is-not-a-valid-pg_dump-archive');
+        try {
+            $validator->validate($bad);
+            $this->fail('كان يجب رفض الأرشيف التالف.');
+        } catch (BackupValidationException) {
+            // متوقّع
+        } finally {
+            @unlink($bad);
+        }
     }
 }
